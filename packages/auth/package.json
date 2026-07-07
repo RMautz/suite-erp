@@ -1,0 +1,31 @@
+{
+  "name": "@suite/auth",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./cookies": "./src/cookies.ts",
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts",
+    "./middleware": "./src/middleware.ts",
+    "./admin": "./src/admin.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@suite/db": "workspace:*",
+    "@supabase/ssr": "^0.6.0",
+    "@supabase/supabase-js": "^2.47.0",
+    "server-only": "^0.0.1"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "next": "^15.1.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
