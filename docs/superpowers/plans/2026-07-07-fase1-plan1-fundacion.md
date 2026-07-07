@@ -6,7 +6,7 @@
 
 **Architecture:** Turborepo con apps Next.js separadas (web/erp/admin) sobre una única base Supabase. Aislamiento multi-tenant por RLS con tests pgTAP. Lógica pura en `packages/core`, acceso a datos tipado en `packages/db`, sesión SSO en `packages/auth`. Mutaciones solo server-side (Server Actions).
 
-**Tech Stack:** Next.js 15 (App Router), React 19, TypeScript 5 (strict), pnpm 9, Turborepo 2, Supabase (Postgres 15, Auth, CLI local), @supabase/ssr, Vitest 3, pgTAP, GitHub Actions, Vercel.
+**Tech Stack:** Next.js 15 (App Router), React 19, TypeScript 5 (strict), pnpm 9, Turborepo 2, Supabase (Postgres 17, Auth, CLI local), @supabase/ssr, Vitest 3, pgTAP, GitHub Actions, Vercel.
 
 **Secuencia de planes de la Fase 1** (este documento es el Plan 1):
 
@@ -913,17 +913,20 @@ begin
   v_rut := app.normalizar_rut(p_rut);
 
   select id into v_plan from planes where nombre = 'Básico';
+  if v_plan is null then
+    raise exception 'No existe el plan Básico; contacta a soporte';
+  end if;
 
   begin
     insert into organizaciones (rut, razon_social, plan_id)
-    values (v_rut, p_razon_social, v_plan)
+    values (v_rut, trim(p_razon_social), v_plan)
     returning id into v_org;
   exception when unique_violation then
     raise exception 'Ya existe una organización registrada con el RUT %', p_rut;
   end;
 
   insert into empresas (organizacion_id, rut, razon_social)
-  values (v_org, v_rut, p_razon_social);
+  values (v_org, v_rut, trim(p_razon_social));
 
   insert into miembros (usuario_id, organizacion_id, rol)
   values (v_usuario, v_org, 'dueno');
@@ -1049,12 +1052,13 @@ git commit -m "feat(db): paquete de tipos generados de Supabase"
   },
   "scripts": { "test": "vitest run" },
   "dependencies": {
-    "@supabase/ssr": "^0.6.0",
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.47.0",
     "@suite/db": "workspace:*"
   },
   "peerDependencies": { "next": "^15.0.0" },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "next": "^15.1.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
@@ -1410,13 +1414,20 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
+    return {
+      error:
+        'Ya hay una sesión iniciada con otro correo en este navegador. Cierra esa sesión para registrar una cuenta nueva.',
+    }
+  }
   if (!user) {
     const { error: errorAuth } = await supabase.auth.signUp({ email, password })
     if (errorAuth?.code === 'user_already_exists') {
       const { error: errorLogin } = await supabase.auth.signInWithPassword({ email, password })
       if (errorLogin) return { error: 'Este correo ya tiene una cuenta. Inicia sesión para continuar.' }
     } else if (errorAuth) {
-      return { error: 'No se pudo crear la cuenta: ' + errorAuth.message }
+      console.error('Error de signUp en registro:', errorAuth)
+      return { error: 'No se pudo crear la cuenta. Inténtalo de nuevo en unos minutos.' }
     }
   }
 
@@ -1694,7 +1705,7 @@ export default async function Inicio() {
           <h2>{org.razon_social}</h2>
           {org.estado === 'trial' && (
             <p style={{ background: '#fff3cd', padding: 8 }}>
-              Período de prueba hasta el {new Date(org.trial_hasta).toLocaleDateString('es-CL')}.
+              Período de prueba hasta el {new Date(org.trial_hasta + 'T00:00:00').toLocaleDateString('es-CL')}.
             </p>
           )}
           {org.estado === 'suspendida' && (
@@ -1888,7 +1899,7 @@ export default async function PanelAdmin() {
               <td>{org.razon_social}</td>
               <td>{org.planes?.nombre ?? '—'}</td>
               <td>{org.estado}</td>
-              <td>{new Date(org.trial_hasta).toLocaleDateString('es-CL')}</td>
+              <td>{new Date(org.trial_hasta + 'T00:00:00').toLocaleDateString('es-CL')}</td>
               <td>
                 <form action={activarOrganizacion} style={{ display: 'inline' }}>
                   <input type="hidden" name="id" value={org.id} />
@@ -1970,7 +1981,7 @@ jobs:
       - run: pnpm test
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.109.1
       - run: supabase start
       - run: supabase test db
       - run: pnpm build
@@ -2030,10 +2041,22 @@ Para cada app (`web`, `erp`, `admin`): en Vercel "Add New Project" → importar 
 
 - [ ] **Step 3: Smoke test en producción**
 
-1. Abrir la URL del portal → registro con un RUT de prueba → éxito.
-2. Login → clic "Entrar al ERP" → login de nuevo si lo pide (sin cookie compartida aún) → se ve la organización.
-3. Abrir admin con el correo de `ADMIN_EMAILS` → activar la organización de prueba.
-4. Borrar la organización de prueba desde el SQL editor de Supabase.
+En `*.vercel.app` **solo `web` es utilizable**: `erp` y `admin` redirigen en
+bucle al login de `web` porque la cookie de sesión es host-only y `vercel.app`
+está en la Public Suffix List (no hay dominio raíz común entre subdominios
+`vercel.app` del que colgarla). El smoke test completo (login cruzado a
+`erp`/`admin`) requiere primero configurar un dominio propio y
+`NEXT_PUBLIC_COOKIE_DOMAIN=.dominio.cl` (ver `docs/deploy.md` §5) y solo
+entonces correrlo (`docs/deploy.md` §6):
+
+1. Abrir la URL del portal → registro con un RUT de prueba → éxito (smoke test
+   parcial en `*.vercel.app`, ver `docs/deploy.md` §4).
+2. Configurar dominio propio + `NEXT_PUBLIC_COOKIE_DOMAIN=.dominio.cl` + redeploy
+   de las 3 apps (`docs/deploy.md` §5).
+3. Login en el dominio propio → clic "Entrar al ERP" → la cookie ahora es
+   compartida → se ve la organización sin pedir login de nuevo.
+4. Abrir admin con el correo de `ADMIN_EMAILS` → activar la organización de prueba.
+5. Borrar la organización de prueba desde el SQL editor de Supabase.
 
 - [ ] **Step 4: Escribir el runbook**
 

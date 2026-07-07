@@ -24,13 +24,20 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
+    return {
+      error:
+        'Ya hay una sesión iniciada con otro correo en este navegador. Cierra esa sesión para registrar una cuenta nueva.',
+    }
+  }
   if (!user) {
     const { error: errorAuth } = await supabase.auth.signUp({ email, password })
     if (errorAuth?.code === 'user_already_exists') {
       const { error: errorLogin } = await supabase.auth.signInWithPassword({ email, password })
       if (errorLogin) return { error: 'Este correo ya tiene una cuenta. Inicia sesión para continuar.' }
     } else if (errorAuth) {
-      return { error: 'No se pudo crear la cuenta: ' + errorAuth.message }
+      console.error('Error de signUp en registro:', errorAuth)
+      return { error: 'No se pudo crear la cuenta. Inténtalo de nuevo en unos minutos.' }
     }
   }
 

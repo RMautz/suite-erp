@@ -34,7 +34,7 @@ export default async function PanelAdmin() {
               <td>{org.razon_social}</td>
               <td>{org.planes?.nombre ?? '—'}</td>
               <td>{org.estado}</td>
-              <td>{new Date(org.trial_hasta).toLocaleDateString('es-CL')}</td>
+              <td>{new Date(org.trial_hasta + 'T00:00:00').toLocaleDateString('es-CL')}</td>
               <td>
                 <form action={activarOrganizacion} style={{ display: 'inline' }}>
                   <input type="hidden" name="id" value={org.id} />

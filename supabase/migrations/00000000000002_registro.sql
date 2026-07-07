@@ -62,17 +62,20 @@ begin
   v_rut := app.normalizar_rut(p_rut);
 
   select id into v_plan from planes where nombre = 'Básico';
+  if v_plan is null then
+    raise exception 'No existe el plan Básico; contacta a soporte';
+  end if;
 
   begin
     insert into organizaciones (rut, razon_social, plan_id)
-    values (v_rut, p_razon_social, v_plan)
+    values (v_rut, trim(p_razon_social), v_plan)
     returning id into v_org;
   exception when unique_violation then
     raise exception 'Ya existe una organización registrada con el RUT %', p_rut;
   end;
 
   insert into empresas (organizacion_id, rut, razon_social)
-  values (v_org, v_rut, p_razon_social);
+  values (v_org, v_rut, trim(p_razon_social));
 
   insert into miembros (usuario_id, organizacion_id, rol)
   values (v_usuario, v_org, 'dueno');

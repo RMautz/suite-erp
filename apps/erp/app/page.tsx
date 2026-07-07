@@ -29,7 +29,8 @@ export default async function Inicio() {
           <h2>{org.razon_social}</h2>
           {org.estado === 'trial' && (
             <p style={{ background: '#fff3cd', padding: 8 }}>
-              Período de prueba hasta el {new Date(org.trial_hasta).toLocaleDateString('es-CL')}.
+              Período de prueba hasta el{' '}
+              {new Date(org.trial_hasta + 'T00:00:00').toLocaleDateString('es-CL')}.
             </p>
           )}
           {org.estado === 'suspendida' && (

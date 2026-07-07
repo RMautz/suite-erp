@@ -150,6 +150,18 @@ En Vercel → **Add New… → Project** → importar `suite-erp` → repetir 3 
 Tras crear los 3, anotar sus URLs (`https://<nombre>.vercel.app`, Vercel asigna
 el subdominio según el nombre de proyecto elegido).
 
+> **⚠️ Importante — límite de `*.vercel.app`:** mientras las 3 apps vivan en
+> subdominios `*.vercel.app`, **solo la app `web` es utilizable** (registro y
+> login). `erp` y `admin` **redirigen en bucle al login** de `web`: su
+> middleware exige sesión, la cookie que emite `web` es host-only, y
+> `vercel.app` está en la Public Suffix List — no existe un dominio raíz común
+> entre `<algo>.vercel.app` y `<otro-algo>.vercel.app` en el que una cookie
+> pueda ser válida para ambos. No hay forma de completar el login cruzado a
+> `erp`/`admin` sin dominio propio. El smoke test en `*.vercel.app` (§4) queda
+> limitado a probar el registro en `web`; el resto del flujo requiere primero
+> configurar un dominio propio (§5) y solo entonces se puede correr el smoke
+> test completo (§6).
+
 ### 3.1 Variables de entorno por app
 
 Configurar en cada proyecto Vercel → **Settings → Environment Variables**,
@@ -196,30 +208,37 @@ cuyo valor cambió, ya que las `NEXT_PUBLIC_*` se inyectan en build time.
 Mientras las 3 apps vivan en subdominios distintos de `vercel.app`
 (`suite-erp-web.vercel.app`, `suite-erp-erp.vercel.app`, ...), no se puede
 compartir una cookie de sesión entre ellas — son dominios distintos a efectos de
-cookies. Dejar `NEXT_PUBLIC_COOKIE_DOMAIN` vacía hace que cada app emita su cookie
-en su propio dominio; el usuario deberá loguearse de nuevo al pasar de `web` a
-`erp` (el botón "Entrar al ERP" redirige y pide login otra vez). Este
-comportamiento es esperado en v1 y se resuelve en el paso 5 (dominio propio).
+cookies, y `vercel.app` está en la Public Suffix List (no hay un sufijo común
+de dos niveles del que colgar una cookie de dominio, como sí lo hay con
+`.dominio.cl`). Dejar `NEXT_PUBLIC_COOKIE_DOMAIN` vacía hace que cada app emita
+su cookie en su propio dominio; el resultado **no es** "el usuario debe
+loguearse de nuevo" sino que `erp`/`admin` quedan inutilizables — ver el aviso
+de arriba. Este comportamiento es esperado en v1 y se resuelve en el §5
+(dominio propio), prerrequisito del smoke test completo del §6.
 
 ---
 
-## 4. Smoke test en producción
+## 4. Smoke test parcial en `*.vercel.app` (solo `web`)
 
 Una vez las 3 apps están desplegadas y las env vars completas (con redeploy si
-hizo falta):
+hizo falta), en `*.vercel.app` solo se puede verificar el registro en `web` —
+ver el aviso de §3. **No** intentar todavía el login cruzado a `erp`/`admin`:
+entra en el bucle descrito arriba. Ese tramo del smoke test se retoma en el §6,
+después de configurar el dominio propio (§5).
 
 1. Abrir la URL de `suite-erp-web` → **Registrarse** con un RUT de prueba válido
    (por ejemplo un RUT real generado con `formatearRut`/`validarRut` de
    `@suite/core`, o cualquier RUT que pase el dígito verificador) y contraseña de
    8+ caracteres → debe crear la cuenta y quedar con sesión iniciada (sin
    confirmación de email, por la config del §2.3).
-2. Clic en "Entrar al ERP" → si pide login de nuevo (sin cookie compartida, ver
-   §3.2), loguearse otra vez con las mismas credenciales → debe verse la
-   organización recién creada (banner de trial incluido, `estado = 'trial'`).
-3. Abrir `suite-erp-admin` y loguearse con el correo listado en `ADMIN_EMAILS`
-   (`rpmautz@gmail.com`) → debe verse la tabla de organizaciones, incluida la de
-   prueba → pulsar **Activar** → el estado pasa a `activa`.
-4. Confirmar en `suite-erp-erp` (recargar) que el banner de trial desaparece.
+2. Confirmar en el Table Editor de `suite-erp-prod` que aparece la fila nueva en
+   `organizaciones` (`estado = 'trial'`), y una fila asociada en `empresas` y en
+   `miembros`.
+
+No borrar todavía la organización de prueba — se reutiliza en el §6 para
+terminar el smoke test completo una vez configurado el dominio propio. Si el
+dominio propio no se va a configurar de inmediato, seguir el §4.1 para
+limpiarla ahora y repetir el registro más adelante.
 
 ### 4.1 Borrar la organización de prueba
 
@@ -261,10 +280,12 @@ schema `auth`).
 
 ---
 
-## 5. Dominio propio (futuro)
+## 5. Dominio propio (prerrequisito del smoke test completo)
 
-Cuando se compre un dominio (ej. en [NIC Chile](https://www.nic.cl) para un
-`.cl`):
+`erp` y `admin` no son utilizables en `*.vercel.app` (§3). Antes de poder
+completar el smoke test (login → ERP → admin → activar, §6) hace falta un
+dominio propio. Cuando se compre uno (ej. en [NIC Chile](https://www.nic.cl)
+para un `.cl`):
 
 1. En Vercel, agregar el dominio a cada uno de los 3 proyectos con el subdominio
    correspondiente, por ejemplo:
@@ -280,11 +301,32 @@ Cuando se compre un dominio (ej. en [NIC Chile](https://www.nic.cl) para un
    subdominios) y hacer **Redeploy** de las 3 (variable `NEXT_PUBLIC_*`, se
    incrusta en build time).
 4. Esto habilita el SSO real: login en `web` deja una cookie visible también en
-   `erp` y `admin`, sin pedir login de nuevo al cruzar de app.
+   `erp` y `admin`, sin pedir login de nuevo al cruzar de app — recién con esto
+   `erp` y `admin` dejan de estar en bucle de login.
 
 ---
 
-## 6. Aplicar migraciones futuras
+## 6. Smoke test completo (con dominio propio)
+
+Con el dominio propio activo (§5) y las 3 apps redesplegadas con
+`NEXT_PUBLIC_COOKIE_DOMAIN=.dominio.cl`, retomar el smoke test del §4:
+
+1. Abrir `www.dominio.cl` → si la organización de prueba del §4 sigue existiendo
+   iniciar sesión con las mismas credenciales; si se borró (§4.1), registrarse
+   de nuevo.
+2. Clic en "Entrar al ERP" (`erp.dominio.cl`) → la cookie de sesión ahora es
+   válida en el subdominio → debe verse la organización directamente, sin pedir
+   login otra vez (banner de trial incluido, `estado = 'trial'`).
+3. Abrir `admin.dominio.cl` y loguearse con el correo listado en `ADMIN_EMAILS`
+   (`rpmautz@gmail.com`) → debe verse la tabla de organizaciones, incluida la de
+   prueba → pulsar **Activar** → el estado pasa a `activa`.
+4. Confirmar en `erp.dominio.cl` (recargar) que el banner de trial desaparece.
+
+Terminado el smoke test, borrar la organización de prueba siguiendo el §4.1.
+
+---
+
+## 7. Aplicar migraciones futuras
 
 Cualquier migración nueva agregada a `supabase/migrations/` después de un merge a
 `main` se aplica a producción con:
@@ -298,7 +340,7 @@ una vez por máquina/checkout, o de nuevo si se reclona el repo.)
 
 ---
 
-## 7. Nota de mantenimiento: GRANTs en tablas nuevas
+## 8. Nota de mantenimiento: GRANTs en tablas nuevas
 
 Desde que Supabase dejó de auto-exponer tablas nuevas de `public` a los roles del
 Data API (`anon`, `authenticated`, `service_role`) sin GRANT explícito (ver
