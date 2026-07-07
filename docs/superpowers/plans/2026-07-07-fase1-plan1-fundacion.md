@@ -11,7 +11,7 @@
 **Secuencia de planes de la Fase 1** (este documento es el Plan 1):
 
 1. **Fundación** (este plan) — monorepo, esquema plataforma, RLS, RUT/IVA, SSO, registro/login, admin mínimo, CI, deploy inicial.
-2. Maestros ERP — productos, clientes, proveedores, bodegas, import Excel/CSV.
+2. Maestros ERP — productos, clientes, proveedores, bodegas, import Excel/CSV. (Aquí nace `packages/ui` — design system compartido — con las primeras pantallas CRUD reales.)
 3. Ventas + DTE — documentos de venta, adaptador proveedor DTE, emisión con cola de reintentos.
 4. Inventario + Compras — movimientos de stock inmutables, órdenes de compra, recepción.
 5. Pagos + Reportes — cobranza, libros compra/venta formato SII, exportes Excel.
@@ -666,13 +666,13 @@ values
 
 insert into public.organizaciones (id, rut, razon_social)
 values
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '76111111-4', 'Organización A'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76222222-8', 'Organización B');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '76111111-6', 'Organización A'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76222222-1', 'Organización B');
 
 insert into public.empresas (organizacion_id, rut, razon_social)
 values
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '76111111-4', 'Empresa A SpA'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76222222-8', 'Empresa B SpA');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '76111111-6', 'Empresa A SpA'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76222222-1', 'Empresa B SpA');
 
 insert into public.miembros (usuario_id, organizacion_id, rol)
 values
@@ -710,7 +710,7 @@ select results_eq(
 -- Escrituras cruzadas: Ana no puede crear empresas en la organización B.
 select throws_ok(
   $$insert into empresas (organizacion_id, rut, razon_social)
-    values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76333333-1', 'Intrusa SpA')$$,
+    values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '76333333-7', 'Intrusa SpA')$$,
   '42501',
   'new row violates row-level security policy for table "empresas"',
   'Ana no puede insertar empresas en la organización B'
@@ -752,7 +752,10 @@ git commit -m "test(db): aislamiento multi-tenant RLS verificado con pgTAP"
 
 **Interfaces:**
 - Consumes: esquema de Task 4.
-- Produces: RPC `public.registrar_organizacion(p_rut text, p_razon_social text) returns uuid` — crea organización (estado `trial`, plan `Básico`) + empresa homónima + miembro `dueno` para `auth.uid()`, en una transacción. Lanza excepción con mensaje en español si no hay sesión o el RUT ya existe.
+- Produces:
+  - `app.normalizar_rut(p_rut text) returns text` — mayúsculas y solo `[0-9K]` (`'76.543.210-3'` → `'765432103'`).
+  - `app.validar_rut(p_rut text) returns boolean` — dígito verificador módulo 11 (misma regla que `@suite/core`).
+  - RPC `public.registrar_organizacion(p_rut text, p_razon_social text) returns uuid` — valida el RUT, lo guarda **normalizado** (la unicidad no depende del cliente), y crea organización (estado `trial`, plan `Básico`) + empresa homónima + miembro `dueno` para `auth.uid()`, en una transacción. Lanza excepción con mensaje en español si no hay sesión, el RUT es inválido o ya existe.
 
 - [ ] **Step 1: Escribir el test que falla**
 
@@ -761,7 +764,7 @@ git commit -m "test(db): aislamiento multi-tenant RLS verificado con pgTAP"
 ```sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(5);
+select plan(7);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'carla@nueva.cl');
@@ -770,7 +773,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "33333333-3333-3333-3333-333333333333", "role": "authenticated"}';
 
 select lives_ok(
-  $$select registrar_organizacion('76.543.210-K', 'Nueva SpA')$$,
+  $$select registrar_organizacion('76.543.210-3', 'Nueva SpA')$$,
   'un usuario autenticado puede registrar su organización'
 );
 
@@ -778,6 +781,12 @@ select results_eq(
   'select razon_social, estado from organizaciones',
   $$values ('Nueva SpA'::text, 'trial'::text)$$,
   'la organización queda en trial y visible para su dueño'
+);
+
+select results_eq(
+  'select rut from organizaciones',
+  array['765432103'::text],
+  'el RUT se guarda normalizado'
 );
 
 select results_eq(
@@ -792,11 +801,19 @@ select results_eq(
   'el usuario queda como dueño'
 );
 
+-- Mismo RUT lógico escrito distinto: la normalización lo detecta como duplicado.
 select throws_ok(
-  $$select registrar_organizacion('76.543.210-K', 'Duplicada SpA')$$,
+  $$select registrar_organizacion('765432103', 'Duplicada SpA')$$,
   'P0001',
-  'Ya existe una organización registrada con el RUT 76.543.210-K',
-  'RUT duplicado da error claro en español'
+  'Ya existe una organización registrada con el RUT 765432103',
+  'RUT duplicado (aun sin formato) da error claro en español'
+);
+
+select throws_ok(
+  $$select registrar_organizacion('76.543.210-K', 'Inválida SpA')$$,
+  'P0001',
+  'El RUT ingresado no es válido',
+  'RUT con dígito verificador incorrecto es rechazado por la BD'
 );
 
 select * from finish();
@@ -813,6 +830,43 @@ Expected: `registro.test.sql` FALLA con `function registrar_organizacion(unknown
 `supabase/migrations/00000000000002_registro.sql`:
 
 ```sql
+-- Normalización y validación de RUT en la BD: última línea de defensa.
+-- El RPC es invocable directo vía PostgREST, así que no se puede confiar
+-- en que el cliente haya validado o normalizado.
+
+create or replace function app.normalizar_rut(p_rut text)
+returns text
+language sql immutable
+as $$
+  select upper(regexp_replace(coalesce(p_rut, ''), '[^0-9kK]', '', 'g'))
+$$;
+
+create or replace function app.validar_rut(p_rut text)
+returns boolean
+language plpgsql immutable
+as $$
+declare
+  limpio text := app.normalizar_rut(p_rut);
+  cuerpo text;
+  dv text;
+  suma int := 0;
+  factor int := 2;
+  resto int;
+  esperado text;
+begin
+  if length(limpio) < 2 then return false; end if;
+  cuerpo := left(limpio, -1);
+  dv := right(limpio, 1);
+  if cuerpo !~ '^\d+$' then return false; end if;
+  for i in reverse length(cuerpo)..1 loop
+    suma := suma + substr(cuerpo, i, 1)::int * factor;
+    factor := case when factor = 7 then 2 else factor + 1 end;
+  end loop;
+  resto := 11 - (suma % 11);
+  esperado := case when resto = 11 then '0' when resto = 10 then 'K' else resto::text end;
+  return esperado = dv;
+end $$;
+
 -- Registro self-service: crea organización + empresa + membresía dueño en una transacción.
 create or replace function public.registrar_organizacion(p_rut text, p_razon_social text)
 returns uuid
@@ -821,28 +875,36 @@ set search_path = public
 as $$
 declare
   v_usuario uuid := auth.uid();
+  v_rut text;
   v_org uuid;
   v_plan uuid;
 begin
   if v_usuario is null then
     raise exception 'Debes iniciar sesión para registrar una organización';
   end if;
+  if not app.validar_rut(p_rut) then
+    raise exception 'El RUT ingresado no es válido';
+  end if;
   if coalesce(trim(p_razon_social), '') = '' then
     raise exception 'La razón social es obligatoria';
   end if;
+
+  -- Guardar normalizado: la restricción unique compara byte a byte, así que
+  -- '76.543.210-3' y '765432103' deben ser la misma fila.
+  v_rut := app.normalizar_rut(p_rut);
 
   select id into v_plan from planes where nombre = 'Básico';
 
   begin
     insert into organizaciones (rut, razon_social, plan_id)
-    values (p_rut, p_razon_social, v_plan)
+    values (v_rut, p_razon_social, v_plan)
     returning id into v_org;
   exception when unique_violation then
     raise exception 'Ya existe una organización registrada con el RUT %', p_rut;
   end;
 
   insert into empresas (organizacion_id, rut, razon_social)
-  values (v_org, p_rut, p_razon_social);
+  values (v_org, v_rut, p_razon_social);
 
   insert into miembros (usuario_id, organizacion_id, rol)
   values (v_usuario, v_org, 'dueno');
@@ -860,7 +922,7 @@ grant execute on function public.registrar_organizacion(text, text) to authentic
 - [ ] **Step 4: Verificar que pasa**
 
 Run: `pnpm supabase db reset && pnpm supabase test db`
-Expected: ambos archivos de test pasan (11 asserts en total).
+Expected: ambos archivos de test pasan (13 asserts en total: 6 de aislamiento + 7 de registro).
 
 - [ ] **Step 5: Commit**
 
@@ -1305,7 +1367,7 @@ export type EstadoForm = { error?: string }
 'use server'
 
 import { redirect } from 'next/navigation'
-import { formatearRut, validarRut } from '@suite/core'
+import { validarRut } from '@suite/core'
 import { crearClienteServidor } from '@suite/auth/server'
 import type { EstadoForm } from '../tipos'
 
@@ -1322,13 +1384,25 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
 
   const supabase = await crearClienteServidor()
 
-  const { error: errorAuth } = await supabase.auth.signUp({ email, password })
-  if (errorAuth) return { error: 'No se pudo crear la cuenta: ' + errorAuth.message }
+  // Reintento tras un fallo posterior (ej. RUT duplicado): si ya hay sesión o el
+  // correo ya tiene cuenta, no volver a crear el usuario — así el segundo envío
+  // del formulario llega al RPC en vez de morir en "User already registered".
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    const { error: errorAuth } = await supabase.auth.signUp({ email, password })
+    if (errorAuth?.code === 'user_already_exists') {
+      const { error: errorLogin } = await supabase.auth.signInWithPassword({ email, password })
+      if (errorLogin) return { error: 'Este correo ya tiene una cuenta. Inicia sesión para continuar.' }
+    } else if (errorAuth) {
+      return { error: 'No se pudo crear la cuenta: ' + errorAuth.message }
+    }
+  }
 
-  // Formato canónico ("76.543.210-K") para que la restricción unique
-  // detecte el mismo RUT escrito de formas distintas.
+  // La BD normaliza y valida el RUT de nuevo (última línea de defensa).
   const { error: errorOrg } = await supabase.rpc('registrar_organizacion', {
-    p_rut: formatearRut(rut),
+    p_rut: rut,
     p_razon_social: razonSocial,
   })
   if (errorOrg) return { error: errorOrg.message }
@@ -1343,7 +1417,8 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
 'use client'
 
 import { useActionState } from 'react'
-import { registrar, type EstadoForm } from './acciones'
+import { registrar } from './acciones'
+import type { EstadoForm } from '../tipos'
 
 const inicial: EstadoForm = {}
 
@@ -1364,7 +1439,7 @@ export default function PaginaRegistro() {
         </label>
         <label>
           RUT de la empresa
-          <input name="rut" placeholder="76.543.210-K" required style={{ width: '100%' }} />
+          <input name="rut" placeholder="76.543.210-3" required style={{ width: '100%' }} />
         </label>
         <label>
           Razón social
@@ -1455,12 +1530,15 @@ export default function PaginaLogin() {
 - [ ] **Step 5: Verificar flujo completo manualmente**
 
 Run: `pnpm install && pnpm --filter web dev` (con Supabase local corriendo)
-Expected: en `http://localhost:3000/registro`, crear cuenta con RUT `76.543.210-K` redirige a `/registro/exito`.
+Expected: en `http://localhost:3000/registro`, crear cuenta con RUT `76.543.210-3` redirige a `/registro/exito`.
 
 Verificar en la BD: abrir Supabase Studio (`http://127.0.0.1:54323`) → Table Editor → `organizaciones`.
 Expected: una fila con la razón social ingresada y estado `trial`; en `empresas` y `miembros`, una fila cada una.
 
-Probar también: RUT inválido muestra "El RUT ingresado no es válido"; registrar el mismo RUT dos veces muestra el error de duplicado.
+Probar también:
+
+1. RUT inválido (ej. `76.543.210-K`, DV incorrecto) muestra "El RUT ingresado no es válido".
+2. Con un **segundo correo**, registrar el mismo RUT `76.543.210-3` muestra el error de duplicado; corregir el RUT a `12.345.678-5` y reenviar el formulario **completa el registro** (el reintento no debe morir en "User already registered").
 
 - [ ] **Step 6: Verificar build y commit**
 
@@ -1667,7 +1745,8 @@ git commit -m "feat(erp): shell autenticado con organizaciones, empresas y banne
     "@suite/db": "workspace:*",
     "next": "^15.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -1677,6 +1756,8 @@ git commit -m "feat(erp): shell autenticado con organizaciones, empresas y banne
   }
 }
 ```
+
+Nota: `server-only` va declarado aquí porque `lib/guardia.ts` lo importa directamente — con la resolución estricta de pnpm no basta con que `@suite/auth` lo tenga.
 
 `apps/admin/tsconfig.json` y `apps/admin/next.config.ts`: idénticos a los de `apps/web` (Task 9, Step 1).
 
@@ -1952,7 +2033,7 @@ git commit -m "docs: runbook de deploy a Supabase y Vercel"
 Al completar las 13 tasks:
 
 - `pnpm test` — unitarios de `@suite/core` y `@suite/auth` verdes.
-- `pnpm supabase test db` — 11 asserts pgTAP verdes (aislamiento RLS + registro).
+- `pnpm supabase test db` — 13 asserts pgTAP verdes (aislamiento RLS + registro).
 - `pnpm build` — 3 apps compilan.
 - Flujo real en producción: registro → login → ERP muestra organización → admin activa el plan.
 
