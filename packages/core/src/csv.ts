@@ -11,7 +11,7 @@ function detectarDelimitador(primeraLinea: string): ',' | ';' {
 }
 
 export function parsearCSV(texto: string): string[][] {
-  const limpio = texto.replace(/^﻿/, '')
+  const limpio = texto.replace(/^\uFEFF/, '')
   if (limpio.trim() === '') return []
   const finPrimeraLinea = limpio.indexOf('\n')
   const primeraLinea = finPrimeraLinea === -1 ? limpio : limpio.slice(0, finPrimeraLinea)

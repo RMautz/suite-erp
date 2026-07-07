@@ -24,7 +24,7 @@ describe('parsearCSV', () => {
     expect(parsearCSV('nombre\n"Arroz ""premium"""')).toEqual([['nombre'], ['Arroz "premium"']])
   })
   it('maneja CRLF, BOM y línea final vacía', () => {
-    expect(parsearCSV('﻿a,b\r\n1,2\r\n')).toEqual([
+    expect(parsearCSV('\uFEFFa,b\r\n1,2\r\n')).toEqual([
       ['a', 'b'],
       ['1', '2'],
     ])
