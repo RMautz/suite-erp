@@ -18,6 +18,43 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  apps/admin:
+    dependencies:
+      '@suite/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@suite/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      next:
+        specifier: ^15.1.0
+        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   apps/erp:
     dependencies:
       '@suite/auth':
