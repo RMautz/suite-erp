@@ -1,0 +1,15 @@
+{
+  "name": "@suite/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "gen": "supabase gen types typescript --local > src/types.ts"
+  },
+  "devDependencies": {
+    "supabase": "^2.0.0",
+    "typescript": "^5.7.0"
+  }
+}

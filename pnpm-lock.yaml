@@ -27,6 +27,15 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7
 
+  packages/db:
+    devDependencies:
+      supabase:
+        specifier: ^2.0.0
+        version: 2.109.1
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
 packages:
 
   '@ecies/ciphers@0.2.6':
