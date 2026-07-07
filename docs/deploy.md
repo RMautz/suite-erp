@@ -13,6 +13,15 @@ estar disponible para autorizar los distintos login (`gh auth login`,
 Todos los comandos de PowerShell asumen Windows 11 / PowerShell 5.1, donde `&&` no
 funciona (usar `;`). Ejecutar siempre desde la raíz del repo.
 
+**Nota (Windows):** si Node/pnpm/gh se instalaron recientemente y la terminal abierta
+no los encuentra ("no se reconoce como comando"), refresca el PATH de la sesión con:
+
+```powershell
+$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+```
+
+O simplemente abre una terminal nueva.
+
 ---
 
 ## 1. Prerrequisito: repo en GitHub
@@ -68,7 +77,6 @@ funciona (usar `;`). Ejecutar siempre desde la raíz del repo.
 ### 2.2 Vincular y aplicar migraciones
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
 pnpm supabase login
 ```
 
@@ -76,14 +84,12 @@ Esto abre el navegador para autorizar la CLI (interactivo, requiere que el
 operador esté presente).
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
 pnpm supabase link --project-ref <ref-del-proyecto>
 ```
 
 Pedirá la contraseña de base de datos guardada en el paso 2.1.
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
 pnpm supabase db push
 ```
 
@@ -223,6 +229,7 @@ FK-safe (hijos antes que padres) usando el RUT de prueba usado en el paso 1:
 ```sql
 -- 1. Reemplazar '<RUT-NORMALIZADO>' por el RUT de prueba normalizado
 --    (solo dígitos + K, tal como lo guarda app.normalizar_rut()).
+--    Por ejemplo, si registraste con `76.543.210-3`, en la BD quedó `765432103` — usa ese valor en los WHERE.
 with org as (
   select id from public.organizaciones where rut = '<RUT-NORMALIZADO>'
 )
@@ -283,7 +290,6 @@ Cualquier migración nueva agregada a `supabase/migrations/` después de un merg
 `main` se aplica a producción con:
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User');
 pnpm supabase db push
 ```
 
