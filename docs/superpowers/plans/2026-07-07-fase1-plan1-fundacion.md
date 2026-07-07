@@ -733,14 +733,16 @@ select throws_ok(
   'Ana no puede insertar empresas en la organización B'
 );
 
--- Usuario anónimo no ve nada.
+-- Usuario anónimo: sin grant sobre organizaciones, el acceso se deniega
+-- de plano (42501) — más estricto que ver una lista vacía.
 set local request.jwt.claims to '{"role": "anon"}';
 set local role anon;
 
-select results_eq(
+select throws_ok(
   'select count(*) from organizaciones',
-  array[0::bigint],
-  'Un anónimo no ve organizaciones'
+  '42501',
+  'permission denied for table organizaciones',
+  'Un anónimo no puede consultar organizaciones'
 );
 
 select * from finish();
