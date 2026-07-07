@@ -616,6 +616,20 @@ create policy "miembros ven miembros" on public.miembros
   for select to authenticated
   using (organizacion_id in (select app.mis_organizaciones()));
 
+-- ---------- Grants Data API ----------
+-- Supabase ya no expone tablas nuevas a los roles del Data API sin GRANT
+-- explícito. RLS sigue siendo el filtro por fila; esto es el permiso a nivel
+-- de tabla, espejando las operaciones que las políticas permiten.
+
+grant select on public.planes to anon, authenticated;
+grant select on public.organizaciones to authenticated;
+grant select on public.suscripciones to authenticated;
+grant select, insert, update on public.empresas to authenticated;
+grant select on public.miembros to authenticated;
+
+-- El panel Admin opera vía service_role (solo servidor).
+grant select, insert, update, delete on all tables in schema public to service_role;
+
 -- ---------- Seed de planes (valores editables desde Admin en planes futuros) ----------
 
 insert into public.planes (nombre, precio_clp, modulos, limites) values

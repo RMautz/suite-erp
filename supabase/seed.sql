@@ -1,0 +1,1 @@
+-- Seed local (vacío por ahora; los planes se insertan en la migración 0001)
