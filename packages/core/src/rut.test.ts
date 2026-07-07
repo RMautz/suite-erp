@@ -42,6 +42,8 @@ describe('validarRut', () => {
     expect(validarRut('K')).toBe(false)
     expect(validarRut('abc')).toBe(false)
     expect(validarRut('12a45678-5')).toBe(false)
+    expect(validarRut('1a2345678-5')).toBe(false)
+    expect(validarRut('12.345.678–5')).toBe(false) // guión tipográfico, no ASCII
   })
 })
 

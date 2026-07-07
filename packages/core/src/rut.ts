@@ -16,6 +16,7 @@ export function calcularDV(cuerpo: string): string {
 }
 
 export function validarRut(rut: string): boolean {
+  if (!/^[0-9.\- kK]+$/.test(rut.trim())) return false
   const limpio = limpiarRut(rut)
   if (limpio.length < 2) return false
   const cuerpo = limpio.slice(0, -1)
