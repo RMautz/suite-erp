@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 -- Usuarios: Ana (duena org A), Beto (dueno org B), Vito (vendedor org A).
 insert into auth.users (instance_id, id, aud, role, email)
@@ -78,6 +78,16 @@ select throws_ok(
   '42501',
   'new row violates row-level security policy for table "productos"',
   'el vendedor no puede crear productos'
+);
+
+select results_eq(
+  $$with u as (
+    update productos set nombre = 'Hackeado'
+    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
+    returning 1
+  ) select count(*) from u$$,
+  array[0::bigint],
+  'el vendedor no puede editar productos (RLS filtra, 0 filas)'
 );
 
 -- 7-8) Checks de RUT en clientes: inválido y sin normalizar se rechazan.

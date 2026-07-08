@@ -67,15 +67,19 @@ export async function guardarProducto(_prev: EstadoForm, formData: FormData): Pr
   }
 
   if (id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('productos')
       .update(datos)
       .eq('id', id)
       .eq('empresa_id', activa.id)
+      .select('id')
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un producto con ese SKU' }
       if (error.code === '42501') return { error: 'Tu rol no permite editar productos' }
       return { error: 'No se pudo guardar el producto' }
+    }
+    if ((data ?? []).length === 0) {
+      return { error: 'No se pudo guardar: el producto no existe o tu rol no permite editarlo' }
     }
   } else {
     const { error } = await supabase
@@ -98,10 +102,15 @@ export async function alternarActivoProducto(formData: FormData): Promise<void> 
   const id = String(formData.get('id') ?? '')
   const activo = String(formData.get('activo') ?? '') === 'true'
   const supabase = await crearClienteServidor()
-  await supabase
+  const { data, error } = await supabase
     .from('productos')
     .update({ activo: !activo, actualizado_en: new Date().toISOString() })
     .eq('id', id)
     .eq('empresa_id', activa.id)
+    .select('id')
+  if (error || (data ?? []).length === 0) {
+    console.error('alternarActivo:', error ?? 'sin filas')
+    return
+  }
   revalidatePath('/productos')
 }

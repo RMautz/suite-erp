@@ -539,13 +539,14 @@ create table public.categorias_producto (
   empresa_id uuid not null references public.empresas (id),
   nombre text not null,
   creado_en timestamptz not null default now(),
-  unique (empresa_id, nombre)
+  unique (empresa_id, nombre),
+  unique (empresa_id, id)
 );
 
 create table public.productos (
   id uuid primary key default gen_random_uuid(),
   empresa_id uuid not null references public.empresas (id),
-  categoria_id uuid references public.categorias_producto (id),
+  categoria_id uuid,
   sku text not null,
   nombre text not null,
   descripcion text,
@@ -556,11 +557,13 @@ create table public.productos (
   activo boolean not null default true,
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
-  unique (empresa_id, sku)
+  unique (empresa_id, sku),
+  foreign key (empresa_id, categoria_id) references public.categorias_producto (empresa_id, id)
 );
 
 create index productos_nombre_idx on public.productos (empresa_id, nombre);
 create index productos_codigo_barras_idx on public.productos (empresa_id, codigo_barras);
+create index productos_categoria_idx on public.productos (empresa_id, categoria_id);
 
 create table public.clientes (
   id uuid primary key default gen_random_uuid(),
@@ -668,7 +671,7 @@ git commit -m "feat(db): maestros de productos y clientes con RLS por empresa y 
 ```sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 -- Usuarios: Ana (duena org A), Beto (dueno org B), Vito (vendedor org A).
 insert into auth.users (instance_id, id, aud, role, email)
@@ -748,6 +751,16 @@ select throws_ok(
   'el vendedor no puede crear productos'
 );
 
+select results_eq(
+  $$with u as (
+    update productos set nombre = 'Hackeado'
+    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
+    returning 1
+  ) select count(*) from u$$,
+  array[0::bigint],
+  'el vendedor no puede editar productos (RLS filtra, 0 filas)'
+);
+
 -- 7-8) Checks de RUT en clientes: inválido y sin normalizar se rechazan.
 select throws_ok(
   $$insert into clientes (empresa_id, rut, razon_social)
@@ -783,7 +796,7 @@ rollback;
 - [ ] **Step 2: Correr y verificar**
 
 Run: `pnpm supabase test db`
-Expected: 3 archivos, 22 asserts en total (6 aislamiento + 7 registro + 9 maestros), todos verdes. Si un assert de maestros falla, se corrige la migración de Task 2 (nunca el test) — reportar BLOCKED si el fix no es obvio.
+Expected: 3 archivos, 23 asserts en total (6 aislamiento + 7 registro + 10 maestros), todos verdes. Si un assert de maestros falla, se corrige la migración de Task 2 (nunca el test) — reportar BLOCKED si el fix no es obvio.
 
 - [ ] **Step 3: Commit**
 
@@ -1575,15 +1588,19 @@ export async function guardarProducto(_prev: EstadoForm, formData: FormData): Pr
   }
 
   if (id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('productos')
       .update(datos)
       .eq('id', id)
       .eq('empresa_id', activa.id)
+      .select('id')
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un producto con ese SKU' }
       if (error.code === '42501') return { error: 'Tu rol no permite editar productos' }
       return { error: 'No se pudo guardar el producto' }
+    }
+    if ((data ?? []).length === 0) {
+      return { error: 'No se pudo guardar: el producto no existe o tu rol no permite editarlo' }
     }
   } else {
     const { error } = await supabase
@@ -1606,11 +1623,16 @@ export async function alternarActivoProducto(formData: FormData): Promise<void> 
   const id = String(formData.get('id') ?? '')
   const activo = String(formData.get('activo') ?? '') === 'true'
   const supabase = await crearClienteServidor()
-  await supabase
+  const { data, error } = await supabase
     .from('productos')
     .update({ activo: !activo, actualizado_en: new Date().toISOString() })
     .eq('id', id)
     .eq('empresa_id', activa.id)
+    .select('id')
+  if (error || (data ?? []).length === 0) {
+    console.error('alternarActivo:', error ?? 'sin filas')
+    return
+  }
   revalidatePath('/productos')
 }
 ```
@@ -1635,7 +1657,7 @@ export default async function PaginaProductos({
   searchParams: Promise<{ q?: string; pagina?: string; inactivos?: string }>
 }) {
   const { q = '', pagina: paginaCruda, inactivos } = await searchParams
-  const pagina = Math.max(1, Number(paginaCruda) || 1)
+  const pagina = Math.max(1, Math.trunc(Number(paginaCruda) || 1))
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return <Encabezado titulo="Sin empresa activa" />
 
@@ -1977,15 +1999,19 @@ export async function guardarCliente(_prev: EstadoForm, formData: FormData): Pro
 
   const supabase = await crearClienteServidor()
   if (id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('clientes')
       .update(datos)
       .eq('id', id)
       .eq('empresa_id', activa.id)
+      .select('id')
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un cliente con ese RUT' }
       if (error.code === '42501') return { error: 'Tu rol no permite editar clientes' }
       return { error: 'No se pudo guardar el cliente' }
+    }
+    if ((data ?? []).length === 0) {
+      return { error: 'No se pudo guardar: el cliente no existe o tu rol no permite editarlo' }
     }
   } else {
     const { error } = await supabase.from('clientes').insert({ ...datos, empresa_id: activa.id })
@@ -2006,7 +2032,16 @@ export async function alternarActivoCliente(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '')
   const activo = String(formData.get('activo') ?? '') === 'true'
   const supabase = await crearClienteServidor()
-  await supabase.from('clientes').update({ activo: !activo }).eq('id', id).eq('empresa_id', activa.id)
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({ activo: !activo })
+    .eq('id', id)
+    .eq('empresa_id', activa.id)
+    .select('id')
+  if (error || (data ?? []).length === 0) {
+    console.error('alternarActivo:', error ?? 'sin filas')
+    return
+  }
   revalidatePath('/clientes')
 }
 ```
@@ -2031,7 +2066,7 @@ export default async function PaginaClientes({
   searchParams: Promise<{ q?: string; pagina?: string; inactivos?: string }>
 }) {
   const { q = '', pagina: paginaCruda, inactivos } = await searchParams
-  const pagina = Math.max(1, Number(paginaCruda) || 1)
+  const pagina = Math.max(1, Math.trunc(Number(paginaCruda) || 1))
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return <Encabezado titulo="Sin empresa activa" />
 
@@ -2387,9 +2422,12 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
   const errores = validos
     .map((r, i) => (r.ok ? null : { fila: i + 2, mensajes: r.errores }))
     .filter((e): e is { fila: number; mensajes: string[] } => e !== null)
-  const filasOk = validos
-    .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
-    .map((r) => r.datos)
+  const filasOkConFila = validos
+    .map((r, i) => (r.ok ? { datos: r.datos, fila: i + 2 } : null))
+    .filter(
+      (v): v is { datos: Extract<(typeof validos)[number], { ok: true }>['datos']; fila: number } => v !== null
+    )
+  const filasOk = filasOkConFila.map((v) => v.datos)
 
   const supabase = await crearClienteServidor()
 
@@ -2402,21 +2440,39 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
       .upsert({ empresa_id: activa.id, nombre }, { onConflict: 'empresa_id,nombre' })
       .select('id')
       .single()
-    if (error) return { error: 'No se pudieron crear las categorías: ' + nombre }
+    if (error) {
+      if (error.code === '42501') return { error: 'Tu rol no permite importar productos' }
+      return { error: 'No se pudieron crear las categorías: ' + nombre }
+    }
     categoriaPorNombre.set(nombre, data.id)
   }
 
-  const registros = filasOk.map((f) => ({
-    empresa_id: activa.id,
-    sku: f.sku,
-    nombre: f.nombre,
-    precio_neto: f.precioNeto,
-    unidad: f.unidad,
-    codigo_barras: f.codigoBarras ?? null,
-    categoria_id: f.categoria ? categoriaPorNombre.get(f.categoria)! : null,
-    exento: f.exento,
-    actualizado_en: new Date().toISOString(),
+  const registrosConFila = filasOkConFila.map(({ datos: f, fila }) => ({
+    registro: {
+      empresa_id: activa.id,
+      sku: f.sku,
+      nombre: f.nombre,
+      precio_neto: f.precioNeto,
+      unidad: f.unidad,
+      codigo_barras: f.codigoBarras ?? null,
+      categoria_id: f.categoria ? categoriaPorNombre.get(f.categoria)! : null,
+      exento: f.exento,
+      actualizado_en: new Date().toISOString(),
+    },
+    fila,
   }))
+
+  const porClave = new Map<string, { registro: (typeof registrosConFila)[number]['registro']; fila: number }>()
+  for (const { registro, fila } of registrosConFila) {
+    const clave = registro.sku
+    const previo = porClave.get(clave)
+    if (previo) {
+      errores.push({ fila: previo.fila, mensajes: ['SKU duplicado en el archivo; se usó la última aparición'] })
+    }
+    porClave.set(clave, { registro, fila })
+  }
+  const registros = [...porClave.values()].map((v) => v.registro)
+  errores.sort((a, b) => a.fila - b.fila)
 
   for (let i = 0; i < registros.length; i += 500) {
     const { error } = await supabase
@@ -2444,21 +2500,38 @@ export async function importarClientes(_prev: ResultadoImport, formData: FormDat
   const errores = validos
     .map((r, i) => (r.ok ? null : { fila: i + 2, mensajes: r.errores }))
     .filter((e): e is { fila: number; mensajes: string[] } => e !== null)
-  const filasOk = validos
-    .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
-    .map((r) => r.datos)
+  const filasOkConFila = validos
+    .map((r, i) => (r.ok ? { datos: r.datos, fila: i + 2 } : null))
+    .filter(
+      (v): v is { datos: Extract<(typeof validos)[number], { ok: true }>['datos']; fila: number } => v !== null
+    )
 
-  const registros = filasOk.map((f) => ({
-    empresa_id: activa.id,
-    rut: f.rut,
-    razon_social: f.razonSocial,
-    giro: f.giro ?? null,
-    email: f.email ?? null,
-    telefono: f.telefono ?? null,
-    direccion: f.direccion ?? null,
-    comuna: f.comuna ?? null,
-    condicion_pago_dias: f.condicionPagoDias,
+  const registrosConFila = filasOkConFila.map(({ datos: f, fila }) => ({
+    registro: {
+      empresa_id: activa.id,
+      rut: f.rut,
+      razon_social: f.razonSocial,
+      giro: f.giro ?? null,
+      email: f.email ?? null,
+      telefono: f.telefono ?? null,
+      direccion: f.direccion ?? null,
+      comuna: f.comuna ?? null,
+      condicion_pago_dias: f.condicionPagoDias,
+    },
+    fila,
   }))
+
+  const porClave = new Map<string, { registro: (typeof registrosConFila)[number]['registro']; fila: number }>()
+  for (const { registro, fila } of registrosConFila) {
+    const clave = registro.rut
+    const previo = porClave.get(clave)
+    if (previo) {
+      errores.push({ fila: previo.fila, mensajes: ['RUT duplicado en el archivo; se usó la última aparición'] })
+    }
+    porClave.set(clave, { registro, fila })
+  }
+  const registros = [...porClave.values()].map((v) => v.registro)
+  errores.sort((a, b) => a.fila - b.fila)
 
   const supabase = await crearClienteServidor()
   for (let i = 0; i < registros.length; i += 500) {
@@ -2584,7 +2657,7 @@ En `docs/superpowers/plans/2026-07-07-fase1-plan1-fundacion.md`, reemplazar las 
 - [ ] **Step 6: Verificación integral del Plan 2**
 
 1. `pnpm test` → todas las suites verdes (core con maestros/csv nuevos, auth).
-2. `pnpm supabase test db` → 22 asserts verdes (6 + 7 + 9).
+2. `pnpm supabase test db` → 23 asserts verdes (6 + 7 + 10).
 3. `pnpm build` → 3 apps compilan.
 4. Flujo completo con navegador o script: login → importar `productos.csv` de plantilla → 1 procesada → aparece en /productos → importar CSV con una fila mala → reporte de errores por fila → importar clientes → dashboard muestra contadores > 0.
 
@@ -2602,6 +2675,6 @@ git commit -m "feat(erp): import CSV de productos y clientes con reporte de erro
 Al completar las 9 tasks:
 
 - `pnpm test` — core (rut, iva, maestros, csv) y auth verdes.
-- `pnpm supabase test db` — 22 asserts pgTAP verdes.
+- `pnpm supabase test db` — 23 asserts pgTAP verdes.
 - `pnpm build` — 3 apps compilan.
 - Criterio de éxito del Plan 2: un usuario dueño puede cargar su catálogo y su cartera de clientes por CSV o a mano, navegando un ERP con identidad visual propia, con los datos aislados por empresa y validados (RUT/precios) en cliente, servidor y base de datos.

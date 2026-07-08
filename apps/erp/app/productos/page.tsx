@@ -13,7 +13,7 @@ export default async function PaginaProductos({
   searchParams: Promise<{ q?: string; pagina?: string; inactivos?: string }>
 }) {
   const { q = '', pagina: paginaCruda, inactivos } = await searchParams
-  const pagina = Math.max(1, Number(paginaCruda) || 1)
+  const pagina = Math.max(1, Math.trunc(Number(paginaCruda) || 1))
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return <Encabezado titulo="Sin empresa activa" />
 

@@ -52,9 +52,12 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
   const errores = validos
     .map((r, i) => (r.ok ? null : { fila: i + 2, mensajes: r.errores }))
     .filter((e): e is { fila: number; mensajes: string[] } => e !== null)
-  const filasOk = validos
-    .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
-    .map((r) => r.datos)
+  const filasOkConFila = validos
+    .map((r, i) => (r.ok ? { datos: r.datos, fila: i + 2 } : null))
+    .filter(
+      (v): v is { datos: Extract<(typeof validos)[number], { ok: true }>['datos']; fila: number } => v !== null
+    )
+  const filasOk = filasOkConFila.map((v) => v.datos)
 
   const supabase = await crearClienteServidor()
 
@@ -67,21 +70,39 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
       .upsert({ empresa_id: activa.id, nombre }, { onConflict: 'empresa_id,nombre' })
       .select('id')
       .single()
-    if (error) return { error: 'No se pudieron crear las categorías: ' + nombre }
+    if (error) {
+      if (error.code === '42501') return { error: 'Tu rol no permite importar productos' }
+      return { error: 'No se pudieron crear las categorías: ' + nombre }
+    }
     categoriaPorNombre.set(nombre, data.id)
   }
 
-  const registros = filasOk.map((f) => ({
-    empresa_id: activa.id,
-    sku: f.sku,
-    nombre: f.nombre,
-    precio_neto: f.precioNeto,
-    unidad: f.unidad,
-    codigo_barras: f.codigoBarras ?? null,
-    categoria_id: f.categoria ? categoriaPorNombre.get(f.categoria)! : null,
-    exento: f.exento,
-    actualizado_en: new Date().toISOString(),
+  const registrosConFila = filasOkConFila.map(({ datos: f, fila }) => ({
+    registro: {
+      empresa_id: activa.id,
+      sku: f.sku,
+      nombre: f.nombre,
+      precio_neto: f.precioNeto,
+      unidad: f.unidad,
+      codigo_barras: f.codigoBarras ?? null,
+      categoria_id: f.categoria ? categoriaPorNombre.get(f.categoria)! : null,
+      exento: f.exento,
+      actualizado_en: new Date().toISOString(),
+    },
+    fila,
   }))
+
+  const porClave = new Map<string, { registro: (typeof registrosConFila)[number]['registro']; fila: number }>()
+  for (const { registro, fila } of registrosConFila) {
+    const clave = registro.sku
+    const previo = porClave.get(clave)
+    if (previo) {
+      errores.push({ fila: previo.fila, mensajes: ['SKU duplicado en el archivo; se usó la última aparición'] })
+    }
+    porClave.set(clave, { registro, fila })
+  }
+  const registros = [...porClave.values()].map((v) => v.registro)
+  errores.sort((a, b) => a.fila - b.fila)
 
   for (let i = 0; i < registros.length; i += 500) {
     const { error } = await supabase
@@ -109,21 +130,38 @@ export async function importarClientes(_prev: ResultadoImport, formData: FormDat
   const errores = validos
     .map((r, i) => (r.ok ? null : { fila: i + 2, mensajes: r.errores }))
     .filter((e): e is { fila: number; mensajes: string[] } => e !== null)
-  const filasOk = validos
-    .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
-    .map((r) => r.datos)
+  const filasOkConFila = validos
+    .map((r, i) => (r.ok ? { datos: r.datos, fila: i + 2 } : null))
+    .filter(
+      (v): v is { datos: Extract<(typeof validos)[number], { ok: true }>['datos']; fila: number } => v !== null
+    )
 
-  const registros = filasOk.map((f) => ({
-    empresa_id: activa.id,
-    rut: f.rut,
-    razon_social: f.razonSocial,
-    giro: f.giro ?? null,
-    email: f.email ?? null,
-    telefono: f.telefono ?? null,
-    direccion: f.direccion ?? null,
-    comuna: f.comuna ?? null,
-    condicion_pago_dias: f.condicionPagoDias,
+  const registrosConFila = filasOkConFila.map(({ datos: f, fila }) => ({
+    registro: {
+      empresa_id: activa.id,
+      rut: f.rut,
+      razon_social: f.razonSocial,
+      giro: f.giro ?? null,
+      email: f.email ?? null,
+      telefono: f.telefono ?? null,
+      direccion: f.direccion ?? null,
+      comuna: f.comuna ?? null,
+      condicion_pago_dias: f.condicionPagoDias,
+    },
+    fila,
   }))
+
+  const porClave = new Map<string, { registro: (typeof registrosConFila)[number]['registro']; fila: number }>()
+  for (const { registro, fila } of registrosConFila) {
+    const clave = registro.rut
+    const previo = porClave.get(clave)
+    if (previo) {
+      errores.push({ fila: previo.fila, mensajes: ['RUT duplicado en el archivo; se usó la última aparición'] })
+    }
+    porClave.set(clave, { registro, fila })
+  }
+  const registros = [...porClave.values()].map((v) => v.registro)
+  errores.sort((a, b) => a.fila - b.fila)
 
   const supabase = await crearClienteServidor()
   for (let i = 0; i < registros.length; i += 500) {

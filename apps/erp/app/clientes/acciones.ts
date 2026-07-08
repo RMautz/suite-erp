@@ -38,15 +38,19 @@ export async function guardarCliente(_prev: EstadoForm, formData: FormData): Pro
 
   const supabase = await crearClienteServidor()
   if (id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('clientes')
       .update(datos)
       .eq('id', id)
       .eq('empresa_id', activa.id)
+      .select('id')
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un cliente con ese RUT' }
       if (error.code === '42501') return { error: 'Tu rol no permite editar clientes' }
       return { error: 'No se pudo guardar el cliente' }
+    }
+    if ((data ?? []).length === 0) {
+      return { error: 'No se pudo guardar: el cliente no existe o tu rol no permite editarlo' }
     }
   } else {
     const { error } = await supabase.from('clientes').insert({ ...datos, empresa_id: activa.id })
@@ -67,6 +71,15 @@ export async function alternarActivoCliente(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '')
   const activo = String(formData.get('activo') ?? '') === 'true'
   const supabase = await crearClienteServidor()
-  await supabase.from('clientes').update({ activo: !activo }).eq('id', id).eq('empresa_id', activa.id)
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({ activo: !activo })
+    .eq('id', id)
+    .eq('empresa_id', activa.id)
+    .select('id')
+  if (error || (data ?? []).length === 0) {
+    console.error('alternarActivo:', error ?? 'sin filas')
+    return
+  }
   revalidatePath('/clientes')
 }

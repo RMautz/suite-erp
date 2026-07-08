@@ -36,13 +36,14 @@ create table public.categorias_producto (
   empresa_id uuid not null references public.empresas (id),
   nombre text not null,
   creado_en timestamptz not null default now(),
-  unique (empresa_id, nombre)
+  unique (empresa_id, nombre),
+  unique (empresa_id, id)
 );
 
 create table public.productos (
   id uuid primary key default gen_random_uuid(),
   empresa_id uuid not null references public.empresas (id),
-  categoria_id uuid references public.categorias_producto (id),
+  categoria_id uuid,
   sku text not null,
   nombre text not null,
   descripcion text,
@@ -53,11 +54,13 @@ create table public.productos (
   activo boolean not null default true,
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
-  unique (empresa_id, sku)
+  unique (empresa_id, sku),
+  foreign key (empresa_id, categoria_id) references public.categorias_producto (empresa_id, id)
 );
 
 create index productos_nombre_idx on public.productos (empresa_id, nombre);
 create index productos_codigo_barras_idx on public.productos (empresa_id, codigo_barras);
+create index productos_categoria_idx on public.productos (empresa_id, categoria_id);
 
 create table public.clientes (
   id uuid primary key default gen_random_uuid(),
