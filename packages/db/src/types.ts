@@ -308,11 +308,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "productos_categoria_id_fkey"
-            columns: ["categoria_id"]
+            foreignKeyName: "productos_empresa_id_categoria_id_fkey"
+            columns: ["empresa_id", "categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_producto"
-            referencedColumns: ["id"]
+            referencedColumns: ["empresa_id", "id"]
           },
           {
             foreignKeyName: "productos_empresa_id_fkey"

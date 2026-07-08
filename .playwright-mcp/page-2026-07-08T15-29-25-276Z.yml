@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - heading "Crea tu cuenta" [level=1] [ref=e3]
+    - paragraph [ref=e4]: 14 días de prueba gratis. Sin tarjeta.
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - text: Correo
+        - textbox "Correo" [ref=e7]
+      - generic [ref=e8]:
+        - text: Contraseña (mínimo 8 caracteres)
+        - textbox "Contraseña (mínimo 8 caracteres)" [ref=e9]
+      - generic [ref=e10]:
+        - text: RUT de la empresa
+        - textbox "RUT de la empresa" [ref=e11]:
+          - /placeholder: 76.543.210-3
+      - generic [ref=e12]:
+        - text: Razón social
+        - textbox "Razón social" [ref=e13]
+      - button "Crear cuenta" [ref=e14]
+  - alert [ref=e15]
