@@ -11,9 +11,12 @@
     "@suite/auth": "workspace:*",
     "@suite/core": "workspace:*",
     "@suite/db": "workspace:*",
+    "@suite/ui": "workspace:^",
+    "@tailwindcss/postcss": "^4.3.2",
     "next": "^15.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
