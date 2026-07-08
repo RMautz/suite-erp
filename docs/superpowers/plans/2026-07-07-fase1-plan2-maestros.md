@@ -1582,6 +1582,7 @@ export async function guardarProducto(_prev: EstadoForm, formData: FormData): Pr
       .eq('empresa_id', activa.id)
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un producto con ese SKU' }
+      if (error.code === '42501') return { error: 'Tu rol no permite editar productos' }
       return { error: 'No se pudo guardar el producto' }
     }
   } else {
@@ -1983,6 +1984,7 @@ export async function guardarCliente(_prev: EstadoForm, formData: FormData): Pro
       .eq('empresa_id', activa.id)
     if (error) {
       if (error.code === '23505') return { error: 'Ya existe un cliente con ese RUT' }
+      if (error.code === '42501') return { error: 'Tu rol no permite editar clientes' }
       return { error: 'No se pudo guardar el cliente' }
     }
   } else {
