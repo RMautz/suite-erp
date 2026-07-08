@@ -34,6 +34,88 @@ export type Database = {
   }
   public: {
     Tables: {
+      categorias_producto: {
+        Row: {
+          creado_en: string
+          empresa_id: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorias_producto_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          activo: boolean
+          comuna: string | null
+          condicion_pago_dias: number
+          creado_en: string
+          direccion: string | null
+          email: string | null
+          empresa_id: string
+          giro: string | null
+          id: string
+          razon_social: string
+          rut: string
+          telefono: string | null
+        }
+        Insert: {
+          activo?: boolean
+          comuna?: string | null
+          condicion_pago_dias?: number
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id: string
+          giro?: string | null
+          id?: string
+          razon_social: string
+          rut: string
+          telefono?: string | null
+        }
+        Update: {
+          activo?: boolean
+          comuna?: string | null
+          condicion_pago_dias?: number
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id?: string
+          giro?: string | null
+          id?: string
+          razon_social?: string
+          rut?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           comuna: string | null
@@ -177,6 +259,69 @@ export type Database = {
           precio_clp?: number
         }
         Relationships: []
+      }
+      productos: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          categoria_id: string | null
+          codigo_barras: string | null
+          creado_en: string
+          descripcion: string | null
+          empresa_id: string
+          exento: boolean
+          id: string
+          nombre: string
+          precio_neto: number
+          sku: string
+          unidad: string
+        }
+        Insert: {
+          activo?: boolean
+          actualizado_en?: string
+          categoria_id?: string | null
+          codigo_barras?: string | null
+          creado_en?: string
+          descripcion?: string | null
+          empresa_id: string
+          exento?: boolean
+          id?: string
+          nombre: string
+          precio_neto: number
+          sku: string
+          unidad?: string
+        }
+        Update: {
+          activo?: boolean
+          actualizado_en?: string
+          categoria_id?: string | null
+          codigo_barras?: string | null
+          creado_en?: string
+          descripcion?: string | null
+          empresa_id?: string
+          exento?: boolean
+          id?: string
+          nombre?: string
+          precio_neto?: number
+          sku?: string
+          unidad?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_producto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suscripciones: {
         Row: {
