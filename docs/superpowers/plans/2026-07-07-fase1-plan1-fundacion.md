@@ -11,9 +11,9 @@
 **Secuencia de planes de la Fase 1** (este documento es el Plan 1):
 
 1. **Fundación** (este plan) — monorepo, esquema plataforma, RLS, RUT/IVA, SSO, registro/login, admin mínimo, CI, deploy inicial.
-2. Maestros ERP — productos, clientes, proveedores, bodegas, import Excel/CSV. (Aquí nace `packages/ui` — design system compartido — con las primeras pantallas CRUD reales.)
+2. Maestros ERP — productos con categorías, clientes, import CSV, design system @suite/ui y empresa activa. (Proveedores y bodegas se movieron al Plan 4, donde se consumen.)
 3. Ventas + DTE — documentos de venta, adaptador proveedor DTE, emisión con cola de reintentos.
-4. Inventario + Compras — movimientos de stock inmutables, órdenes de compra, recepción.
+4. Inventario + Compras — bodegas, proveedores, movimientos de stock inmutables, órdenes de compra, recepción.
 5. Pagos + Reportes — cobranza, libros compra/venta formato SII, exportes Excel.
 6. Portal comercial completo + Admin completo + lanzamiento en dominio.
 
