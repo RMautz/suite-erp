@@ -1,5 +1,6 @@
 export * from './tipos'
 export { MockDTE } from './mock'
+export { cifrar, descifrar, generarClave } from './cripto'
 import type { ProveedorDTE } from './tipos'
 import { MockDTE } from './mock'
 
