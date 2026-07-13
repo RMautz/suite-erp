@@ -1901,6 +1901,7 @@ set search_path = public
 as $$
   select * from documentos_venta
   where empresa_id = p_empresa and estado = 'pendiente_envio'
+    and empresa_id in (select app.mis_empresas())
   order by creado_en
 $$;
 
