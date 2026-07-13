@@ -3,12 +3,20 @@
 import { revalidatePath } from 'next/cache'
 import { clienteAdmin } from '@suite/auth/admin'
 import { crearClienteServidor } from '@suite/auth/server'
-import { CODIGO_SII, esTributario, type TipoDocumento } from '@suite/core'
-import { proveedorPorAmbiente } from '@suite/dte'
+import { CODIGO_SII, type TipoDocumento } from '@suite/core'
+import { proveedorPorAmbiente, type EstadoResultado } from '@suite/dte'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { credencialesEmpresa } from '../../lib/emision'
 
 const TIPOS_EMISIBLES = ['factura', 'boleta'] as const
+
+// Mapea el estado del proveedor al estado del documento, preservando 'rechazado'
+// (un rechazo del SII es terminal, no un fallo transitorio de la cola de reintentos).
+function estadoDocumento(estado: EstadoResultado): 'emitido' | 'rechazado' | 'pendiente_envio' {
+  if (estado === 'emitido') return 'emitido'
+  if (estado === 'rechazado') return 'rechazado'
+  return 'pendiente_envio'
+}
 
 export async function emitirDocumento(formData: FormData): Promise<void> {
   const { activa } = await obtenerEmpresaActiva()
@@ -32,15 +40,19 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
     const cred = await credencialesEmpresa(activa.id, tipo)
 
     // Reserva de folio SOLO si aún no tiene (idempotencia ante reintento).
-    // tomar_folio se llama en contexto de USUARIO (supabase, no admin): la función
-    // valida internamente que el usuario pertenece a la empresa (auth.uid()), lo que
-    // bajo service_role fallaría. security definer le permite avanzar folios_caf igual.
+    // tomar_folio en contexto de USUARIO (valida pertenencia por auth.uid()).
     let folio = doc.folio
     if (folio === null) {
       const { data: nuevo, error: eFolio } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: tipo })
       if (eFolio || nuevo === null) throw new Error(eFolio?.message ?? 'No hay folios disponibles')
       folio = nuevo as number
-      await admin.from('documentos_venta').update({ tipo, folio, estado: 'pendiente_envio' }).eq('id', id)
+      // El folio DEBE quedar persistido antes de continuar: si este write falla, abortamos
+      // para que el reintento reutilice el mismo folio (nunca dos folios para una venta).
+      const { error: eUpd } = await admin
+        .from('documentos_venta')
+        .update({ tipo, folio, estado: 'pendiente_envio' })
+        .eq('id', id)
+      if (eUpd) throw new Error('No se pudo reservar el folio; reintenta')
     }
 
     const [{ data: emp }, { data: cli }, { data: lineas }] = await Promise.all([
@@ -67,16 +79,19 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
       credenciales: cred,
     })
 
+    const estado = estadoDocumento(resultado.estado)
     await admin
       .from('documentos_venta')
       .update({
-        estado: resultado.estado === 'emitido' ? 'emitido' : 'pendiente_envio',
+        tipo,
+        folio,
+        estado,
         track_id: resultado.trackId,
         xml_timbrado: resultado.xmlTimbrado,
         pdf_ruta: resultado.pdfBase64,
         error_emision: resultado.error,
-        emitido_en: resultado.estado === 'emitido' ? new Date().toISOString() : null,
-        intentos: 1,
+        emitido_en: estado === 'emitido' ? new Date().toISOString() : null,
+        intentos: doc.estado === 'pendiente_envio' ? 2 : 1,
       })
       .eq('id', id)
   } catch (e) {
@@ -104,30 +119,38 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
   if (!ref || !ref.folio) return
 
   const admin = clienteAdmin()
+  let ncId: string | null = null
   try {
     const cred = await credencialesEmpresa(activa.id, 'nota_credito')
-    // tomar_folio en contexto de usuario (valida pertenencia por auth.uid()).
-    const { data: folioNc, error: eF } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: 'nota_credito' })
-    if (eF || folioNc === null) throw new Error(eF?.message ?? 'No hay folios de nota de crédito')
 
-    // Crea la NC como documento propio referenciando el original. Se inserta vía admin
-    // (ya autorizado por el select RLS de arriba); NO vía crear_documento_venta, cuyo
-    // check de rol usa auth.uid() y fallaría bajo service_role.
+    // 1. Crea la NC (borrador) referenciando el original ANTES de reservar folio, para que
+    // cualquier fallo posterior tenga una fila donde registrar el error (no se pierde).
     const { data: ncDoc, error: eNc } = await admin
       .from('documentos_venta')
       .insert({
         empresa_id: activa.id, tipo: 'nota_credito', cliente_id: ref.cliente_id, estado: 'borrador',
+        documento_referencia_id: refId, razon_anulacion: razon,
         neto: ref.neto, exento: ref.exento, iva: ref.iva, total: ref.total,
       })
       .select('id')
       .single()
     if (eNc || !ncDoc) throw new Error('No se pudo crear la nota de crédito')
-    const ncId = ncDoc.id
+    ncId = ncDoc.id
     await admin.from('documentos_venta_lineas').insert({
       empresa_id: activa.id, documento_id: ncId, producto_id: null,
       descripcion: 'Anulación ' + ref.tipo + ' folio ' + ref.folio, cantidad: 1,
       precio_neto: ref.total, exenta: false, subtotal: ref.total,
     })
+
+    // 2. Reserva el folio (contexto usuario) y persístelo en la NC antes de emitir.
+    const { data: folioNc, error: eF } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: 'nota_credito' })
+    if (eF || folioNc === null) throw new Error(eF?.message ?? 'No hay folios de nota de crédito')
+    const { error: eUpd } = await admin
+      .from('documentos_venta')
+      .update({ folio: folioNc as number, estado: 'pendiente_envio' })
+      .eq('id', ncId)
+    if (eUpd) throw new Error('No se pudo reservar el folio de la nota de crédito')
+
     const [{ data: emp }, { data: cli }] = await Promise.all([
       admin.from('empresas').select('rut, razon_social, giro_emisor, direccion_emisor, comuna_emisor').eq('id', activa.id).single(),
       admin.from('clientes').select('rut, razon_social, giro, direccion, comuna').eq('id', ref.cliente_id).single(),
@@ -142,14 +165,23 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
       credenciales: cred,
       folioReferencia: ref.folio, codigoSiiReferencia: CODIGO_SII[ref.tipo as TipoDocumento]!, razonAnulacion: razon,
     })
+    const estado = estadoDocumento(resultado.estado)
     await admin.from('documentos_venta').update({
-      folio: folioNc as number, documento_referencia_id: refId, razon_anulacion: razon,
-      estado: resultado.estado === 'emitido' ? 'emitido' : 'pendiente_envio',
+      estado,
       track_id: resultado.trackId, xml_timbrado: resultado.xmlTimbrado, pdf_ruta: resultado.pdfBase64,
-      emitido_en: resultado.estado === 'emitido' ? new Date().toISOString() : null,
+      error_emision: resultado.error,
+      emitido_en: estado === 'emitido' ? new Date().toISOString() : null,
     }).eq('id', ncId)
-  } catch {
-    // Silencioso; la NC queda sin emitir y el usuario reintenta.
+  } catch (e) {
+    // No silencioso: registra el error en la NC (si se creó) para que el usuario lo vea y la
+    // cola de reintentos la tome. La venta original queda intacta.
+    if (ncId) {
+      await admin
+        .from('documentos_venta')
+        .update({ estado: 'pendiente_envio', error_emision: e instanceof Error ? e.message : 'Error al emitir la nota de crédito' })
+        .eq('id', ncId)
+    }
   }
   revalidatePath('/ventas')
+  if (ncId) revalidatePath('/ventas/' + ncId)
 }
