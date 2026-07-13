@@ -28,7 +28,7 @@ describe('MockDTE', () => {
   })
 
   it('devuelve pendiente_envio para el RUT de falla (prueba de reintentos)', async () => {
-    const r = await new MockDTE().emitirDTE({ ...base, receptor: { ...base.receptor, rut: '66666666-6' } })
+    const r = await new MockDTE().emitirDTE({ ...base, receptor: { ...base.receptor, rut: '666666666' } })
     expect(r.estado).toBe('pendiente_envio')
     expect(r.trackId).toBeNull()
     expect(r.error).not.toBeNull()

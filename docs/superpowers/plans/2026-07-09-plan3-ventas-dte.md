@@ -341,7 +341,7 @@ describe('MockDTE', () => {
   })
 
   it('devuelve pendiente_envio para el RUT de falla (prueba de reintentos)', async () => {
-    const r = await new MockDTE().emitirDTE({ ...base, receptor: { ...base.receptor, rut: '66666666-6' } })
+    const r = await new MockDTE().emitirDTE({ ...base, receptor: { ...base.receptor, rut: '666666666' } })
     expect(r.estado).toBe('pendiente_envio')
     expect(r.trackId).toBeNull()
     expect(r.error).not.toBeNull()
@@ -385,7 +385,7 @@ import type {
   SolicitudNotaCredito,
 } from './tipos'
 
-const RUT_FALLA = '66666666-6'
+const RUT_FALLA = '666666666'
 
 export class MockDTE implements ProveedorDTE {
   async emitirDTE(solicitud: SolicitudEmision): Promise<ResultadoEmision> {

@@ -7,7 +7,7 @@ import type {
   SolicitudNotaCredito,
 } from './tipos'
 
-const RUT_FALLA = '66666666-6'
+const RUT_FALLA = '666666666'
 
 export class MockDTE implements ProveedorDTE {
   async emitirDTE(solicitud: SolicitudEmision): Promise<ResultadoEmision> {
