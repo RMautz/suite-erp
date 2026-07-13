@@ -584,6 +584,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crear_documento_venta: {
+        Args: {
+          p_cliente: string
+          p_empresa: string
+          p_lineas: Json
+          p_tipo: string
+        }
+        Returns: string
+      }
       registrar_organizacion: {
         Args: { p_razon_social: string; p_rut: string }
         Returns: string
