@@ -66,6 +66,9 @@ importers:
       '@suite/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@suite/dte':
+        specifier: workspace:*
+        version: link:../../packages/dte
       '@suite/ui':
         specifier: workspace:^
         version: link:../../packages/ui

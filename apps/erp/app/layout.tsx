@@ -12,6 +12,7 @@ const NAV = [
   { href: '/productos', etiqueta: 'Productos' },
   { href: '/clientes', etiqueta: 'Clientes' },
   { href: '/importar', etiqueta: 'Importar' },
+  { href: '/configuracion/dte', etiqueta: 'Configuración' },
 ]
 
 export default async function LayoutRaiz({ children }: { children: ReactNode }) {
