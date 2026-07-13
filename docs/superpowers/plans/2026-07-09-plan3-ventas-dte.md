@@ -1183,6 +1183,9 @@ Crear `supabase/migrations/00000000000005_crear_venta.sql` (o el siguiente corre
 ```sql
 -- Crea un documento de venta (borrador) con sus líneas en una transacción,
 -- calculando totales server-side. Devuelve el id del documento.
+-- Precio, exención y nombre se toman del PRODUCTO (fuente de verdad tributaria),
+-- nunca de lo que envía el cliente: evita sub-declarar IVA marcando un afecto como
+-- exento o alterar el precio. Del cliente solo se confía la cantidad.
 create or replace function public.crear_documento_venta(
   p_empresa uuid,
   p_cliente uuid,
@@ -1200,9 +1203,18 @@ declare
   v_iva integer;
   v_linea jsonb;
   v_sub integer;
+  v_nombre text;
+  v_precio integer;
+  v_exenta boolean;
+  v_cant integer;
 begin
   if not app.tiene_rol_en_empresa(p_empresa, array['dueno','admin','vendedor']) then
     raise exception 'Tu rol no permite crear ventas';
+  end if;
+  -- Esta RPC solo crea notas de venta (borrador). Los documentos tributarios
+  -- se generan al emitir (que toma folio y valida certificado).
+  if p_tipo <> 'nota_venta' then
+    raise exception 'Tipo de documento no permitido en esta operación';
   end if;
   if jsonb_array_length(p_lineas) = 0 then
     raise exception 'La venta debe tener al menos una línea';
@@ -1213,11 +1225,20 @@ begin
   returning id into v_doc;
 
   for v_linea in select * from jsonb_array_elements(p_lineas) loop
-    v_sub := round((v_linea->>'cantidad')::numeric * (v_linea->>'precioNeto')::numeric);
+    select nombre, precio_neto, exento into v_nombre, v_precio, v_exenta
+    from productos
+    where id = (v_linea->>'productoId')::uuid and empresa_id = p_empresa and activo;
+    if not found then
+      raise exception 'Producto no encontrado o inactivo en la empresa';
+    end if;
+    v_cant := (v_linea->>'cantidad')::integer;
+    if v_cant < 1 then
+      raise exception 'La cantidad debe ser al menos 1';
+    end if;
+    v_sub := round(v_cant * v_precio);
     insert into documentos_venta_lineas (empresa_id, documento_id, producto_id, descripcion, cantidad, precio_neto, exenta, subtotal)
-    values (p_empresa, v_doc, (v_linea->>'productoId')::uuid, v_linea->>'descripcion',
-            (v_linea->>'cantidad')::integer, (v_linea->>'precioNeto')::integer, (v_linea->>'exenta')::boolean, v_sub);
-    if (v_linea->>'exenta')::boolean then v_exento := v_exento + v_sub; else v_neto := v_neto + v_sub; end if;
+    values (p_empresa, v_doc, (v_linea->>'productoId')::uuid, v_nombre, v_cant, v_precio, v_exenta, v_sub);
+    if v_exenta then v_exento := v_exento + v_sub; else v_neto := v_neto + v_sub; end if;
   end loop;
 
   v_iva := round(v_neto * 0.19);
