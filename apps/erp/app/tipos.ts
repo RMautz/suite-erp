@@ -5,3 +5,5 @@ export type ResultadoImport = {
   procesadas?: number
   errores?: { fila: number; mensajes: string[] }[]
 }
+
+export type ResultadoVenta = { error?: string }
