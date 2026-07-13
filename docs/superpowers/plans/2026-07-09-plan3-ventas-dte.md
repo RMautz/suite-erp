@@ -578,6 +578,13 @@ Expected: existen `0001_plataforma`, `0002_registro`, `0003_maestros`. Usar `000
 ```sql
 -- Ventas y facturación electrónica (DTE). Multi-tenant por empresa.
 
+-- ---------- Prerrequisito: unique compuesto para las FK por tenant ----------
+-- Postgres exige que las columnas referenciadas por una FK compuesta tengan un
+-- unique/PK que las cubra exactamente. clientes/productos solo tienen unique
+-- (empresa_id, rut/sku); agregamos (empresa_id, id) para las FK de esta migración.
+alter table public.clientes add constraint clientes_empresa_id_key unique (empresa_id, id);
+alter table public.productos add constraint productos_empresa_id_key unique (empresa_id, id);
+
 -- ---------- Datos del emisor y certificado cifrado en empresas ----------
 alter table public.empresas
   add column if not exists giro_emisor text,
@@ -884,7 +891,7 @@ git commit -m "feat(db): tipos regenerados con tablas de ventas"
 ### Task 7: ERP — configuración del emisor (certificado + CAF cifrados)
 
 **Files:**
-- Create: `apps/erp/app/configuracion/dte/page.tsx`, `apps/erp/app/configuracion/dte/acciones.ts`, `apps/erp/componentes/formulario-emisor.tsx`
+- Create: `apps/erp/app/configuracion/dte/page.tsx`, `apps/erp/app/configuracion/dte/acciones.ts`, `apps/erp/componentes/formulario-emisor.tsx`, `apps/erp/componentes/formulario-certificado.tsx`, `apps/erp/componentes/formulario-caf.tsx`
 - Modify: `apps/erp/app/layout.tsx` (agregar item "Configuración" al NAV), `apps/erp/.env.example` (agregar `DTE_ENCRYPTION_KEY` y `DTE_AMBIENTE`)
 
 **Interfaces:**
@@ -1074,9 +1081,11 @@ export function FormularioEmisor({
 
 ```tsx
 import { crearClienteServidor } from '@suite/auth/server'
-import { Boton, Campo, Encabezado, Entrada, Insignia, Selector, Tarjeta } from '@suite/ui'
+import { Encabezado, Insignia } from '@suite/ui'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { FormularioEmisor } from '../../../componentes/formulario-emisor'
+import { FormularioCertificado } from '../../../componentes/formulario-certificado'
+import { FormularioCAF } from '../../../componentes/formulario-caf'
 import { cargarCAF, cargarCertificado, guardarEmisor } from './acciones'
 
 export default async function ConfigDTE() {
@@ -1116,57 +1125,16 @@ export default async function ConfigDTE() {
       <h2 className="mb-2 mt-8 text-lg font-semibold text-slate-800">
         Certificado digital {tieneCert ? <Insignia tono="verde">Cargado</Insignia> : <Insignia tono="amarillo">Falta</Insignia>}
       </h2>
-      <Tarjeta className="max-w-2xl">
-        <form action={cargarCertificado} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Campo etiqueta="Certificado (.pfx) *">
-            <input type="file" name="certificado" accept=".pfx,.p12" required className="text-sm" />
-          </Campo>
-          <Campo etiqueta="Contraseña del certificado *">
-            <Entrada name="certificado_password" type="password" required />
-          </Campo>
-          <div className="sm:col-span-2">
-            <Campo etiqueta="API key del proveedor DTE (SimpleAPI) *">
-              <Entrada name="dte_api_key" required />
-            </Campo>
-          </div>
-          <div className="flex justify-end sm:col-span-2">
-            <Boton type="submit">Cargar certificado</Boton>
-          </div>
-        </form>
-        <p className="mt-2 text-xs text-slate-500">
-          El certificado se guarda cifrado y solo se usa en el servidor al emitir. Nunca se muestra ni se descarga.
-        </p>
-      </Tarjeta>
+      <FormularioCertificado accion={cargarCertificado} />
 
       <h2 className="mb-2 mt-8 text-lg font-semibold text-slate-800">Folios CAF</h2>
-      <Tarjeta className="max-w-2xl">
-        <form action={cargarCAF} className="flex flex-wrap items-end gap-3">
-          <Campo etiqueta="Tipo">
-            <Selector name="tipo_documento" defaultValue="factura">
-              <option value="factura">Factura (33)</option>
-              <option value="boleta">Boleta (39)</option>
-              <option value="nota_credito">Nota de crédito (61)</option>
-            </Selector>
-          </Campo>
-          <Campo etiqueta="Archivo CAF (.xml)">
-            <input type="file" name="caf" accept=".xml" required className="text-sm" />
-          </Campo>
-          <Boton type="submit">Cargar CAF</Boton>
-        </form>
-        <ul className="mt-4 space-y-1 text-sm text-slate-700">
-          {(cafs ?? []).map((c, i) => (
-            <li key={i}>
-              {c.tipo_documento}: folios {c.desde}–{c.hasta} (siguiente: {c.siguiente}){' '}
-              {c.activo ? <Insignia tono="verde">Activo</Insignia> : <Insignia tono="gris">Inactivo</Insignia>}
-            </li>
-          ))}
-          {(cafs ?? []).length === 0 && <li className="text-slate-500">Aún no cargas folios CAF.</li>}
-        </ul>
-      </Tarjeta>
+      <FormularioCAF accion={cargarCAF} cafs={cafs ?? []} />
     </div>
   )
 }
 ```
+
+`apps/erp/componentes/formulario-certificado.tsx` y `apps/erp/componentes/formulario-caf.tsx` siguen el mismo patrón `useActionState` que `formulario-emisor.tsx` (arriba): cada uno envuelve su `<form action={enviar}>` con `const [estado, enviar, pendiente] = useActionState(accion, {} as EstadoForm)` y muestra `estado.error` en rojo — necesario porque `<form action={server-action}>` nativo descarta el valor de retorno de la Server Action, por lo que sin `useActionState` los errores (contraseña vencida, CAF inválido, RLS) se pierden silenciosamente.
 
 Modificar `apps/erp/app/layout.tsx` — agregar al array `NAV` (después de "Importar"):
 
@@ -1559,9 +1527,12 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
     const cred = await credencialesEmpresa(activa.id, tipo)
 
     // Reserva de folio SOLO si aún no tiene (idempotencia ante reintento).
+    // tomar_folio se llama en contexto de USUARIO (supabase, no admin): la función
+    // valida internamente que el usuario pertenece a la empresa (auth.uid()), lo que
+    // bajo service_role fallaría. security definer le permite avanzar folios_caf igual.
     let folio = doc.folio
     if (folio === null) {
-      const { data: nuevo, error: eFolio } = await admin.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: tipo })
+      const { data: nuevo, error: eFolio } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: tipo })
       if (eFolio || nuevo === null) throw new Error(eFolio?.message ?? 'No hay folios disponibles')
       folio = nuevo as number
       await admin.from('documentos_venta').update({ tipo, folio, estado: 'pendiente_envio' }).eq('id', id)
@@ -1634,7 +1605,8 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
   const admin = clienteAdmin()
   try {
     const cred = await credencialesEmpresa(activa.id, 'nota_credito')
-    const { data: folioNc, error: eF } = await admin.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: 'nota_credito' })
+    // tomar_folio en contexto de usuario (valida pertenencia por auth.uid()).
+    const { data: folioNc, error: eF } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: 'nota_credito' })
     if (eF || folioNc === null) throw new Error(eF?.message ?? 'No hay folios de nota de crédito')
 
     // Crea la NC como documento propio referenciando el original. Se inserta vía admin
