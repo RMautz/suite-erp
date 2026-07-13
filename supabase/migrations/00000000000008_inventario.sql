@@ -96,6 +96,7 @@ grant select, insert, update on public.bodegas, public.proveedores to authentica
 grant select on public.movimientos_stock to authenticated;
 grant select on public.stock_actual to authenticated;
 grant select, insert, update, delete on public.bodegas, public.proveedores, public.movimientos_stock to service_role;
+grant select on public.stock_actual to service_role;
 
 -- ---------- Bodega por defecto ----------
 create or replace function public.bodega_por_defecto(p_empresa uuid)
@@ -106,8 +107,8 @@ as $$
 declare
   v_bodega uuid;
 begin
-  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'bodeguero', 'vendedor', 'contador']) then
-    raise exception 'No perteneces a esta empresa';
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'bodeguero']) then
+    raise exception 'Tu rol no permite administrar bodegas';
   end if;
   select id into v_bodega from bodegas where empresa_id = p_empresa and activo order by creado_en limit 1;
   if v_bodega is null then
