@@ -116,35 +116,205 @@ export type Database = {
           },
         ]
       }
+      documentos_venta: {
+        Row: {
+          cliente_id: string
+          creado_en: string
+          documento_referencia_id: string | null
+          emitido_en: string | null
+          empresa_id: string
+          error_emision: string | null
+          estado: string
+          exento: number
+          folio: number | null
+          id: string
+          intentos: number
+          iva: number
+          neto: number
+          pdf_ruta: string | null
+          razon_anulacion: string | null
+          tipo: string
+          total: number
+          track_id: string | null
+          xml_timbrado: string | null
+        }
+        Insert: {
+          cliente_id: string
+          creado_en?: string
+          documento_referencia_id?: string | null
+          emitido_en?: string | null
+          empresa_id: string
+          error_emision?: string | null
+          estado?: string
+          exento?: number
+          folio?: number | null
+          id?: string
+          intentos?: number
+          iva?: number
+          neto?: number
+          pdf_ruta?: string | null
+          razon_anulacion?: string | null
+          tipo: string
+          total?: number
+          track_id?: string | null
+          xml_timbrado?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          creado_en?: string
+          documento_referencia_id?: string | null
+          emitido_en?: string | null
+          empresa_id?: string
+          error_emision?: string | null
+          estado?: string
+          exento?: number
+          folio?: number | null
+          id?: string
+          intentos?: number
+          iva?: number
+          neto?: number
+          pdf_ruta?: string | null
+          razon_anulacion?: string | null
+          tipo?: string
+          total?: number
+          track_id?: string | null
+          xml_timbrado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_empresa_id_documento_referencia_id_fkey"
+            columns: ["empresa_id", "documento_referencia_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos_venta_lineas: {
+        Row: {
+          cantidad: number
+          descripcion: string
+          documento_id: string
+          empresa_id: string
+          exenta: boolean
+          id: string
+          precio_neto: number
+          producto_id: string | null
+          subtotal: number
+        }
+        Insert: {
+          cantidad: number
+          descripcion: string
+          documento_id: string
+          empresa_id: string
+          exenta?: boolean
+          id?: string
+          precio_neto: number
+          producto_id?: string | null
+          subtotal: number
+        }
+        Update: {
+          cantidad?: number
+          descripcion?: string
+          documento_id?: string
+          empresa_id?: string
+          exenta?: boolean
+          id?: string
+          precio_neto?: number
+          producto_id?: string | null
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
+          certificado_cifrado: string | null
+          certificado_password_cifrada: string | null
           comuna: string | null
+          comuna_emisor: string | null
           creado_en: string
           direccion: string | null
+          direccion_emisor: string | null
+          dte_api_key_cifrada: string | null
           giro: string | null
+          giro_emisor: string | null
           id: string
           organizacion_id: string
           razon_social: string
+          resolucion_sii_fecha: string | null
+          resolucion_sii_numero: number | null
           rut: string
         }
         Insert: {
+          certificado_cifrado?: string | null
+          certificado_password_cifrada?: string | null
           comuna?: string | null
+          comuna_emisor?: string | null
           creado_en?: string
           direccion?: string | null
+          direccion_emisor?: string | null
+          dte_api_key_cifrada?: string | null
           giro?: string | null
+          giro_emisor?: string | null
           id?: string
           organizacion_id: string
           razon_social: string
+          resolucion_sii_fecha?: string | null
+          resolucion_sii_numero?: number | null
           rut: string
         }
         Update: {
+          certificado_cifrado?: string | null
+          certificado_password_cifrada?: string | null
           comuna?: string | null
+          comuna_emisor?: string | null
           creado_en?: string
           direccion?: string | null
+          direccion_emisor?: string | null
+          dte_api_key_cifrada?: string | null
           giro?: string | null
+          giro_emisor?: string | null
           id?: string
           organizacion_id?: string
           razon_social?: string
+          resolucion_sii_fecha?: string | null
+          resolucion_sii_numero?: number | null
           rut?: string
         }
         Relationships: [
@@ -153,6 +323,50 @@ export type Database = {
             columns: ["organizacion_id"]
             isOneToOne: false
             referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      folios_caf: {
+        Row: {
+          activo: boolean
+          creado_en: string
+          desde: number
+          empresa_id: string
+          hasta: number
+          id: string
+          siguiente: number
+          tipo_documento: string
+          xml_caf: string
+        }
+        Insert: {
+          activo?: boolean
+          creado_en?: string
+          desde: number
+          empresa_id: string
+          hasta: number
+          id?: string
+          siguiente: number
+          tipo_documento: string
+          xml_caf: string
+        }
+        Update: {
+          activo?: boolean
+          creado_en?: string
+          desde?: number
+          empresa_id?: string
+          hasta?: number
+          id?: string
+          siguiente?: number
+          tipo_documento?: string
+          xml_caf?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folios_caf_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
