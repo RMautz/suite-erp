@@ -24,4 +24,19 @@ describe('cifrado del certificado', () => {
   it('generarClave produce 64 caracteres hex', () => {
     expect(generarClave()).toMatch(/^[0-9a-f]{64}$/)
   })
+
+  it('rechaza una clave de largo inválido', () => {
+    expect(() => cifrar(Buffer.from('x'), 'abc')).toThrow()
+    expect(() => descifrar(cifrar(Buffer.from('x'), CLAVE), 'abc')).toThrow()
+  })
+
+  it('un ciphertext manipulado falla aunque la clave sea correcta (integridad GCM)', () => {
+    const paquete = cifrar(Buffer.from('secreto'), CLAVE)
+    const partes = paquete.split('.')
+    // Voltea un byte del ciphertext (tercer segmento) manteniendo base64 válido.
+    const ct = Buffer.from(partes[2], 'base64')
+    ct[0] = ct[0] ^ 0xff
+    const manipulado = [partes[0], partes[1], ct.toString('base64')].join('.')
+    expect(() => descifrar(manipulado, CLAVE)).toThrow()
+  })
 })
