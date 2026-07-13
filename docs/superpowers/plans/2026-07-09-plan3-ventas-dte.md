@@ -565,7 +565,7 @@ git commit -m "feat(dte): cifrado AES-256-GCM del certificado con clave en env v
 - Consumes: `empresas`, `clientes`, `productos`, `app.mis_empresas`, `app.tiene_rol_en_empresa`, `app.validar_rut`, `app.normalizar_rut` (Planes 1-2).
 - Produces:
   - Tablas `documentos_venta`, `documentos_venta_lineas`, `folios_caf`; columnas de certificado cifrado en `empresas`.
-  - `app.tomar_folio(p_empresa uuid, p_tipo text) returns integer` — reserva atómica del siguiente folio del CAF vigente.
+  - `public.tomar_folio(p_empresa uuid, p_tipo text) returns integer` — reserva atómica del siguiente folio del CAF vigente.
   - RLS + grants para las 3 tablas.
 
 - [ ] **Step 1: Verificar el correlativo y escribir la migración**
@@ -660,7 +660,7 @@ create table public.documentos_venta_lineas (
 create index documentos_venta_lineas_doc_idx on public.documentos_venta_lineas (empresa_id, documento_id);
 
 -- ---------- Reserva atómica de folio ----------
-create or replace function app.tomar_folio(p_empresa uuid, p_tipo text)
+create or replace function public.tomar_folio(p_empresa uuid, p_tipo text)
 returns integer
 language plpgsql security definer
 set search_path = public
@@ -685,8 +685,8 @@ begin
   return v_folio;
 end $$;
 
-revoke execute on function app.tomar_folio(uuid, text) from anon, public;
-grant execute on function app.tomar_folio(uuid, text) to authenticated;
+revoke execute on function public.tomar_folio(uuid, text) from anon, public;
+grant execute on function public.tomar_folio(uuid, text) to authenticated;
 
 -- ---------- RLS ----------
 alter table public.folios_caf enable row level security;
@@ -799,8 +799,8 @@ values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 100, 102, 100, '<CAF/
 set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
-select is( (select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
-select is( (select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
+select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
+select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
 
 -- Ana crea un documento y su línea.
 select lives_ok(
@@ -1453,7 +1453,7 @@ git commit -m "feat(erp): nueva venta con selector de productos, cliente y total
 **Interfaces:**
 - Consumes: `obtenerEmpresaActiva`, `@suite/dte` (`proveedorPorAmbiente`, `descifrar`, tipos), `@suite/core` (`esTributario`, `CODIGO_SII`, `formatearCLP`, `formatearRut`), `crearClienteServidor`, `clienteAdmin` de `@suite/auth/admin` (para escribir estado/xml saltando RLS de forma controlada en el servidor), tablas de ventas.
 - Produces:
-  - `emitirDocumento(formData): Promise<void>` — Server Action: valida certificado+CAF+emisor, reserva folio (`app.tomar_folio`), llama al proveedor, persiste resultado (folio, track_id, xml, estado). Idempotente por documento.
+  - `emitirDocumento(formData): Promise<void>` — Server Action: valida certificado+CAF+emisor, reserva folio (`public.tomar_folio`), llama al proveedor, persiste resultado (folio, track_id, xml, estado). Idempotente por documento.
   - `emitirNotaCredito(formData): Promise<void>` — emite NC referenciando una factura/boleta emitida.
   - Lista de documentos con filtro por estado; detalle con líneas, totales y botón emitir/descargar PDF.
   - `GET /ventas/[id]/pdf` — devuelve el PDF (desde `pdf_ruta` en Storage o el `pdfBase64` guardado).

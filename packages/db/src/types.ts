@@ -597,6 +597,10 @@ export type Database = {
         Args: { p_razon_social: string; p_rut: string }
         Returns: string
       }
+      tomar_folio: {
+        Args: { p_empresa: string; p_tipo: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

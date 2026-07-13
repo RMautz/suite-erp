@@ -31,8 +31,8 @@ values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 100, 102, 100, '<CAF/
 set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
-select is( (select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
-select is( (select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
+select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
+select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
 
 -- Ana crea un documento y su línea.
 select lives_ok(
@@ -59,7 +59,7 @@ select throws_ok(
 
 -- Beto no puede tomar folios de la empresa A (cross-tenant).
 select throws_ok(
-  $$select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')$$,
+  $$select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')$$,
   'P0001', 'No tienes permiso para emitir documentos en esta empresa',
   'Beto no puede tomar folios de la empresa A (cross-tenant)'
 );

@@ -82,7 +82,7 @@ create table public.documentos_venta_lineas (
 create index documentos_venta_lineas_doc_idx on public.documentos_venta_lineas (empresa_id, documento_id);
 
 -- ---------- Reserva atómica de folio ----------
-create or replace function app.tomar_folio(p_empresa uuid, p_tipo text)
+create or replace function public.tomar_folio(p_empresa uuid, p_tipo text)
 returns integer
 language plpgsql security definer
 set search_path = public
@@ -111,8 +111,8 @@ begin
   return v_folio;
 end $$;
 
-revoke execute on function app.tomar_folio(uuid, text) from anon, public;
-grant execute on function app.tomar_folio(uuid, text) to authenticated;
+revoke execute on function public.tomar_folio(uuid, text) from anon, public;
+grant execute on function public.tomar_folio(uuid, text) to authenticated;
 
 -- ---------- RLS ----------
 alter table public.folios_caf enable row level security;
