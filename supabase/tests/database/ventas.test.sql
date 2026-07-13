@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -55,6 +55,13 @@ select throws_ok(
   $$insert into documentos_venta (empresa_id, tipo, cliente_id, total)
     values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 1)$$,
   '42501', null, 'Beto no puede crear documentos en la empresa A'
+);
+
+-- Beto no puede tomar folios de la empresa A (cross-tenant).
+select throws_ok(
+  $$select app.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')$$,
+  'P0001', 'No tienes permiso para emitir documentos en esta empresa',
+  'Beto no puede tomar folios de la empresa A (cross-tenant)'
 );
 
 -- Ces (contador de A) NO puede crear documentos (rol sin permiso de venta): RLS filtra el insert.

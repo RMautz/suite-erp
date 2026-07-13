@@ -91,6 +91,10 @@ declare
   v_folio integer;
   v_caf_id uuid;
 begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'vendedor']) then
+    raise exception 'No tienes permiso para emitir documentos en esta empresa';
+  end if;
+
   -- Bloquea el CAF vigente y toma el siguiente folio si queda rango.
   select id, siguiente into v_caf_id, v_folio
   from folios_caf
