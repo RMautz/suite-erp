@@ -17,6 +17,7 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
   if (!doc) notFound()
 
   const emitible = doc.estado === 'borrador' || doc.estado === 'pendiente_envio'
+  const esNotaVenta = doc.tipo === 'nota_venta'
 
   return (
     <div>
@@ -48,17 +49,17 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        {emitible && (
-          <>
-            <form action={emitirDocumento}>
-              <input type="hidden" name="id" value={doc.id} /><input type="hidden" name="tipo" value="factura" />
-              <Boton type="submit">Emitir factura</Boton>
-            </form>
-            <form action={emitirDocumento}>
-              <input type="hidden" name="id" value={doc.id} /><input type="hidden" name="tipo" value="boleta" />
-              <Boton variante="secundario" type="submit">Emitir boleta</Boton>
-            </form>
-          </>
+        {emitible && (esNotaVenta || doc.tipo === 'factura') && (
+          <form action={emitirDocumento}>
+            <input type="hidden" name="id" value={doc.id} /><input type="hidden" name="tipo" value="factura" />
+            <Boton type="submit">Emitir factura</Boton>
+          </form>
+        )}
+        {emitible && (esNotaVenta || doc.tipo === 'boleta') && (
+          <form action={emitirDocumento}>
+            <input type="hidden" name="id" value={doc.id} /><input type="hidden" name="tipo" value="boleta" />
+            <Boton variante="secundario" type="submit">Emitir boleta</Boton>
+          </form>
         )}
         {doc.estado === 'emitido' && doc.tipo !== 'nota_credito' && (
           <>

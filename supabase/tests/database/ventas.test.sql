@@ -24,6 +24,9 @@ values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaa
 insert into public.clientes (id, empresa_id, rut, razon_social)
 values ('cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '765432103', 'Cliente A');
 
+insert into public.productos (id, empresa_id, sku, nombre, precio_neto, exento)
+values ('99999999-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'P1', 'Producto A', 10000, false);
+
 insert into public.folios_caf (empresa_id, tipo_documento, desde, hasta, siguiente, xml_caf)
 values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 100, 102, 100, '<CAF/>');
 
@@ -34,27 +37,28 @@ set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111",
 select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
 select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
 
--- Ana crea un documento y su línea.
+-- Ana crea una nota de venta SOLO vía la RPC (único camino de escritura permitido).
 select lives_ok(
-  $$insert into documentos_venta (id, empresa_id, tipo, cliente_id, total)
-    values ('dddddddd-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 11900)$$,
-  'la dueña crea un documento de venta'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":2}]'::jsonb)$$,
+  'la dueña crea una nota de venta vía crear_documento_venta'
 );
-select lives_ok(
-  $$insert into documentos_venta_lineas (empresa_id, documento_id, descripcion, cantidad, precio_neto, subtotal)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'dddddddd-0000-0000-0000-aaaaaaaaaaaa', 'Item', 1, 10000, 10000)$$,
-  'la dueña agrega una línea'
+-- El IVA sale del producto (2 x 10000 x 0.19 = 3800), no de lo que envíe el cliente.
+select is(
+  (select iva from documentos_venta where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' limit 1),
+  3800, 'el IVA se calcula del producto'
 );
 
 -- Beto (org B) no ve los documentos de A.
 set local request.jwt.claims to '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 select is( (select count(*) from documentos_venta), 0::bigint, 'Beto no ve documentos de la empresa A' );
 
--- Beto no puede crear documentos en la empresa A.
+-- Beto no puede crear ventas en la empresa A (la RPC valida pertenencia).
 select throws_ok(
-  $$insert into documentos_venta (empresa_id, tipo, cliente_id, total)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 1)$$,
-  '42501', null, 'Beto no puede crear documentos en la empresa A'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":1}]'::jsonb)$$,
+  'P0001', 'Tu rol no permite crear ventas',
+  'Beto no puede crear ventas en la empresa A'
 );
 
 -- Beto no puede tomar folios de la empresa A (cross-tenant).
@@ -64,12 +68,13 @@ select throws_ok(
   'Beto no puede tomar folios de la empresa A (cross-tenant)'
 );
 
--- Ces (contador de A) NO puede crear documentos (rol sin permiso de venta): RLS filtra el insert.
+-- Ces (contador de A) NO puede crear ventas (rol sin permiso).
 set local request.jwt.claims to '{"sub": "55555555-5555-5555-5555-555555555555", "role": "authenticated"}';
 select throws_ok(
-  $$insert into documentos_venta (empresa_id, tipo, cliente_id, total)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 1)$$,
-  '42501', null, 'el contador no puede crear documentos de venta'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":1}]'::jsonb)$$,
+  'P0001', 'Tu rol no permite crear ventas',
+  'el contador no puede crear ventas'
 );
 
 -- Anónimo denegado de plano.

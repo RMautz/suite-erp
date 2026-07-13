@@ -98,7 +98,7 @@ export async function cargarCAF(_prev: EstadoForm, formData: FormData): Promise<
     desde,
     hasta,
     siguiente: desde,
-    xml_caf: xml,
+    xml_caf: cifrar(Buffer.from(xml, 'utf8'), claveCifrado()),
   })
   if (error) {
     if (error.code === '42501') return { error: 'Solo el dueño o admin puede cargar folios CAF' }

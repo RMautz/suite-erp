@@ -29,11 +29,13 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
   // Verifica que el documento pertenece a la empresa activa y está emitible (RLS lo acota).
   const { data: doc } = await supabase
     .from('documentos_venta')
-    .select('id, estado, folio, cliente_id, neto, exento, iva, total')
+    .select('id, tipo, estado, folio, cliente_id, neto, exento, iva, total')
     .eq('id', id)
     .eq('empresa_id', activa.id)
     .single()
   if (!doc || (doc.estado !== 'borrador' && doc.estado !== 'pendiente_envio')) return
+  // No cambiar el tipo de un documento ya tributario (evita cruzar folio con el CAF equivocado).
+  if (doc.tipo !== 'nota_venta' && doc.tipo !== tipo) return
 
   const admin = clienteAdmin()
   try {
@@ -48,11 +50,14 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
       folio = nuevo as number
       // El folio DEBE quedar persistido antes de continuar: si este write falla, abortamos
       // para que el reintento reutilice el mismo folio (nunca dos folios para una venta).
-      const { error: eUpd } = await admin
+      const { data: reservado, error: eUpd } = await admin
         .from('documentos_venta')
         .update({ tipo, folio, estado: 'pendiente_envio' })
         .eq('id', id)
+        .is('folio', null)
+        .select('id')
       if (eUpd) throw new Error('No se pudo reservar el folio; reintenta')
+      if ((reservado ?? []).length === 0) return // otra emisión concurrente ya reservó el folio
     }
 
     const [{ data: emp }, { data: cli }, { data: lineas }] = await Promise.all([
@@ -117,6 +122,16 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
     .select('id, tipo, folio, cliente_id, neto, exento, iva, total')
     .eq('id', refId).eq('empresa_id', activa.id).eq('estado', 'emitido').single()
   if (!ref || !ref.folio) return
+  if (ref.tipo === 'nota_credito') return // no se anula una nota de crédito con otra NC
+  // Evita crear una segunda NC para el mismo documento (reintento del botón).
+  const { data: ncPrevia } = await supabase
+    .from('documentos_venta')
+    .select('id')
+    .eq('empresa_id', activa.id)
+    .eq('documento_referencia_id', refId)
+    .neq('estado', 'rechazado')
+    .limit(1)
+  if (ncPrevia && ncPrevia.length > 0) return
 
   const admin = clienteAdmin()
   let ncId: string | null = null
@@ -136,11 +151,12 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
       .single()
     if (eNc || !ncDoc) throw new Error('No se pudo crear la nota de crédito')
     ncId = ncDoc.id
-    await admin.from('documentos_venta_lineas').insert({
+    const { error: eLinea } = await admin.from('documentos_venta_lineas').insert({
       empresa_id: activa.id, documento_id: ncId, producto_id: null,
       descripcion: 'Anulación ' + ref.tipo + ' folio ' + ref.folio, cantidad: 1,
       precio_neto: ref.total, exenta: false, subtotal: ref.total,
     })
+    if (eLinea) throw new Error('No se pudo crear la línea de la nota de crédito')
 
     // 2. Reserva el folio (contexto usuario) y persístelo en la NC antes de emitir.
     const { data: folioNc, error: eF } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: 'nota_credito' })

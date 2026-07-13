@@ -36,7 +36,7 @@ export async function credencialesEmpresa(empresaId: string, tipo: TipoDocumento
     apiKey: descifrar(emp.dte_api_key_cifrada, k).toString('utf8'),
     certificadoPfx: descifrar(emp.certificado_cifrado, k),
     certificadoPassword: descifrar(emp.certificado_password_cifrada, k).toString('utf8'),
-    cafXml: caf.xml_caf,
+    cafXml: descifrar(caf.xml_caf, k).toString('utf8'),
   }
 }
 

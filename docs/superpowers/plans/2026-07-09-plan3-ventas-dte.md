@@ -437,6 +437,17 @@ export function proveedorPorAmbiente(_ambiente: string): ProveedorDTE {
 }
 ```
 
+**Endurecimiento (review final):** hasta que Task 10/13 conecten `SimpleApiDTE`, `'produccion'` NO debe caer silenciosamente al mock. `proveedorPorAmbiente` lanza si `ambiente === 'produccion'` y solo devuelve `MockDTE` para cualquier otro valor (incl. `'certificacion'`):
+
+```ts
+export function proveedorPorAmbiente(ambiente: string): ProveedorDTE {
+  if (ambiente === 'produccion') {
+    throw new Error('El proveedor DTE de producción aún no está configurado (integración SimpleAPI pendiente)')
+  }
+  return new MockDTE()
+}
+```
+
 Run: `pnpm --filter @suite/dte test`
 Expected: PASS — 4 tests verdes.
 
@@ -731,6 +742,8 @@ grant select, insert, update on public.folios_caf, public.documentos_venta, publ
 grant select, insert, update, delete on public.folios_caf, public.documentos_venta, public.documentos_venta_lineas to service_role;
 ```
 
+**Endurecimiento (review final, migración `00000000000007_endurecimiento.sql`):** las políticas de insert/update de `documentos_venta`/`documentos_venta_lineas` para `authenticated` ("vendedores crean/editan documentos/lineas") y de update de `folios_caf` ("duenos editan folios") se eliminan — permitían forjar un documento `emitido` o alterar totales/IVA/folio saltándose `crear_documento_venta` y `tomar_folio` (ambas `security definer`). `authenticated` queda solo con select en esas tres tablas, más insert en `folios_caf` (carga de CAF, sin poder editar `siguiente`). Además se agrega un índice único `(empresa_id, tipo, folio) where folio is not null` como defensa contra folios repetidos.
+
 - [ ] **Step 2: Aplicar y verificar**
 
 Run: `pnpm supabase db reset`
@@ -765,10 +778,12 @@ git commit -m "feat(db): ventas, folios CAF y certificado cifrado con RLS y foli
 
 `supabase/tests/database/ventas.test.sql`:
 
+**Endurecimiento (review final):** desde la migración `00000000000007_endurecimiento.sql`, `authenticated` ya no tiene insert/update directo en `documentos_venta`/`documentos_venta_lineas` — todo escritor pasa por `crear_documento_venta` (security definer). El test se reescribió para probar ese único camino de escritura (y sus rechazos) en vez de insertar directo en las tablas:
+
 ```sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -792,6 +807,9 @@ values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaa
 insert into public.clientes (id, empresa_id, rut, razon_social)
 values ('cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '765432103', 'Cliente A');
 
+insert into public.productos (id, empresa_id, sku, nombre, precio_neto, exento)
+values ('99999999-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'P1', 'Producto A', 10000, false);
+
 insert into public.folios_caf (empresa_id, tipo_documento, desde, hasta, siguiente, xml_caf)
 values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 100, 102, 100, '<CAF/>');
 
@@ -802,35 +820,44 @@ set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111",
 select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 100, 'primer folio es 100' );
 select is( (select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')), 101, 'segundo folio es 101 (no repite)' );
 
--- Ana crea un documento y su línea.
+-- Ana crea una nota de venta SOLO vía la RPC (único camino de escritura permitido).
 select lives_ok(
-  $$insert into documentos_venta (id, empresa_id, tipo, cliente_id, total)
-    values ('dddddddd-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 11900)$$,
-  'la dueña crea un documento de venta'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":2}]'::jsonb)$$,
+  'la dueña crea una nota de venta vía crear_documento_venta'
 );
-select lives_ok(
-  $$insert into documentos_venta_lineas (empresa_id, documento_id, descripcion, cantidad, precio_neto, subtotal)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'dddddddd-0000-0000-0000-aaaaaaaaaaaa', 'Item', 1, 10000, 10000)$$,
-  'la dueña agrega una línea'
+-- El IVA sale del producto (2 x 10000 x 0.19 = 3800), no de lo que envíe el cliente.
+select is(
+  (select iva from documentos_venta where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' limit 1),
+  3800, 'el IVA se calcula del producto'
 );
 
 -- Beto (org B) no ve los documentos de A.
 set local request.jwt.claims to '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 select is( (select count(*) from documentos_venta), 0::bigint, 'Beto no ve documentos de la empresa A' );
 
--- Beto no puede crear documentos en la empresa A.
+-- Beto no puede crear ventas en la empresa A (la RPC valida pertenencia).
 select throws_ok(
-  $$insert into documentos_venta (empresa_id, tipo, cliente_id, total)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 1)$$,
-  '42501', null, 'Beto no puede crear documentos en la empresa A'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":1}]'::jsonb)$$,
+  'P0001', 'Tu rol no permite crear ventas',
+  'Beto no puede crear ventas en la empresa A'
 );
 
--- Ces (contador de A) NO puede crear documentos (rol sin permiso de venta): RLS filtra el insert.
+-- Beto no puede tomar folios de la empresa A (cross-tenant).
+select throws_ok(
+  $$select public.tomar_folio('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura')$$,
+  'P0001', 'No tienes permiso para emitir documentos en esta empresa',
+  'Beto no puede tomar folios de la empresa A (cross-tenant)'
+);
+
+-- Ces (contador de A) NO puede crear ventas (rol sin permiso).
 set local request.jwt.claims to '{"sub": "55555555-5555-5555-5555-555555555555", "role": "authenticated"}';
 select throws_ok(
-  $$insert into documentos_venta (empresa_id, tipo, cliente_id, total)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 1)$$,
-  '42501', null, 'el contador no puede crear documentos de venta'
+  $$select crear_documento_venta('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta',
+    '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":1}]'::jsonb)$$,
+  'P0001', 'Tu rol no permite crear ventas',
+  'el contador no puede crear ventas'
 );
 
 -- Anónimo denegado de plano.
@@ -849,7 +876,7 @@ rollback;
 - [ ] **Step 2: Correr y verificar**
 
 Run: `pnpm supabase test db`
-Expected: 4 archivos, 31 asserts (6 aislamiento + 7 registro + 10 maestros + 8 ventas), todos verdes. Si un assert de ventas falla, corregir la migración de Task 4 (nunca el test); reportar BLOCKED si el fix no es obvio.
+Expected: 4 archivos, 32 asserts (6 aislamiento + 7 registro + 10 maestros + 9 ventas), todos verdes. Si un assert de ventas falla, corregir la migración de Task 4/7 (nunca el test); reportar BLOCKED si el fix no es obvio.
 
 - [ ] **Step 3: Commit**
 
@@ -1027,6 +1054,8 @@ export async function cargarCAF(_prev: EstadoForm, formData: FormData): Promise<
   return {}
 }
 ```
+
+**Endurecimiento (review final):** el XML del CAF trae la clave privada de firma del SII para ese rango de folios — no es un dato público, igual que el certificado y su password. `xml_caf` se cifra igual que el resto de las credenciales antes de guardarlo (`cifrar(Buffer.from(xml, 'utf8'), claveCifrado())` en vez de guardar `xml` en texto plano), y se descifra en `credencialesEmpresa` (`apps/erp/lib/emision.ts`) con `descifrar(caf.xml_caf, k).toString('utf8')`.
 
 - [ ] **Step 3: Formulario (client) y página**
 
@@ -1707,6 +1736,12 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
 }
 ```
 
+**Endurecimiento (review final) en `emitir.ts`:**
+- `emitirDocumento` ahora selecciona `tipo` del documento y aborta si ya es un tipo tributario distinto al que se está pidiendo emitir (`doc.tipo !== 'nota_venta' && doc.tipo !== tipo`) — evita cruzar el folio con el CAF equivocado si el botón se envía dos veces con tipos distintos.
+- El `update` que persiste el folio reservado agrega `.is('folio', null).select('id')` y, si no actualizó ninguna fila, retorna sin llamar al proveedor — cierra la ventana donde dos emisiones concurrentes del mismo documento podían reservar y quemar dos folios.
+- `emitirNotaCredito` rechaza anular una nota de crédito con otra NC (`ref.tipo === 'nota_credito'`) y, antes de crear la NC, comprueba que no exista ya una NC no rechazada para el mismo `documento_referencia_id` (evita duplicar la anulación en un doble clic).
+- El insert de la línea de la NC ahora captura y verifica su `error` (antes se ignoraba silenciosamente, dejando una NC sin líneas si fallaba).
+
 - [ ] **Step 3: Lista y detalle**
 
 `apps/erp/app/ventas/page.tsx`:
@@ -1993,6 +2028,12 @@ Si la verificación no requirió cambios de producción, no hay commit. Si detec
 ### Task 13: `@suite/dte` — integración real con SimpleAPI (GATED en credenciales)
 
 **⚠️ Esta task requiere que el usuario tenga:** una cuenta SimpleAPI (plan gratis), su API key de certificación, un certificado digital de prueba y un CAF de certificación del SII. Sin esas credenciales, NO se puede ejecutar ni verificar — se ejecuta cuando el usuario las consiga. Hasta entonces, el sistema opera con `MockDTE` (todo lo anterior funciona).
+
+**Deferido a Task 13** (hallazgos del review final que no bloquean el mock pero deben resolverse junto con la integración real):
+- CAF-por-folio en `credencialesEmpresa`: hoy toma el primer CAF `activo` del tipo; con múltiples CAF cargados (rangos distintos) debería elegir el que cubre el próximo folio a reservar, no "el primero".
+- Líneas de la nota de crédito con la estructura neto/exento del documento original (hoy es una sola línea agregada por el total), para que el XML de la NC refleje el detalle real que se está anulando.
+- Columnas de auditoría `creado_por`/`emitido_por` en `documentos_venta`, para saber qué usuario emitió cada documento (hoy solo queda el `empresa_id`).
+- Incremento real de `intentos` en `emitirDocumento` (hoy el `update` fija `intentos` en 1 o 2 según el estado previo en vez de incrementar el contador existente).
 
 **Files:**
 - Create: `packages/dte/src/simpleapi.ts`, `packages/dte/src/simpleapi.contrato.test.ts` (test de contra sandbox, skippeable sin credenciales)

@@ -6,6 +6,9 @@ import { MockDTE } from './mock'
 
 // Task 10 reemplaza el cuerpo por: return ambiente === 'produccion' || ambiente === 'certificacion'
 //   ? new SimpleApiDTE(ambiente) : new MockDTE()  (con SimpleApiDTE leyendo la doc en vivo).
-export function proveedorPorAmbiente(_ambiente: string): ProveedorDTE {
+export function proveedorPorAmbiente(ambiente: string): ProveedorDTE {
+  if (ambiente === 'produccion') {
+    throw new Error('El proveedor DTE de producción aún no está configurado (integración SimpleAPI pendiente)')
+  }
   return new MockDTE()
 }

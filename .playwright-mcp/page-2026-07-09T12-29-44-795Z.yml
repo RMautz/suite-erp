@@ -1,0 +1,7 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e15]
+  - main [ref=e16]:
+    - heading "¡Cuenta creada!" [level=1] [ref=e17]
+    - paragraph [ref=e18]: Tu organización quedó registrada con 14 días de prueba.
+    - link "Entrar al ERP" [ref=e19] [cursor=pointer]:
+      - /url: "﻿https://suite-erp-erp.vercel.app"
