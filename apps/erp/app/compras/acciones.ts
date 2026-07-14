@@ -81,3 +81,49 @@ export async function cancelarOrden(formData: FormData): Promise<void> {
   revalidatePath('/compras')
   revalidatePath('/compras/' + id)
 }
+
+type LineaRecepcion = { ordenLineaId: string; cantidad: number }
+
+export async function registrarRecepcion(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+
+  const orden = String(formData.get('orden_id') ?? '')
+  const bodega = String(formData.get('bodega_id') ?? '')
+  const notas = String(formData.get('notas') ?? '').trim()
+  if (!orden || !bodega) return { error: 'Selecciona la bodega de destino' }
+
+  let lineas: LineaRecepcion[]
+  try {
+    lineas = (JSON.parse(String(formData.get('lineas') ?? '[]')) as LineaRecepcion[]).filter((l) => l.cantidad > 0)
+  } catch {
+    return { error: 'Las cantidades de la recepción no son válidas' }
+  }
+  if (lineas.length === 0) return { error: 'Ingresa al menos una cantidad a recibir' }
+  for (const l of lineas) {
+    if (!l.ordenLineaId || !Number.isInteger(l.cantidad) || l.cantidad < 1) {
+      return { error: 'Las cantidades deben ser enteros mayores a 0' }
+    }
+  }
+
+  const supabase = await crearClienteServidor()
+  // p_lineas es jsonb en SQL; el generador de tipos lo tipa como Json, no como el shape real: castea sólo el tipo.
+  // p_notas es opcional en SQL (text acepta NULL), pero el generador no refleja la nulabilidad de argumentos
+  // de función: castea sólo el tipo, no el valor (mismo criterio que crearOrdenCompra más arriba).
+  const { error } = await supabase.rpc('registrar_recepcion', {
+    p_empresa: activa.id,
+    p_orden: orden,
+    p_bodega: bodega,
+    p_lineas: lineas.map((l) => ({ ordenLineaId: l.ordenLineaId, cantidad: l.cantidad })) as unknown as Json,
+    p_notas: (notas || null) as string,
+  })
+  if (error) {
+    if (error.message.includes('rol')) return { error: 'Tu rol no permite recibir mercadería' }
+    if (error.message.includes('pendiente')) return { error: error.message }
+    if (error.message.includes('estado')) return { error: 'La orden no está en un estado que permita recepción' }
+    return { error: 'No se pudo registrar la recepción' }
+  }
+  revalidatePath('/compras')
+  revalidatePath('/compras/' + orden)
+  redirect('/compras/' + orden)
+}
