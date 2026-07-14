@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
-import { formatearCLP } from '@suite/core'
+import { bajoMinimo, formatearCantidad, formatearCLP } from '@suite/core'
 import { Boton, Encabezado, Entrada, Insignia, Paginacion, Tabla, Td, Th, Tr } from '@suite/ui'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { alternarActivoProducto } from './acciones'
@@ -20,7 +20,7 @@ export default async function PaginaProductos({
   const supabase = await crearClienteServidor()
   let consulta = supabase
     .from('productos')
-    .select('id, sku, nombre, unidad, precio_neto, exento, activo, categorias_producto (nombre)', {
+    .select('id, sku, nombre, unidad, precio_neto, exento, activo, stock_minimo, categorias_producto (nombre)', {
       count: 'exact',
     })
     .eq('empresa_id', activa.id)
@@ -34,6 +34,21 @@ export default async function PaginaProductos({
   const { data: productos, count, error } = await consulta
   if (error) throw new Error('No se pudieron cargar los productos')
   const totalPaginas = Math.max(1, Math.ceil((count ?? 0) / POR_PAGINA))
+
+  // Stock total por producto (suma de todas las bodegas).
+  const ids = (productos ?? []).map((p) => p.id)
+  const stockPorProducto = new Map<string, number>()
+  if (ids.length > 0) {
+    const { data: stock } = await supabase
+      .from('stock_actual')
+      .select('producto_id, cantidad')
+      .eq('empresa_id', activa.id)
+      .in('producto_id', ids)
+    for (const s of stock ?? []) {
+      if (!s.producto_id) continue
+      stockPorProducto.set(s.producto_id, (stockPorProducto.get(s.producto_id) ?? 0) + (s.cantidad ?? 0))
+    }
+  }
 
   const hrefBase = `/productos?q=${encodeURIComponent(q)}${inactivos === '1' ? '&inactivos=1' : ''}`
 
@@ -64,6 +79,7 @@ export default async function PaginaProductos({
             <Th>Categoría</Th>
             <Th>Unidad</Th>
             <Th className="text-right">Precio neto</Th>
+            <Th className="text-right">Stock</Th>
             <Th>Estado</Th>
             <Th />
           </tr>
@@ -85,6 +101,16 @@ export default async function PaginaProductos({
               <Td>{p.categorias_producto?.nombre ?? '—'}</Td>
               <Td>{p.unidad}</Td>
               <Td className="text-right">{formatearCLP(p.precio_neto)}</Td>
+              <Td className="text-right">
+                {(() => {
+                  const s = stockPorProducto.get(p.id) ?? 0
+                  return bajoMinimo(s, p.stock_minimo) ? (
+                    <span className="font-mono text-red-600" title="Bajo el mínimo">{formatearCantidad(s)} ⚠</span>
+                  ) : (
+                    <span className="font-mono">{formatearCantidad(s)}</span>
+                  )
+                })()}
+              </Td>
               <Td>{p.activo ? <Insignia tono="verde">Activo</Insignia> : <Insignia tono="gris">Inactivo</Insignia>}</Td>
               <Td>
                 <form action={alternarActivoProducto}>
@@ -99,7 +125,7 @@ export default async function PaginaProductos({
           ))}
           {(productos ?? []).length === 0 && (
             <Tr>
-              <Td colSpan={7} className="py-8 text-center text-slate-500">
+              <Td colSpan={8} className="py-8 text-center text-slate-500">
                 No hay productos {q ? 'que coincidan con la búsqueda' : 'todavía. Crea el primero o usa Importar'}.
               </Td>
             </Tr>

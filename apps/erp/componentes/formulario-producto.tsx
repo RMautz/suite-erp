@@ -19,6 +19,7 @@ export interface ProductoEditable {
   precio_neto: number | ''
   exento: boolean
   categoria_id: string
+  stock_minimo: number | ''
 }
 
 const VACIO: ProductoEditable = {
@@ -30,6 +31,7 @@ const VACIO: ProductoEditable = {
   precio_neto: '',
   exento: false,
   categoria_id: '',
+  stock_minimo: 0,
 }
 
 export function FormularioProducto({
@@ -57,6 +59,9 @@ export function FormularioProducto({
         </Campo>
         <Campo etiqueta="Unidad">
           <Entrada name="unidad" defaultValue={inicial.unidad} />
+        </Campo>
+        <Campo etiqueta="Stock mínimo (alerta)">
+          <Entrada name="stock_minimo" inputMode="numeric" defaultValue={inicial.stock_minimo} />
         </Campo>
         <Campo etiqueta="Código de barras">
           <Entrada name="codigo_barras" defaultValue={inicial.codigo_barras} />

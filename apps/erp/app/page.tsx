@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearRut } from '@suite/core'
 import { Encabezado, Insignia, Tarjeta } from '@suite/ui'
@@ -43,6 +44,15 @@ export default async function Inicio() {
       .eq('activo', true),
   ])
 
+  const { data: prods } = await supabase.from('productos').select('id, stock_minimo').eq('empresa_id', activa.id).eq('activo', true)
+  const { data: stockRows } = await supabase.from('stock_actual').select('producto_id, cantidad').eq('empresa_id', activa.id)
+  const totalPorProd = new Map<string, number>()
+  for (const s of stockRows ?? []) {
+    if (!s.producto_id) continue
+    totalPorProd.set(s.producto_id, (totalPorProd.get(s.producto_id) ?? 0) + (s.cantidad ?? 0))
+  }
+  const criticos = (prods ?? []).filter((p) => (totalPorProd.get(p.id) ?? 0) <= p.stock_minimo).length
+
   return (
     <div>
       <Encabezado titulo={activa.razon_social}>
@@ -72,10 +82,12 @@ export default async function Inicio() {
           <p className="text-sm text-slate-500">Clientes activos</p>
           <p className="mt-1 text-3xl font-semibold">{clientes.count ?? 0}</p>
         </Tarjeta>
-        <Tarjeta>
-          <p className="text-sm text-slate-500">Ventas</p>
-          <p className="mt-1 text-sm text-slate-400">Disponible en el módulo de ventas (Plan 3)</p>
-        </Tarjeta>
+        <Link href="/productos?inactivos=0">
+          <Tarjeta>
+            <p className="text-sm text-slate-500">Stock crítico</p>
+            <p className="mt-1 text-3xl font-semibold">{criticos}</p>
+          </Tarjeta>
+        </Link>
       </div>
     </div>
   )

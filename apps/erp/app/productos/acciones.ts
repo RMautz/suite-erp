@@ -40,6 +40,7 @@ export async function guardarProducto(_prev: EstadoForm, formData: FormData): Pr
   const unidad = String(formData.get('unidad') ?? '').trim() || 'UN'
   const precioNeto = parsearPrecioCLP(String(formData.get('precio_neto') ?? ''))
   const exento = formData.get('exento') === 'on'
+  const stockMinimo = Math.max(0, Math.trunc(Number(String(formData.get('stock_minimo') ?? '0'))) || 0)
 
   if (sku === '') return { error: 'El SKU es obligatorio' }
   if (nombre === '') return { error: 'El nombre es obligatorio' }
@@ -63,6 +64,7 @@ export async function guardarProducto(_prev: EstadoForm, formData: FormData): Pr
     precio_neto: precioNeto,
     exento,
     categoria_id: categoria.id,
+    stock_minimo: stockMinimo,
     actualizado_en: new Date().toISOString(),
   }
 
