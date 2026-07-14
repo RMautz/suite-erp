@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
-import { formatearRut } from '@suite/core'
+import { estaVencido, formatearCLP, formatearRut } from '@suite/core'
 import { Encabezado, Insignia, Tarjeta } from '@suite/ui'
 import { obtenerEmpresaActiva } from '../lib/empresa-activa'
 
@@ -53,6 +53,15 @@ export default async function Inicio() {
   }
   const criticos = (prods ?? []).filter((p) => (totalPorProd.get(p.id) ?? 0) <= p.stock_minimo).length
 
+  const { data: saldosRows } = await supabase
+    .from('saldos_documentos')
+    .select('saldo, fecha_vencimiento')
+    .eq('empresa_id', activa.id)
+    .gt('saldo', 0)
+  const hoy = new Date().toISOString().slice(0, 10)
+  const vencidos = (saldosRows ?? []).filter((s) => estaVencido(s.fecha_vencimiento, hoy, s.saldo ?? 0))
+  const montoVencido = vencidos.reduce((s, v) => s + (v.saldo ?? 0), 0)
+
   return (
     <div>
       <Encabezado titulo={activa.razon_social}>
@@ -73,7 +82,7 @@ export default async function Inicio() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tarjeta>
           <p className="text-sm text-slate-500">Productos activos</p>
           <p className="mt-1 text-3xl font-semibold">{productos.count ?? 0}</p>
@@ -86,6 +95,13 @@ export default async function Inicio() {
           <Tarjeta>
             <p className="text-sm text-slate-500">Stock crítico</p>
             <p className="mt-1 text-3xl font-semibold">{criticos}</p>
+          </Tarjeta>
+        </Link>
+        <Link href="/cobranza?vencidas=1">
+          <Tarjeta>
+            <p className="text-sm text-slate-500">Por cobrar vencido</p>
+            <p className="mt-1 text-3xl font-semibold">{formatearCLP(montoVencido)}</p>
+            <p className="text-xs text-slate-500">{vencidos.length} documento{vencidos.length === 1 ? '' : 's'}</p>
           </Tarjeta>
         </Link>
       </div>
