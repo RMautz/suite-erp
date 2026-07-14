@@ -1,1 +1,1 @@
-export type { Database } from './types'
+export type { Database, Json } from './types'
