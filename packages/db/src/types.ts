@@ -234,6 +234,13 @@ export type Database = {
             foreignKeyName: "documentos_venta_empresa_id_documento_referencia_id_fkey"
             columns: ["empresa_id", "documento_referencia_id"]
             isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_empresa_id_documento_referencia_id_fkey"
+            columns: ["empresa_id", "documento_referencia_id"]
+            isOneToOne: false
             referencedRelation: "saldos_documentos"
             referencedColumns: ["empresa_id", "documento_id"]
           },
@@ -292,6 +299,13 @@ export type Database = {
             foreignKeyName: "documentos_venta_lineas_empresa_id_documento_id_fkey"
             columns: ["empresa_id", "documento_id"]
             isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
             referencedRelation: "saldos_documentos"
             referencedColumns: ["empresa_id", "documento_id"]
           },
@@ -308,6 +322,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "productos"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
           },
         ]
       }
@@ -518,6 +539,13 @@ export type Database = {
             referencedColumns: ["empresa_id", "id"]
           },
           {
+            foreignKeyName: "movimientos_stock_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
+          },
+          {
             foreignKeyName: "movimientos_stock_empresa_id_proveedor_id_fkey"
             columns: ["empresa_id", "proveedor_id"]
             isOneToOne: false
@@ -530,6 +558,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documentos_venta"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_referencia_documento_id_fkey"
+            columns: ["empresa_id", "referencia_documento_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
           },
           {
             foreignKeyName: "movimientos_stock_empresa_id_referencia_documento_id_fkey"
@@ -647,6 +682,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "productos"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_compra_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
           },
         ]
       }
@@ -774,6 +816,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documentos_venta"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "pagos_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
           },
           {
             foreignKeyName: "pagos_aplicaciones_empresa_id_documento_id_fkey"
@@ -1047,6 +1096,13 @@ export type Database = {
             referencedColumns: ["empresa_id", "id"]
           },
           {
+            foreignKeyName: "recepciones_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
+          },
+          {
             foreignKeyName: "recepciones_lineas_empresa_id_recepcion_id_fkey"
             columns: ["empresa_id", "recepcion_id"]
             isOneToOne: false
@@ -1099,6 +1155,30 @@ export type Database = {
       }
     }
     Views: {
+      libro_ventas: {
+        Row: {
+          documento_id: string | null
+          empresa_id: string | null
+          exento: number | null
+          fecha: string | null
+          folio: number | null
+          iva: number | null
+          neto: number | null
+          razon_social_cliente: string | null
+          rut_cliente: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saldos_documentos: {
         Row: {
           cliente_id: string | null
@@ -1159,6 +1239,52 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "productos"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
+          },
+        ]
+      }
+      valorizacion_inventario: {
+        Row: {
+          costo_unitario: number | null
+          empresa_id: string | null
+          nombre: string | null
+          producto_id: string | null
+          sku: string | null
+          stock: number | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ventas_diarias: {
+        Row: {
+          documentos: number | null
+          empresa_id: string | null
+          fecha: string | null
+          iva: number | null
+          neto: number | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
         ]
       }
