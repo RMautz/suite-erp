@@ -15,6 +15,7 @@ const NAV = [
   { href: '/ventas', etiqueta: 'Ventas' },
   { href: '/inventario', etiqueta: 'Inventario' },
   { href: '/compras', etiqueta: 'Compras' },
+  { href: '/cobranza', etiqueta: 'Cobranza' },
   { href: '/configuracion/dte', etiqueta: 'Configuración' },
 ]
 
