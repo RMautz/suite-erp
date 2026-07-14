@@ -452,6 +452,7 @@ export type Database = {
           producto_id: string
           proveedor_id: string | null
           referencia_documento_id: string | null
+          referencia_recepcion_id: string | null
           tipo: string
         }
         Insert: {
@@ -464,6 +465,7 @@ export type Database = {
           producto_id: string
           proveedor_id?: string | null
           referencia_documento_id?: string | null
+          referencia_recepcion_id?: string | null
           tipo: string
         }
         Update: {
@@ -476,6 +478,7 @@ export type Database = {
           producto_id?: string
           proveedor_id?: string | null
           referencia_documento_id?: string | null
+          referencia_recepcion_id?: string | null
           tipo?: string
         }
         Relationships: [
@@ -512,6 +515,116 @@ export type Database = {
             columns: ["empresa_id", "referencia_documento_id"]
             isOneToOne: false
             referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_recepcion_fk"
+            columns: ["empresa_id", "referencia_recepcion_id"]
+            isOneToOne: false
+            referencedRelation: "recepciones"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      ordenes_compra: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          empresa_id: string
+          estado: string
+          id: string
+          notas: string | null
+          numero: number
+          proveedor_id: string
+        }
+        Insert: {
+          actualizado_en?: string
+          creado_en?: string
+          empresa_id: string
+          estado?: string
+          id?: string
+          notas?: string | null
+          numero: number
+          proveedor_id: string
+        }
+        Update: {
+          actualizado_en?: string
+          creado_en?: string
+          empresa_id?: string
+          estado?: string
+          id?: string
+          notas?: string | null
+          numero?: number
+          proveedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordenes_compra_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_compra_empresa_id_proveedor_id_fkey"
+            columns: ["empresa_id", "proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      ordenes_compra_lineas: {
+        Row: {
+          cantidad_pedida: number
+          cantidad_recibida: number
+          costo_unitario: number
+          descripcion: string
+          empresa_id: string
+          id: string
+          orden_id: string
+          producto_id: string
+        }
+        Insert: {
+          cantidad_pedida: number
+          cantidad_recibida?: number
+          costo_unitario: number
+          descripcion: string
+          empresa_id: string
+          id?: string
+          orden_id: string
+          producto_id: string
+        }
+        Update: {
+          cantidad_pedida?: number
+          cantidad_recibida?: number
+          costo_unitario?: number
+          descripcion?: string
+          empresa_id?: string
+          id?: string
+          orden_id?: string
+          producto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordenes_compra_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_compra_lineas_empresa_id_orden_id_fkey"
+            columns: ["empresa_id", "orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_compra"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_compra_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
             referencedColumns: ["empresa_id", "id"]
           },
         ]
@@ -703,6 +816,114 @@ export type Database = {
           },
         ]
       }
+      recepciones: {
+        Row: {
+          bodega_id: string
+          creado_en: string
+          empresa_id: string
+          id: string
+          notas: string | null
+          orden_id: string
+        }
+        Insert: {
+          bodega_id: string
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          notas?: string | null
+          orden_id: string
+        }
+        Update: {
+          bodega_id?: string
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          notas?: string | null
+          orden_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recepciones_empresa_id_bodega_id_fkey"
+            columns: ["empresa_id", "bodega_id"]
+            isOneToOne: false
+            referencedRelation: "bodegas"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "recepciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recepciones_empresa_id_orden_id_fkey"
+            columns: ["empresa_id", "orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_compra"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      recepciones_lineas: {
+        Row: {
+          cantidad: number
+          costo_unitario: number
+          empresa_id: string
+          id: string
+          orden_linea_id: string
+          producto_id: string
+          recepcion_id: string
+        }
+        Insert: {
+          cantidad: number
+          costo_unitario: number
+          empresa_id: string
+          id?: string
+          orden_linea_id: string
+          producto_id: string
+          recepcion_id: string
+        }
+        Update: {
+          cantidad?: number
+          costo_unitario?: number
+          empresa_id?: string
+          id?: string
+          orden_linea_id?: string
+          producto_id?: string
+          recepcion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recepciones_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recepciones_lineas_empresa_id_orden_linea_id_fkey"
+            columns: ["empresa_id", "orden_linea_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_compra_lineas"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "recepciones_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "recepciones_lineas_empresa_id_recepcion_id_fkey"
+            columns: ["empresa_id", "recepcion_id"]
+            isOneToOne: false
+            referencedRelation: "recepciones"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       suscripciones: {
         Row: {
           creado_en: string
@@ -790,6 +1011,15 @@ export type Database = {
         }
         Returns: string
       }
+      crear_orden_compra: {
+        Args: {
+          p_empresa: string
+          p_lineas: Json
+          p_notas: string
+          p_proveedor: string
+        }
+        Returns: string
+      }
       registrar_ajuste: {
         Args: {
           p_bodega: string
@@ -811,8 +1041,28 @@ export type Database = {
         }
         Returns: string
       }
+      registrar_movimientos_documento: {
+        Args: {
+          p_documento: string
+          p_empresa: string
+          p_lineas: Json
+          p_motivo: string
+          p_signo: number
+        }
+        Returns: undefined
+      }
       registrar_organizacion: {
         Args: { p_razon_social: string; p_rut: string }
+        Returns: string
+      }
+      registrar_recepcion: {
+        Args: {
+          p_bodega: string
+          p_empresa: string
+          p_lineas: Json
+          p_notas: string
+          p_orden: string
+        }
         Returns: string
       }
       registrar_traslado: {
