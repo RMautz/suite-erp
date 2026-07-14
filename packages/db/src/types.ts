@@ -34,6 +34,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      bodegas: {
+        Row: {
+          activo: boolean
+          creado_en: string
+          direccion: string | null
+          empresa_id: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          activo?: boolean
+          creado_en?: string
+          direccion?: string | null
+          empresa_id: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          activo?: boolean
+          creado_en?: string
+          direccion?: string | null
+          empresa_id?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bodegas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categorias_producto: {
         Row: {
           creado_en: string
@@ -406,6 +441,81 @@ export type Database = {
           },
         ]
       }
+      movimientos_stock: {
+        Row: {
+          bodega_id: string
+          cantidad: number
+          creado_en: string
+          empresa_id: string
+          id: string
+          motivo: string | null
+          producto_id: string
+          proveedor_id: string | null
+          referencia_documento_id: string | null
+          tipo: string
+        }
+        Insert: {
+          bodega_id: string
+          cantidad: number
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          motivo?: string | null
+          producto_id: string
+          proveedor_id?: string | null
+          referencia_documento_id?: string | null
+          tipo: string
+        }
+        Update: {
+          bodega_id?: string
+          cantidad?: number
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          motivo?: string | null
+          producto_id?: string
+          proveedor_id?: string | null
+          referencia_documento_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_bodega_id_fkey"
+            columns: ["empresa_id", "bodega_id"]
+            isOneToOne: false
+            referencedRelation: "bodegas"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_proveedor_id_fkey"
+            columns: ["empresa_id", "proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_referencia_documento_id_fkey"
+            columns: ["empresa_id", "referencia_documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       organizaciones: {
         Row: {
           creado_en: string
@@ -488,6 +598,7 @@ export type Database = {
           nombre: string
           precio_neto: number
           sku: string
+          stock_minimo: number
           unidad: string
         }
         Insert: {
@@ -503,6 +614,7 @@ export type Database = {
           nombre: string
           precio_neto: number
           sku: string
+          stock_minimo?: number
           unidad?: string
         }
         Update: {
@@ -518,6 +630,7 @@ export type Database = {
           nombre?: string
           precio_neto?: number
           sku?: string
+          stock_minimo?: number
           unidad?: string
         }
         Relationships: [
@@ -530,6 +643,59 @@ export type Database = {
           },
           {
             foreignKeyName: "productos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proveedores: {
+        Row: {
+          activo: boolean
+          comuna: string | null
+          condicion_pago_dias: number
+          creado_en: string
+          direccion: string | null
+          email: string | null
+          empresa_id: string
+          giro: string | null
+          id: string
+          razon_social: string
+          rut: string
+          telefono: string | null
+        }
+        Insert: {
+          activo?: boolean
+          comuna?: string | null
+          condicion_pago_dias?: number
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id: string
+          giro?: string | null
+          id?: string
+          razon_social: string
+          rut: string
+          telefono?: string | null
+        }
+        Update: {
+          activo?: boolean
+          comuna?: string | null
+          condicion_pago_dias?: number
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id?: string
+          giro?: string | null
+          id?: string
+          razon_social?: string
+          rut?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proveedores_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -581,9 +747,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      stock_actual: {
+        Row: {
+          bodega_id: string | null
+          cantidad: number | null
+          empresa_id: string | null
+          producto_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_bodega_id_fkey"
+            columns: ["empresa_id", "bodega_id"]
+            isOneToOne: false
+            referencedRelation: "bodegas"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_stock_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
     }
     Functions: {
+      bodega_por_defecto: { Args: { p_empresa: string }; Returns: string }
       crear_documento_venta: {
         Args: {
           p_cliente: string
@@ -593,9 +790,40 @@ export type Database = {
         }
         Returns: string
       }
+      registrar_ajuste: {
+        Args: {
+          p_bodega: string
+          p_cantidad: number
+          p_empresa: string
+          p_motivo: string
+          p_producto: string
+        }
+        Returns: string
+      }
+      registrar_entrada: {
+        Args: {
+          p_bodega: string
+          p_cantidad: number
+          p_empresa: string
+          p_motivo: string
+          p_producto: string
+          p_proveedor: string
+        }
+        Returns: string
+      }
       registrar_organizacion: {
         Args: { p_razon_social: string; p_rut: string }
         Returns: string
+      }
+      registrar_traslado: {
+        Args: {
+          p_cantidad: number
+          p_destino: string
+          p_empresa: string
+          p_origen: string
+          p_producto: string
+        }
+        Returns: undefined
       }
       tomar_folio: {
         Args: { p_empresa: string; p_tipo: string }
