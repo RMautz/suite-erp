@@ -25,39 +25,41 @@ export default async function Inicio() {
   }
 
   const supabase = await crearClienteServidor()
-  const [{ data: organizacion }, productos, clientes] = await Promise.all([
-    supabase
-      .from('empresas')
-      .select('organizaciones (estado, trial_hasta)')
-      .eq('id', activa.id)
-      .single()
-      .then((r) => ({ data: r.data?.organizaciones ?? null })),
-    supabase
-      .from('productos')
-      .select('id', { count: 'exact', head: true })
-      .eq('empresa_id', activa.id)
-      .eq('activo', true),
-    supabase
-      .from('clientes')
-      .select('id', { count: 'exact', head: true })
-      .eq('empresa_id', activa.id)
-      .eq('activo', true),
-  ])
+  // Todas las consultas del dashboard en un solo roundtrip paralelo (eran 3 awaits
+  // secuenciales tras el Promise.all: ~100-150ms extra de TTFB en la página de aterrizaje).
+  const [{ data: organizacion }, productos, clientes, { data: prods }, { data: stockRows }, { data: saldosRows }] =
+    await Promise.all([
+      supabase
+        .from('empresas')
+        .select('organizaciones (estado, trial_hasta)')
+        .eq('id', activa.id)
+        .single()
+        .then((r) => ({ data: r.data?.organizaciones ?? null })),
+      supabase
+        .from('productos')
+        .select('id', { count: 'exact', head: true })
+        .eq('empresa_id', activa.id)
+        .eq('activo', true),
+      supabase
+        .from('clientes')
+        .select('id', { count: 'exact', head: true })
+        .eq('empresa_id', activa.id)
+        .eq('activo', true),
+      supabase.from('productos').select('id, stock_minimo').eq('empresa_id', activa.id).eq('activo', true),
+      supabase.from('stock_actual').select('producto_id, cantidad').eq('empresa_id', activa.id),
+      supabase
+        .from('saldos_documentos')
+        .select('saldo, fecha_vencimiento')
+        .eq('empresa_id', activa.id)
+        .gt('saldo', 0),
+    ])
 
-  const { data: prods } = await supabase.from('productos').select('id, stock_minimo').eq('empresa_id', activa.id).eq('activo', true)
-  const { data: stockRows } = await supabase.from('stock_actual').select('producto_id, cantidad').eq('empresa_id', activa.id)
   const totalPorProd = new Map<string, number>()
   for (const s of stockRows ?? []) {
     if (!s.producto_id) continue
     totalPorProd.set(s.producto_id, (totalPorProd.get(s.producto_id) ?? 0) + (s.cantidad ?? 0))
   }
   const criticos = (prods ?? []).filter((p) => (totalPorProd.get(p.id) ?? 0) <= p.stock_minimo).length
-
-  const { data: saldosRows } = await supabase
-    .from('saldos_documentos')
-    .select('saldo, fecha_vencimiento')
-    .eq('empresa_id', activa.id)
-    .gt('saldo', 0)
   const hoy = new Date().toISOString().slice(0, 10)
   const vencidos = (saldosRows ?? []).filter((s) => estaVencido(s.fecha_vencimiento, hoy, s.saldo ?? 0))
   const montoVencido = vencidos.reduce((s, v) => s + (v.saldo ?? 0), 0)
