@@ -54,3 +54,21 @@ export function parsearCSV(texto: string): string[][] {
   if (fila.some((c) => c.trim() !== '')) filas.push(fila)
   return filas
 }
+
+// Genera CSV compatible con Excel es-CL: BOM (escape ﻿, jamás el carácter
+// literal en el fuente), separador ';', CRLF. Celdas de TEXTO que parten con
+// = + - @ se prefijan con ' (anti inyección de fórmulas: un nombre de cliente
+// malicioso no debe ejecutar nada en el Excel del contador). Números sin comillas.
+function celdaCsv(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'number') return String(v)
+  let s = v
+  if (/^[=+\-@]/.test(s)) s = "'" + s
+  if (/[";\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"'
+  return s
+}
+
+export function filasACsv(encabezados: string[], filas: (string | number | null | undefined)[][]): string {
+  const lineas = [encabezados as (string | number | null | undefined)[], ...filas].map((f) => f.map(celdaCsv).join(';'))
+  return '﻿' + lineas.join('\r\n') + '\r\n'
+}
