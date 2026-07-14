@@ -24,7 +24,7 @@ describe('parsearCSV', () => {
     expect(parsearCSV('nombre\n"Arroz ""premium"""')).toEqual([['nombre'], ['Arroz "premium"']])
   })
   it('maneja CRLF, BOM y línea final vacía', () => {
-    expect(parsearCSV('﻿a,b\r\n1,2\r\n')).toEqual([
+    expect(parsearCSV('\uFEFFa,b\r\n1,2\r\n')).toEqual([
       ['a', 'b'],
       ['1', '2'],
     ])
@@ -37,21 +37,21 @@ describe('parsearCSV', () => {
 
 describe('filasACsv', () => {
   it('separa con ; y termina lineas en CRLF', () => {
-    expect(filasACsv(['a', 'b'], [['x', 1]])).toBe('﻿a;b\r\nx;1\r\n')
+    expect(filasACsv(['a', 'b'], [['x', 1]])).toBe('\uFEFFa;b\r\nx;1\r\n')
   })
   it('parte con BOM para que Excel detecte UTF-8', () => {
-    expect(filasACsv(['a'], []).startsWith('﻿')).toBe(true)
+    expect(filasACsv(['a'], []).startsWith('\uFEFF')).toBe(true)
   })
   it('entrecomilla celdas con ; comillas o saltos, escapando comillas', () => {
-    expect(filasACsv(['a'], [['dice "hola"; chao']])).toBe('﻿a\r\n"dice ""hola""; chao"\r\n')
+    expect(filasACsv(['a'], [['dice "hola"; chao']])).toBe('\uFEFFa\r\n"dice ""hola""; chao"\r\n')
   })
   it('protege contra inyección de fórmulas en celdas de texto', () => {
-    expect(filasACsv(['a'], [['=SUM(A1:A9)']])).toBe("﻿a\r\n'=SUM(A1:A9)\r\n")
+    expect(filasACsv(['a'], [['=SUM(A1:A9)']])).toBe("\uFEFFa\r\n'=SUM(A1:A9)\r\n")
   })
   it('los números (incluso negativos) van sin proteger ni entrecomillar', () => {
-    expect(filasACsv(['a'], [[-100000]])).toBe('﻿a\r\n-100000\r\n')
+    expect(filasACsv(['a'], [[-100000]])).toBe('\uFEFFa\r\n-100000\r\n')
   })
   it('null y undefined son celdas vacías', () => {
-    expect(filasACsv(['a', 'b'], [[null, undefined]])).toBe('﻿a;b\r\n;\r\n')
+    expect(filasACsv(['a', 'b'], [[null, undefined]])).toBe('\uFEFFa;b\r\n;\r\n')
   })
 })
