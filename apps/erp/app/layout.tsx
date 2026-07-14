@@ -13,6 +13,7 @@ const NAV = [
   { href: '/clientes', etiqueta: 'Clientes' },
   { href: '/importar', etiqueta: 'Importar' },
   { href: '/ventas', etiqueta: 'Ventas' },
+  { href: '/inventario', etiqueta: 'Inventario' },
   { href: '/configuracion/dte', etiqueta: 'Configuración' },
 ]
 
