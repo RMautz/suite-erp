@@ -6,7 +6,7 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { CODIGO_SII, type TipoDocumento } from '@suite/core'
 import { proveedorPorAmbiente, type EstadoResultado } from '@suite/dte'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
-import { credencialesEmpresa } from '../../lib/emision'
+import { credencialesEmpresa, registrarMovimientosDocumento } from '../../lib/emision'
 
 const TIPOS_EMISIBLES = ['factura', 'boleta'] as const
 
@@ -63,7 +63,7 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
     const [{ data: emp }, { data: cli }, { data: lineas }] = await Promise.all([
       admin.from('empresas').select('rut, razon_social, giro_emisor, direccion_emisor, comuna_emisor').eq('id', activa.id).single(),
       admin.from('clientes').select('rut, razon_social, giro, direccion, comuna').eq('id', doc.cliente_id).single(),
-      admin.from('documentos_venta_lineas').select('descripcion, cantidad, precio_neto, exenta').eq('documento_id', id),
+      admin.from('documentos_venta_lineas').select('producto_id, descripcion, cantidad, precio_neto, exenta').eq('documento_id', id),
     ])
 
     const proveedor = proveedorPorAmbiente(process.env.DTE_AMBIENTE ?? 'certificacion')
@@ -99,6 +99,16 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
         intentos: doc.estado === 'pendiente_envio' ? 2 : 1,
       })
       .eq('id', id)
+
+    if (estado === 'emitido') {
+      await registrarMovimientosDocumento(
+        activa.id,
+        id,
+        (lineas ?? []).map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
+        -1,
+        'Venta ' + tipo + ' folio ' + folio
+      )
+    }
   } catch (e) {
     await admin
       .from('documentos_venta')
@@ -188,6 +198,20 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
       error_emision: resultado.error,
       emitido_en: estado === 'emitido' ? new Date().toISOString() : null,
     }).eq('id', ncId)
+
+    if (estado === 'emitido') {
+      const { data: lineasRef } = await admin
+        .from('documentos_venta_lineas')
+        .select('producto_id, cantidad')
+        .eq('documento_id', refId)
+      await registrarMovimientosDocumento(
+        activa.id,
+        ncId,
+        (lineasRef ?? []).map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
+        1,
+        'Nota de crédito folio ' + (folioNc as number)
+      )
+    }
   } catch (e) {
     // No silencioso: registra el error en la NC (si se creó) para que el usuario lo vea y la
     // cola de reintentos la tome. La venta original queda intacta.
