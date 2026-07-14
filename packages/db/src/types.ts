@@ -1288,6 +1288,39 @@ export type Database = {
           },
         ]
       }
+      ventas_por_producto: {
+        Row: {
+          cantidad: number | null
+          descripcion: string | null
+          empresa_id: string | null
+          fecha: string | null
+          producto_id: string | null
+          subtotal: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
+          },
+        ]
+      }
     }
     Functions: {
       anular_pago: {

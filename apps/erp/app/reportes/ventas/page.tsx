@@ -20,29 +20,22 @@ export default async function PaginaVentasPeriodo({
   const hasta = hastaRaw >= desde ? hastaRaw : desde
   const supabase = await crearClienteServidor()
 
-  const [{ data: dias }, { data: docs }] = await Promise.all([
+  const [{ data: dias }, { data: porProductoDia }] = await Promise.all([
     supabase.from('ventas_diarias')
       .select('fecha, documentos, neto, iva, total')
       .eq('empresa_id', activa.id).gte('fecha', desde).lte('fecha', hasta).order('fecha'),
-    supabase.from('documentos_venta')
-      .select('id')
-      .eq('empresa_id', activa.id).eq('estado', 'emitido').in('tipo', ['factura', 'boleta'])
-      .gte('emitido_en', desde).lte('emitido_en', hasta + 'T23:59:59.999').limit(1000),
+    supabase.from('ventas_por_producto')
+      .select('producto_id, descripcion, cantidad, subtotal')
+      .eq('empresa_id', activa.id).gte('fecha', desde).lte('fecha', hasta),
   ])
 
-  // Top 10 productos del rango (solo ventas: NC excluidas por el filtro de tipo de arriba).
-  const ids = (docs ?? []).map((d) => d.id)
-  const { data: lineas } = ids.length
-    ? await supabase.from('documentos_venta_lineas')
-        .select('producto_id, descripcion, cantidad, subtotal')
-        .eq('empresa_id', activa.id).in('documento_id', ids)
-    : { data: [] as { producto_id: string | null; descripcion: string; cantidad: number; subtotal: number }[] }
+  // Top 10 productos del rango (solo ventas: NC excluidas por la vista agregadora).
   const porProducto = new Map<string, { descripcion: string; cantidad: number; subtotal: number }>()
-  for (const l of lineas ?? []) {
-    const key = l.producto_id ?? l.descripcion
-    const acc = porProducto.get(key) ?? { descripcion: l.descripcion, cantidad: 0, subtotal: 0 }
-    acc.cantidad += l.cantidad
-    acc.subtotal += l.subtotal
+  for (const l of porProductoDia ?? []) {
+    const key = l.producto_id ?? l.descripcion ?? ''
+    const acc = porProducto.get(key) ?? { descripcion: l.descripcion ?? '', cantidad: 0, subtotal: 0 }
+    acc.cantidad += l.cantidad ?? 0
+    acc.subtotal += l.subtotal ?? 0
     porProducto.set(key, acc)
   }
   const top = [...porProducto.values()].sort((a, b) => b.subtotal - a.subtotal).slice(0, 10)

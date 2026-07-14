@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -58,6 +58,9 @@ values ('dddddddd-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-aaaaaaa
        ('dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'factura', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', null, 'borrador', 10000, 0, 1900, 11900, null),
        ('dddddddd-0000-0000-0000-000000000005', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'nota_venta', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa', null, 'borrador', 10000, 0, 1900, 11900, null);
 
+insert into public.documentos_venta_lineas (empresa_id, documento_id, producto_id, descripcion, cantidad, precio_neto, exenta, subtotal)
+values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'dddddddd-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 'Producto Uno', 2, 42017, false, 84034);
+
 -- ===== Ana (duena A) =====
 set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
@@ -86,14 +89,18 @@ select is( (select valor from valorizacion_inventario where sku = 'P1'), 15000, 
 -- 8) P2 sin recepciones: costo NULL.
 select ok( (select costo_unitario is null from valorizacion_inventario where sku = 'P2'), 'sin recepciones el costo es NULL' );
 
--- 9) Beto (org B) no ve nada en las 3 vistas.
+-- 9) ventas_por_producto agrega las líneas de documentos emitidos.
+select is( (select subtotal from ventas_por_producto where producto_id = '99999999-0000-0000-0000-000000000001'),
+  84034, 'ventas_por_producto agrega las líneas de documentos emitidos' );
+
+-- 10) Beto (org B) no ve nada en las 4 vistas.
 set local request.jwt.claims to '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 select is(
-  (select count(*) from libro_ventas) + (select count(*) from ventas_diarias) + (select count(*) from valorizacion_inventario),
+  (select count(*) from libro_ventas) + (select count(*) from ventas_diarias) + (select count(*) from valorizacion_inventario) + (select count(*) from ventas_por_producto),
   0::bigint, 'Beto no ve reportes de la empresa A'
 );
 
--- 10) Anónimo denegado.
+-- 11) Anónimo denegado.
 set local request.jwt.claims to '{"role": "anon"}';
 set local role anon;
 select throws_ok(
