@@ -2,6 +2,7 @@ import 'server-only'
 import { clienteAdmin } from '@suite/auth/admin'
 import { descifrar, proveedorPorAmbiente, type CredencialesDTE, type SolicitudEmision } from '@suite/dte'
 import { CODIGO_SII, type TipoDocumento } from '@suite/core'
+import type { Json } from '@suite/db'
 
 function clave(): string {
   const k = process.env.DTE_ENCRYPTION_KEY
@@ -41,8 +42,10 @@ export async function credencialesEmpresa(empresaId: string, tipo: TipoDocumento
 }
 
 // Registra movimientos de stock para un documento emitido. signo = -1 descuenta (venta),
-// signo = +1 restituye (nota de crédito). Idempotente: no duplica si ya hay movimientos
-// para esa referencia. Nunca lanza — el stock se puede reconciliar con un ajuste.
+// signo = +1 restituye (nota de crédito). Delegado a la RPC registrar_movimientos_documento
+// (solo service_role): advisory lock por documento — el check de idempotencia y los inserts
+// corren serializados en la BD, cerrando el TOCTOU de reintentos simultáneos (review Plan 4).
+// Nunca lanza — el stock se puede reconciliar con un ajuste.
 export async function registrarMovimientosDocumento(
   empresaId: string,
   documentoId: string,
@@ -52,49 +55,16 @@ export async function registrarMovimientosDocumento(
 ): Promise<void> {
   try {
     const admin = clienteAdmin()
-    const { data: previos } = await admin
-      .from('movimientos_stock')
-      .select('id')
-      .eq('empresa_id', empresaId)
-      .eq('referencia_documento_id', documentoId)
-      .limit(1)
-    if (previos && previos.length > 0) return // ya registrados (reintento)
-
-    // Resuelve la bodega por defecto directamente vía admin (sin la RPC bodega_por_defecto:
-    // esta valida pertenencia vía auth.uid(), que es null bajo service_role).
-    let bodegaId: string | null = null
-    const { data: b } = await admin
-      .from('bodegas')
-      .select('id')
-      .eq('empresa_id', empresaId)
-      .eq('activo', true)
-      .order('creado_en')
-      .limit(1)
-      .maybeSingle()
-    bodegaId = b?.id ?? null
-    if (!bodegaId) {
-      const { data: nueva } = await admin
-        .from('bodegas')
-        .insert({ empresa_id: empresaId, nombre: 'Bodega Principal' })
-        .select('id')
-        .single()
-      bodegaId = nueva?.id ?? null
-    }
-    if (!bodegaId) return
-    const bodega = bodegaId // const: preserva la narrow a `string` dentro del closure del .map()
-
-    const filas = lineas
-      .filter((l): l is { producto_id: string; cantidad: number } => l.producto_id !== null)
-      .map((l) => ({
-        empresa_id: empresaId,
-        producto_id: l.producto_id,
-        bodega_id: bodega,
-        tipo: signo < 0 ? 'salida' : 'entrada',
-        cantidad: signo * Math.abs(l.cantidad),
-        motivo,
-        referencia_documento_id: documentoId,
-      }))
-    if (filas.length > 0) await admin.from('movimientos_stock').insert(filas)
+    const { error } = await admin.rpc('registrar_movimientos_documento', {
+      p_empresa: empresaId,
+      p_documento: documentoId,
+      p_lineas: lineas
+        .filter((l): l is { producto_id: string; cantidad: number } => l.producto_id !== null)
+        .map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad })) as unknown as Json,
+      p_signo: signo,
+      p_motivo: motivo,
+    })
+    if (error) console.error('registrarMovimientosDocumento:', error.message)
   } catch (e) {
     console.error('registrarMovimientosDocumento:', e)
   }
