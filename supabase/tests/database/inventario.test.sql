@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -56,28 +56,34 @@ select is(
 -- 4) El libro es inmutable: no se puede update (ni siquiera la dueña).
 select throws_ok(
   $$update movimientos_stock set cantidad = 999 where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'$$,
-  '42501', null, 'los movimientos de stock son inmutables (update denegado)'
+  '42501', 'permission denied for table movimientos_stock', 'los movimientos de stock son inmutables (update denegado)'
 );
 
--- 5) bodega_por_defecto devuelve la bodega existente.
+-- 5) El libro es inmutable: tampoco se puede delete (las correcciones son movimientos inversos).
+select throws_ok(
+  $$delete from movimientos_stock where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'$$,
+  '42501', 'permission denied for table movimientos_stock', 'los movimientos de stock son inmutables (delete denegado)'
+);
+
+-- 6) bodega_por_defecto devuelve la bodega existente.
 select is(
   (select bodega_por_defecto('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa')),
   'bbbb0000-0000-0000-0000-aaaaaaaaaaaa'::uuid,
   'bodega_por_defecto devuelve la bodega activa existente'
 );
 
--- 6) Beto (org B) no ve el stock de A.
+-- 7) Beto (org B) no ve el stock de A.
 set local request.jwt.claims to '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 select is( (select count(*) from stock_actual), 0::bigint, 'Beto no ve el stock de la empresa A' );
 
--- 7) Beto no puede registrar entradas en A (cross-tenant).
+-- 8) Beto no puede registrar entradas en A (cross-tenant).
 select throws_ok(
   $$select registrar_entrada('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '99999999-0000-0000-0000-aaaaaaaaaaaa', 'bbbb0000-0000-0000-0000-aaaaaaaaaaaa', 1, null, 'x')$$,
   'P0001', 'Tu rol no permite registrar movimientos de stock',
   'Beto no puede registrar movimientos en la empresa A'
 );
 
--- 8) Ces (contador de A) no puede registrar movimientos (rol sin permiso).
+-- 9) Ces (contador de A) no puede registrar movimientos (rol sin permiso).
 set local request.jwt.claims to '{"sub": "55555555-5555-5555-5555-555555555555", "role": "authenticated"}';
 select throws_ok(
   $$select registrar_entrada('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '99999999-0000-0000-0000-aaaaaaaaaaaa', 'bbbb0000-0000-0000-0000-aaaaaaaaaaaa', 1, null, 'x')$$,
@@ -85,7 +91,7 @@ select throws_ok(
   'el contador no puede registrar movimientos'
 );
 
--- 9) Anónimo denegado de plano.
+-- 10) Anónimo denegado de plano.
 set local request.jwt.claims to '{"role": "anon"}';
 set local role anon;
 select throws_ok(
