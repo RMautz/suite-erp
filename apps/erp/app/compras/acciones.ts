@@ -49,3 +49,35 @@ export async function crearOrdenCompra(_prev: EstadoForm, formData: FormData): P
   revalidatePath('/compras')
   redirect('/compras/' + ordenId)
 }
+
+// Transiciones simples por update directo (RLS: dueno/admin; grant solo columnas estado/actualizado_en).
+// El guard .eq('estado', ...) + .select('id') convierte 0 filas de RLS/estado en no-op explícito.
+export async function marcarEnviada(formData: FormData): Promise<void> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return
+  const id = String(formData.get('id') ?? '')
+  const supabase = await crearClienteServidor()
+  const { data, error } = await supabase
+    .from('ordenes_compra')
+    .update({ estado: 'enviada', actualizado_en: new Date().toISOString() })
+    .eq('id', id).eq('empresa_id', activa.id).eq('estado', 'borrador')
+    .select('id')
+  if (error || (data ?? []).length === 0) { console.error('marcarEnviada:', error ?? 'sin filas'); return }
+  revalidatePath('/compras')
+  revalidatePath('/compras/' + id)
+}
+
+export async function cancelarOrden(formData: FormData): Promise<void> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return
+  const id = String(formData.get('id') ?? '')
+  const supabase = await crearClienteServidor()
+  const { data, error } = await supabase
+    .from('ordenes_compra')
+    .update({ estado: 'cancelada', actualizado_en: new Date().toISOString() })
+    .eq('id', id).eq('empresa_id', activa.id).in('estado', ['borrador', 'enviada'])
+    .select('id')
+  if (error || (data ?? []).length === 0) { console.error('cancelarOrden:', error ?? 'sin filas'); return }
+  revalidatePath('/compras')
+  revalidatePath('/compras/' + id)
+}
