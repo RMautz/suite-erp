@@ -231,6 +231,13 @@ export type Database = {
             referencedColumns: ["empresa_id", "id"]
           },
           {
+            foreignKeyName: "documentos_venta_empresa_id_documento_referencia_id_fkey"
+            columns: ["empresa_id", "documento_referencia_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
             foreignKeyName: "documentos_venta_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -280,6 +287,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documentos_venta"
             referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_lineas_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
           },
           {
             foreignKeyName: "documentos_venta_lineas_empresa_id_fkey"
@@ -518,6 +532,13 @@ export type Database = {
             referencedColumns: ["empresa_id", "id"]
           },
           {
+            foreignKeyName: "movimientos_stock_empresa_id_referencia_documento_id_fkey"
+            columns: ["empresa_id", "referencia_documento_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
             foreignKeyName: "movimientos_stock_recepcion_fk"
             columns: ["empresa_id", "referencia_recepcion_id"]
             isOneToOne: false
@@ -664,6 +685,116 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "planes"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagos: {
+        Row: {
+          cliente_id: string
+          creado_en: string
+          empresa_id: string
+          estado: string
+          fecha: string
+          id: string
+          metodo: string
+          monto: number
+          motivo_anulacion: string | null
+          notas: string | null
+          referencia: string | null
+        }
+        Insert: {
+          cliente_id: string
+          creado_en?: string
+          empresa_id: string
+          estado?: string
+          fecha?: string
+          id?: string
+          metodo: string
+          monto: number
+          motivo_anulacion?: string | null
+          notas?: string | null
+          referencia?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          creado_en?: string
+          empresa_id?: string
+          estado?: string
+          fecha?: string
+          id?: string
+          metodo?: string
+          monto?: number
+          motivo_anulacion?: string | null
+          notas?: string | null
+          referencia?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "pagos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagos_aplicaciones: {
+        Row: {
+          documento_id: string
+          empresa_id: string
+          id: string
+          monto: number
+          pago_id: string
+        }
+        Insert: {
+          documento_id: string
+          empresa_id: string
+          id?: string
+          monto: number
+          pago_id: string
+        }
+        Update: {
+          documento_id?: string
+          empresa_id?: string
+          id?: string
+          monto?: number
+          pago_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "pagos_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "pagos_aplicaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_aplicaciones_empresa_id_pago_id_fkey"
+            columns: ["empresa_id", "pago_id"]
+            isOneToOne: false
+            referencedRelation: "pagos"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -968,6 +1099,38 @@ export type Database = {
       }
     }
     Views: {
+      saldos_documentos: {
+        Row: {
+          cliente_id: string | null
+          cliente_razon_social: string | null
+          documento_id: string | null
+          emitido_en: string | null
+          empresa_id: string | null
+          fecha_vencimiento: string | null
+          folio: number | null
+          notas_credito: number | null
+          pagado: number | null
+          saldo: number | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_venta_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_venta_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_actual: {
         Row: {
           bodega_id: string | null
@@ -1001,6 +1164,10 @@ export type Database = {
       }
     }
     Functions: {
+      anular_pago: {
+        Args: { p_empresa: string; p_motivo: string; p_pago: string }
+        Returns: undefined
+      }
       bodega_por_defecto: { Args: { p_empresa: string }; Returns: string }
       crear_documento_venta: {
         Args: {
@@ -1053,6 +1220,19 @@ export type Database = {
       }
       registrar_organizacion: {
         Args: { p_razon_social: string; p_rut: string }
+        Returns: string
+      }
+      registrar_pago: {
+        Args: {
+          p_aplicaciones: Json
+          p_cliente: string
+          p_empresa: string
+          p_fecha: string
+          p_metodo: string
+          p_monto: number
+          p_notas: string
+          p_referencia: string
+        }
         Returns: string
       }
       registrar_recepcion: {
