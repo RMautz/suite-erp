@@ -38,12 +38,31 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
   if (doc.tipo !== 'nota_venta' && doc.tipo !== tipo) return
 
   const admin = clienteAdmin()
+  // Fuera del try: el catch decide con folioPersistido si revierte a 'borrador' (nada
+  // persistido, nada que reintentar) o deja 'pendiente_envio' (folio YA escrito en la fila).
+  let folio = doc.folio
+  let folioPersistido = folio !== null // reintento: la fila ya traía folio persistido
   try {
+    // Claim atómico ANTES de tomar folio: dos clics simultáneos sobre el mismo
+    // borrador → solo uno pasa; el perdedor sale SIN consumir folio. Un doc ya
+    // en pendiente_envio (reintento) no se re-clama: su folio ya está reservado
+    // o se reserva más abajo con el guard .is('folio', null).
+    if (doc.estado === 'borrador') {
+      const { data: reclamado, error: eClaim } = await admin
+        .from('documentos_venta')
+        .update({ estado: 'pendiente_envio' })
+        .eq('id', id)
+        .eq('empresa_id', activa.id)
+        .eq('estado', 'borrador')
+        .select('id')
+      if (eClaim) throw new Error('No se pudo iniciar la emisión; reintenta')
+      if ((reclamado ?? []).length === 0) return // otra emisión concurrente ya tomó el documento
+    }
+
     const cred = await credencialesEmpresa(activa.id, tipo)
 
     // Reserva de folio SOLO si aún no tiene (idempotencia ante reintento).
     // tomar_folio en contexto de USUARIO (valida pertenencia por auth.uid()).
-    let folio = doc.folio
     if (folio === null) {
       const { data: nuevo, error: eFolio } = await supabase.rpc('tomar_folio', { p_empresa: activa.id, p_tipo: tipo })
       if (eFolio || nuevo === null) throw new Error(eFolio?.message ?? 'No hay folios disponibles')
@@ -54,10 +73,14 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
         .from('documentos_venta')
         .update({ tipo, folio, estado: 'pendiente_envio' })
         .eq('id', id)
+        .eq('empresa_id', activa.id)
         .is('folio', null)
         .select('id')
       if (eUpd) throw new Error('No se pudo reservar el folio; reintenta')
       if ((reservado ?? []).length === 0) return // otra emisión concurrente ya reservó el folio
+      // Folio PERSISTIDO recién aquí: si este write hubiera fallado, el folio ya tomado
+      // se pierde como gap (misma familia que el gap ya aceptado de un DTE rechazado por el SII).
+      folioPersistido = true
     }
 
     const [{ data: emp }, { data: cli }, { data: lineas }] = await Promise.all([
@@ -99,6 +122,7 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
         intentos: doc.estado === 'pendiente_envio' ? 2 : 1,
       })
       .eq('id', id)
+      .eq('empresa_id', activa.id)
 
     if (estado === 'emitido') {
       await registrarMovimientosDocumento(
@@ -110,10 +134,21 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
       )
     }
   } catch (e) {
+    // La decisión es sobre folio PERSISTIDO, no sobre la variable local `folio`: si se
+    // tomó un folio pero el UPDATE que lo escribe falló, `folio` ya no es null pero la
+    // fila jamás lo guardó — ese folio se pierde como gap (misma familia que el gap ya
+    // aceptado de un DTE rechazado por el SII). Sin folio persistido el documento vuelve
+    // a 'borrador' (un certificado o CAF faltante ya no lo deja atascado en pendiente_envio);
+    // con folio persistido queda 'pendiente_envio': el reintento reutiliza el MISMO folio
+    // (guard .is('folio', null) más arriba).
     await admin
       .from('documentos_venta')
-      .update({ estado: 'pendiente_envio', error_emision: e instanceof Error ? e.message : 'Error de emisión' })
+      .update({
+        estado: folioPersistido ? 'pendiente_envio' : 'borrador',
+        error_emision: e instanceof Error ? e.message : 'Error de emisión',
+      })
       .eq('id', id)
+      .eq('empresa_id', activa.id)
   }
 
   revalidatePath('/ventas')

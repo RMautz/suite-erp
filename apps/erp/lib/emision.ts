@@ -53,14 +53,20 @@ export async function registrarMovimientosDocumento(
   signo: 1 | -1,
   motivo: string
 ): Promise<void> {
+  // Sin líneas con producto (p. ej. factura nacida de una proforma de transporte:
+  // todas sus líneas llevan producto_id = null) no hay stock que mover, y llamar
+  // la RPC igual crearía la bodega 'Principal' fantasma en empresas que jamás
+  // han usado inventario. Early-return antes de tocar la BD.
+  const conProducto = lineas
+    .filter((l): l is { producto_id: string; cantidad: number } => l.producto_id !== null)
+    .map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad }))
+  if (conProducto.length === 0) return
   try {
     const admin = clienteAdmin()
     const { error } = await admin.rpc('registrar_movimientos_documento', {
       p_empresa: empresaId,
       p_documento: documentoId,
-      p_lineas: lineas
-        .filter((l): l is { producto_id: string; cantidad: number } => l.producto_id !== null)
-        .map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad })) as unknown as Json,
+      p_lineas: conProducto as unknown as Json,
       p_signo: signo,
       p_motivo: motivo,
     })
