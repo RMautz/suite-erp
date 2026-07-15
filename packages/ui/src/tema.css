@@ -1,14 +1,14 @@
 @theme {
-  /* Marca: azul petróleo profesional */
-  --color-marca-50: #f0f7fa;
-  --color-marca-100: #dcebf2;
-  --color-marca-200: #bcd8e6;
-  --color-marca-300: #8dbcd3;
-  --color-marca-400: #5698ba;
-  --color-marca-500: #3b7ea1;
-  --color-marca-600: #2d6485;
-  --color-marca-700: #27546e;
-  --color-marca-800: #24485d;
-  --color-marca-900: #223e4f;
-  --color-marca-950: #16293a;
+  /* Marca: azul eléctrico vivo (escala sky de Tailwind; antes azul petróleo) */
+  --color-marca-50: #f0f9ff;
+  --color-marca-100: #e0f2fe;
+  --color-marca-200: #bae6fd;
+  --color-marca-300: #7dd3fc;
+  --color-marca-400: #38bdf8;
+  --color-marca-500: #0ea5e9;
+  --color-marca-600: #0284c7;
+  --color-marca-700: #0369a1;
+  --color-marca-800: #075985;
+  --color-marca-900: #0c4a6e;
+  --color-marca-950: #082f49;
 }
