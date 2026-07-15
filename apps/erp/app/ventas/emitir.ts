@@ -141,7 +141,7 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
     // a 'borrador' (un certificado o CAF faltante ya no lo deja atascado en pendiente_envio);
     // con folio persistido queda 'pendiente_envio': el reintento reutiliza el MISMO folio
     // (guard .is('folio', null) más arriba).
-    await admin
+    const revertir = admin
       .from('documentos_venta')
       .update({
         estado: folioPersistido ? 'pendiente_envio' : 'borrador',
@@ -149,6 +149,11 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
       })
       .eq('id', id)
       .eq('empresa_id', activa.id)
+    // El revert a 'borrador' solo aplica si la fila sigue SIN folio: una invocación
+    // concurrente que sí emitió (folio persistido) no debe ser pisada — sin este guard,
+    // un doc emitido volvería a verse como borrador y un re-clic re-emitiría el MISMO folio.
+    if (!folioPersistido) revertir.is('folio', null)
+    await revertir
   }
 
   revalidatePath('/ventas')
