@@ -151,6 +151,82 @@ export type Database = {
           },
         ]
       }
+      documentos_compra: {
+        Row: {
+          creado_en: string
+          empresa_id: string
+          estado: string
+          exento: number
+          fecha_emision: string
+          folio: number
+          id: string
+          iva: number
+          motivo_anulacion: string | null
+          neto: number
+          notas: string | null
+          orden_id: string | null
+          proveedor_id: string
+          tipo: string
+          total: number
+        }
+        Insert: {
+          creado_en?: string
+          empresa_id: string
+          estado?: string
+          exento?: number
+          fecha_emision: string
+          folio: number
+          id?: string
+          iva?: number
+          motivo_anulacion?: string | null
+          neto?: number
+          notas?: string | null
+          orden_id?: string | null
+          proveedor_id: string
+          tipo: string
+          total: number
+        }
+        Update: {
+          creado_en?: string
+          empresa_id?: string
+          estado?: string
+          exento?: number
+          fecha_emision?: string
+          folio?: number
+          id?: string
+          iva?: number
+          motivo_anulacion?: string | null
+          neto?: number
+          notas?: string | null
+          orden_id?: string | null
+          proveedor_id?: string
+          tipo?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_compra_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_compra_empresa_id_orden_id_fkey"
+            columns: ["empresa_id", "orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_compra"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "documentos_compra_empresa_id_proveedor_id_fkey"
+            columns: ["empresa_id", "proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       documentos_venta: {
         Row: {
           cliente_id: string
@@ -847,6 +923,123 @@ export type Database = {
           },
         ]
       }
+      pagos_proveedor: {
+        Row: {
+          creado_en: string
+          empresa_id: string
+          estado: string
+          fecha: string
+          id: string
+          metodo: string
+          monto: number
+          motivo_anulacion: string | null
+          notas: string | null
+          proveedor_id: string
+          referencia: string | null
+        }
+        Insert: {
+          creado_en?: string
+          empresa_id: string
+          estado?: string
+          fecha?: string
+          id?: string
+          metodo: string
+          monto: number
+          motivo_anulacion?: string | null
+          notas?: string | null
+          proveedor_id: string
+          referencia?: string | null
+        }
+        Update: {
+          creado_en?: string
+          empresa_id?: string
+          estado?: string
+          fecha?: string
+          id?: string
+          metodo?: string
+          monto?: number
+          motivo_anulacion?: string | null
+          notas?: string | null
+          proveedor_id?: string
+          referencia?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_proveedor_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_proveedor_empresa_id_proveedor_id_fkey"
+            columns: ["empresa_id", "proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      pagos_proveedor_aplicaciones: {
+        Row: {
+          documento_id: string
+          empresa_id: string
+          id: string
+          monto: number
+          pago_id: string
+        }
+        Insert: {
+          documento_id: string
+          empresa_id: string
+          id?: string
+          monto: number
+          pago_id: string
+        }
+        Update: {
+          documento_id?: string
+          empresa_id?: string
+          id?: string
+          monto?: number
+          pago_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_proveedor_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_compra"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "pagos_proveedor_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "libro_compras"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "pagos_proveedor_aplicaciones_empresa_id_documento_id_fkey"
+            columns: ["empresa_id", "documento_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_compras"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "pagos_proveedor_aplicaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_proveedor_aplicaciones_empresa_id_pago_id_fkey"
+            columns: ["empresa_id", "pago_id"]
+            isOneToOne: false
+            referencedRelation: "pagos_proveedor"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       planes: {
         Row: {
           activo: boolean
@@ -1155,6 +1348,30 @@ export type Database = {
       }
     }
     Views: {
+      libro_compras: {
+        Row: {
+          documento_id: string | null
+          empresa_id: string | null
+          exento: number | null
+          fecha: string | null
+          folio: number | null
+          iva: number | null
+          neto: number | null
+          razon_social_proveedor: string | null
+          rut_proveedor: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_compra_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       libro_ventas: {
         Row: {
           documento_id: string | null
@@ -1176,6 +1393,37 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      saldos_compras: {
+        Row: {
+          documento_id: string | null
+          empresa_id: string | null
+          fecha_emision: string | null
+          fecha_vencimiento: string | null
+          folio: number | null
+          pagado: number | null
+          proveedor_id: string | null
+          proveedor_razon_social: string | null
+          saldo: number | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_compra_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_compra_empresa_id_proveedor_id_fkey"
+            columns: ["empresa_id", "proveedor_id"]
+            isOneToOne: false
+            referencedRelation: "proveedores"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -1323,7 +1571,15 @@ export type Database = {
       }
     }
     Functions: {
+      anular_documento_compra: {
+        Args: { p_documento: string; p_empresa: string; p_motivo: string }
+        Returns: undefined
+      }
       anular_pago: {
+        Args: { p_empresa: string; p_motivo: string; p_pago: string }
+        Returns: undefined
+      }
+      anular_pago_proveedor: {
         Args: { p_empresa: string; p_motivo: string; p_pago: string }
         Returns: undefined
       }
@@ -1390,6 +1646,19 @@ export type Database = {
           p_metodo: string
           p_monto: number
           p_notas: string
+          p_referencia: string
+        }
+        Returns: string
+      }
+      registrar_pago_proveedor: {
+        Args: {
+          p_aplicaciones: Json
+          p_empresa: string
+          p_fecha: string
+          p_metodo: string
+          p_monto: number
+          p_notas: string
+          p_proveedor: string
           p_referencia: string
         }
         Returns: string
