@@ -151,6 +151,44 @@ export type Database = {
           },
         ]
       }
+      conductores: {
+        Row: {
+          activo: boolean
+          creado_en: string
+          empresa_id: string
+          id: string
+          nombre: string
+          rut: string
+          telefono: string | null
+        }
+        Insert: {
+          activo?: boolean
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          nombre: string
+          rut: string
+          telefono?: string | null
+        }
+        Update: {
+          activo?: boolean
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          nombre?: string
+          rut?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conductores_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cotizaciones: {
         Row: {
           cliente_id: string
@@ -300,6 +338,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "valorizacion_inventario"
             referencedColumns: ["empresa_id", "producto_id"]
+          },
+        ]
+      }
+      destinos: {
+        Row: {
+          activo: boolean
+          creado_en: string
+          empresa_id: string
+          id: string
+          nombre: string
+          tarifa_kg: number
+        }
+        Insert: {
+          activo?: boolean
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          nombre: string
+          tarifa_kg: number
+        }
+        Update: {
+          activo?: boolean
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          nombre?: string
+          tarifa_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "destinos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -570,9 +643,11 @@ export type Database = {
           direccion: string | null
           direccion_emisor: string | null
           dte_api_key_cifrada: string | null
+          factor_volumetrico: number
           giro: string | null
           giro_emisor: string | null
           id: string
+          modulo_transporte: boolean
           organizacion_id: string
           razon_social: string
           resolucion_sii_fecha: string | null
@@ -588,9 +663,11 @@ export type Database = {
           direccion?: string | null
           direccion_emisor?: string | null
           dte_api_key_cifrada?: string | null
+          factor_volumetrico?: number
           giro?: string | null
           giro_emisor?: string | null
           id?: string
+          modulo_transporte?: boolean
           organizacion_id: string
           razon_social: string
           resolucion_sii_fecha?: string | null
@@ -606,9 +683,11 @@ export type Database = {
           direccion?: string | null
           direccion_emisor?: string | null
           dte_api_key_cifrada?: string | null
+          factor_volumetrico?: number
           giro?: string | null
           giro_emisor?: string | null
           id?: string
+          modulo_transporte?: boolean
           organizacion_id?: string
           razon_social?: string
           resolucion_sii_fecha?: string | null
@@ -917,6 +996,142 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "valorizacion_inventario"
             referencedColumns: ["empresa_id", "producto_id"]
+          },
+        ]
+      }
+      ordenes_entrega: {
+        Row: {
+          bultos: number
+          cliente_id: string
+          conductor_id: string | null
+          creado_en: string
+          destino_id: string
+          docum: string | null
+          documento_venta_id: string | null
+          empresa_id: string
+          estado: string
+          fecha_ingreso: string
+          id: string
+          kilo_afecto: number
+          kilos: number
+          m3: number | null
+          motivo_anulacion: string | null
+          neto: number
+          notas: string | null
+          numero: number
+          oc_cliente: string | null
+          proforma_id: string | null
+          vehiculo_id: string | null
+        }
+        Insert: {
+          bultos: number
+          cliente_id: string
+          conductor_id?: string | null
+          creado_en?: string
+          destino_id: string
+          docum?: string | null
+          documento_venta_id?: string | null
+          empresa_id: string
+          estado?: string
+          fecha_ingreso: string
+          id?: string
+          kilo_afecto: number
+          kilos: number
+          m3?: number | null
+          motivo_anulacion?: string | null
+          neto: number
+          notas?: string | null
+          numero: number
+          oc_cliente?: string | null
+          proforma_id?: string | null
+          vehiculo_id?: string | null
+        }
+        Update: {
+          bultos?: number
+          cliente_id?: string
+          conductor_id?: string | null
+          creado_en?: string
+          destino_id?: string
+          docum?: string | null
+          documento_venta_id?: string | null
+          empresa_id?: string
+          estado?: string
+          fecha_ingreso?: string
+          id?: string
+          kilo_afecto?: number
+          kilos?: number
+          m3?: number | null
+          motivo_anulacion?: string | null
+          neto?: number
+          notas?: string | null
+          numero?: number
+          oc_cliente?: string | null
+          proforma_id?: string | null
+          vehiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_conductor_id_fkey"
+            columns: ["empresa_id", "conductor_id"]
+            isOneToOne: false
+            referencedRelation: "conductores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_destino_id_fkey"
+            columns: ["empresa_id", "destino_id"]
+            isOneToOne: false
+            referencedRelation: "destinos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_proforma_id_fkey"
+            columns: ["empresa_id", "proforma_id"]
+            isOneToOne: false
+            referencedRelation: "proformas"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "ordenes_entrega_empresa_id_vehiculo_id_fkey"
+            columns: ["empresa_id", "vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehiculos"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -1288,6 +1503,90 @@ export type Database = {
           },
         ]
       }
+      proformas: {
+        Row: {
+          cliente_id: string
+          creado_en: string
+          documento_venta_id: string | null
+          empresa_id: string
+          estado: string
+          fecha: string
+          id: string
+          iva: number
+          motivo_rechazo: string | null
+          neto: number
+          notas: string | null
+          numero: number
+          total: number
+        }
+        Insert: {
+          cliente_id: string
+          creado_en?: string
+          documento_venta_id?: string | null
+          empresa_id: string
+          estado?: string
+          fecha?: string
+          id?: string
+          iva?: number
+          motivo_rechazo?: string | null
+          neto?: number
+          notas?: string | null
+          numero: number
+          total?: number
+        }
+        Update: {
+          cliente_id?: string
+          creado_en?: string
+          documento_venta_id?: string | null
+          empresa_id?: string
+          estado?: string
+          fecha?: string
+          id?: string
+          iva?: number
+          motivo_rechazo?: string | null
+          neto?: number
+          notas?: string | null
+          numero?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proformas_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "proformas_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "proformas_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "proformas_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "proformas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proveedores: {
         Row: {
           activo: boolean
@@ -1494,6 +1793,44 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehiculos: {
+        Row: {
+          activo: boolean
+          capacidad_kg: number | null
+          creado_en: string
+          descripcion: string | null
+          empresa_id: string
+          id: string
+          patente: string
+        }
+        Insert: {
+          activo?: boolean
+          capacidad_kg?: number | null
+          creado_en?: string
+          descripcion?: string | null
+          empresa_id: string
+          id?: string
+          patente: string
+        }
+        Update: {
+          activo?: boolean
+          capacidad_kg?: number | null
+          creado_en?: string
+          descripcion?: string | null
+          empresa_id?: string
+          id?: string
+          patente?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
@@ -1727,12 +2064,29 @@ export type Database = {
         Args: { p_documento: string; p_empresa: string; p_motivo: string }
         Returns: undefined
       }
+      anular_estado_pago: {
+        Args: { p_documento: string; p_empresa: string }
+        Returns: undefined
+      }
+      anular_orden_entrega: {
+        Args: { p_empresa: string; p_motivo: string; p_orden: string }
+        Returns: undefined
+      }
       anular_pago: {
         Args: { p_empresa: string; p_motivo: string; p_pago: string }
         Returns: undefined
       }
       anular_pago_proveedor: {
         Args: { p_empresa: string; p_motivo: string; p_pago: string }
+        Returns: undefined
+      }
+      asignar_despacho: {
+        Args: {
+          p_conductor: string
+          p_empresa: string
+          p_orden: string
+          p_vehiculo: string
+        }
         Returns: undefined
       }
       bodega_por_defecto: { Args: { p_empresa: string }; Returns: string }
@@ -1742,6 +2096,15 @@ export type Database = {
           p_empresa: string
           p_estado: string
           p_motivo?: string
+        }
+        Returns: undefined
+      }
+      cambiar_estado_proforma: {
+        Args: {
+          p_empresa: string
+          p_estado: string
+          p_motivo?: string
+          p_proforma: string
         }
         Returns: undefined
       }
@@ -1775,6 +2138,37 @@ export type Database = {
           p_notas: string
           p_proveedor: string
         }
+        Returns: string
+      }
+      crear_orden_entrega: {
+        Args: {
+          p_bultos: number
+          p_cliente: string
+          p_conductor: string
+          p_destino: string
+          p_docum: string
+          p_empresa: string
+          p_fecha: string
+          p_kilos: number
+          p_m3: number
+          p_neto: number
+          p_notas: string
+          p_oc: string
+          p_vehiculo: string
+        }
+        Returns: string
+      }
+      crear_proforma: {
+        Args: {
+          p_cliente: string
+          p_empresa: string
+          p_notas: string
+          p_ordenes: string[]
+        }
+        Returns: string
+      }
+      facturar_proforma: {
+        Args: { p_empresa: string; p_proforma: string }
         Returns: string
       }
       registrar_ajuste: {
