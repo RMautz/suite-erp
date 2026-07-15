@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { BarraLateral } from '@suite/ui'
 import './globals.css'
 import { cambiarEmpresaActiva } from './acciones'
+import { BotonCerrarSesion } from '../componentes/boton-cerrar-sesion'
 import { SelectorEmpresa } from '../componentes/selector-empresa'
 import { obtenerEmpresaActiva } from '../lib/empresa-activa'
 
@@ -33,9 +34,10 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
               titulo="Suite ERP"
               items={NAV}
               pie={
-                activa && (
-                  <SelectorEmpresa empresas={empresas} activaId={activa.id} accion={cambiarEmpresaActiva} />
-                )
+                <div className="grid gap-2">
+                  {activa && <SelectorEmpresa empresas={empresas} activaId={activa.id} accion={cambiarEmpresaActiva} />}
+                  <BotonCerrarSesion />
+                </div>
               }
             />
           </div>

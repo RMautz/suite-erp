@@ -72,6 +72,7 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
       .single()
     if (error) {
       if (error.code === '42501') return { error: 'Tu rol no permite importar productos' }
+      if (error.code === '23505') return { error: 'Esa categoría ya existe (revisa mayúsculas/minúsculas)' }
       return { error: 'No se pudieron crear las categorías: ' + nombre }
     }
     categoriaPorNombre.set(nombre, data.id)
@@ -87,6 +88,7 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
       codigo_barras: f.codigoBarras ?? null,
       categoria_id: f.categoria ? categoriaPorNombre.get(f.categoria)! : null,
       exento: f.exento,
+      activo: true,
       actualizado_en: new Date().toISOString(),
     },
     fila,
@@ -147,6 +149,7 @@ export async function importarClientes(_prev: ResultadoImport, formData: FormDat
       direccion: f.direccion ?? null,
       comuna: f.comuna ?? null,
       condicion_pago_dias: f.condicionPagoDias,
+      activo: true,
     },
     fila,
   }))

@@ -4,7 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { clienteAdmin } from '@suite/auth/admin'
 import { verificarAdmin } from '../lib/guardia'
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 async function cambiarEstado(id: string, estado: 'activa' | 'suspendida') {
+  if (!UUID.test(id)) return
   await verificarAdmin()
   const admin = clienteAdmin()
   const { error } = await admin.from('organizaciones').update({ estado }).eq('id', id)

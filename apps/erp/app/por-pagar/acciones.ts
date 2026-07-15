@@ -138,6 +138,7 @@ export async function registrarPagoProveedor(_prev: EstadoForm, formData: FormDa
     if (error.message.includes('rol')) return { error: 'Tu rol no permite registrar pagos a proveedores' }
     if (error.message.includes('saldo')) return { error: error.message }
     if (error.message.includes('suma')) return { error: 'La suma de las aplicaciones debe ser igual al monto del pago' }
+    if (error.message.includes('Método')) return { error: 'Selecciona un método de pago válido' }
     if (error.message.includes('válido')) return { error: 'Hay un documento no válido o de otro proveedor' }
     return { error: 'No se pudo registrar el pago' }
   }

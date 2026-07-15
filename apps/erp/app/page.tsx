@@ -23,18 +23,14 @@ export default async function Inicio() {
 
   if (!activa) {
     return (
-      <div>
-        <Encabezado titulo="Sin organización" />
-        <Tarjeta>
-          <p>
-            Tu usuario no pertenece a ninguna organización. Pide una invitación o{' '}
-            <a className="text-marca-600 underline" href={process.env.NEXT_PUBLIC_URL_WEB + '/registro'}>
-              crea tu cuenta
-            </a>
-            .
+      <main className="grid min-h-[60vh] place-items-center">
+        <div className="max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-lg font-semibold text-slate-900">Tu organización aún no tiene empresas</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Cuando tu organización registre una empresa vas a ver aquí el panel con sus ventas, stock y cobranza.
           </p>
-        </Tarjeta>
-      </div>
+        </div>
+      </main>
     )
   }
 
