@@ -34,6 +34,18 @@ export async function registrarFacturaCompra(_prev: EstadoForm, formData: FormDa
   if (total !== neto + exento + iva) return { error: 'El total no cuadra: debe ser neto + exento + IVA' }
 
   const supabase = await crearClienteServidor()
+  // El filtro de OCs por proveedor del formulario es solo UI: un POST manipulado podria
+  // vincular una OC de otro proveedor del mismo tenant (la FK compuesta solo valida empresa).
+  if (orden) {
+    const { data: oc } = await supabase
+      .from('ordenes_compra')
+      .select('id')
+      .eq('id', orden)
+      .eq('empresa_id', activa.id)
+      .eq('proveedor_id', proveedor)
+      .maybeSingle()
+    if (!oc) return { error: 'La orden de compra no corresponde a ese proveedor' }
+  }
   const { error } = await supabase.from('documentos_compra').insert({
     empresa_id: activa.id,
     proveedor_id: proveedor,
