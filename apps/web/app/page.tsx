@@ -23,7 +23,7 @@ export default function Inicio() {
           </Link>
           <Link
             href="/registro"
-            className="rounded-lg bg-gradient-to-br from-marca-500 to-marca-600 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
+            className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
           >
             Prueba gratis
           </Link>

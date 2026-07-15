@@ -151,7 +151,7 @@ export default async function Inicio() {
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {RAPIDOS.map((r) => (
           <Link key={r.href} href={r.href} className="rounded-xl border-2 border-dashed border-marca-300 bg-white p-3 text-center">
-            <span className="font-semibold text-marca-600">{r.titulo}</span>
+            <span className="font-semibold text-marca-700">{r.titulo}</span>
             <span className="block text-xs text-slate-400">{r.sub}</span>
           </Link>
         ))}

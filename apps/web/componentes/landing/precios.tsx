@@ -39,7 +39,7 @@ export function Precios() {
             }
           >
             {p.destacado && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-marca-500 to-marca-600 px-3 py-0.5 text-xs font-medium tracking-wide text-white">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-marca-600 to-marca-700 px-3 py-0.5 text-xs font-medium tracking-wide text-white">
                 Más elegido
               </span>
             )}
@@ -59,7 +59,7 @@ export function Precios() {
               href="/registro"
               className={
                 p.destacado
-                  ? 'mt-6 rounded-lg bg-gradient-to-br from-marca-500 to-marca-600 px-4 py-2.5 text-center font-semibold text-white shadow-lg shadow-marca-600/30'
+                  ? 'mt-6 rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2.5 text-center font-semibold text-white shadow-lg shadow-marca-600/30'
                   : 'mt-6 rounded-lg border-2 border-marca-300 px-4 py-2.5 text-center font-semibold text-marca-700'
               }
             >

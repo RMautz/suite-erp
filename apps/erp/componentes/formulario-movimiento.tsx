@@ -21,7 +21,7 @@ export function FormularioMovimiento({
   const [eAjuste, fAjuste, pAjuste] = useActionState(accionAjuste, {} as EstadoForm)
   const [eTraslado, fTraslado, pTraslado] = useActionState(accionTraslado, {} as EstadoForm)
 
-  const tabClase = (t: string) => `rounded-md px-3 py-1.5 text-sm ${tab === t ? 'bg-marca-600 text-white' : 'bg-slate-100 text-slate-700'}`
+  const tabClase = (t: string) => `rounded-md px-3 py-1.5 text-sm ${tab === t ? 'bg-marca-700 text-white' : 'bg-slate-100 text-slate-700'}`
   const selProducto = <Selector name="producto_id" required defaultValue=""><option value="" disabled>Producto…</option>{productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</Selector>
 
   return (

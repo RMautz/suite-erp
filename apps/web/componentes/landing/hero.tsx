@@ -24,7 +24,7 @@ export function Hero() {
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link
             href="/registro"
-            className="rounded-lg bg-gradient-to-br from-marca-500 to-marca-600 px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30"
+            className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30"
           >
             Prueba gratis 14 días
           </Link>

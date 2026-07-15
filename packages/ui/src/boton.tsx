@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react'
 import { cn } from './cn'
 
 const VARIANTES = {
-  primario: 'bg-marca-600 text-white hover:bg-marca-700 disabled:bg-marca-300',
+  primario: 'bg-marca-700 text-white hover:bg-marca-800 disabled:bg-marca-300',
   secundario: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:text-slate-400',
   peligro: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
 } as const
