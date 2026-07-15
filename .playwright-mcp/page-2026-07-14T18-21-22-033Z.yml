@@ -1,0 +1,80 @@
+- generic [ref=f12e2]:
+  - complementary [ref=f12e3]:
+    - generic [ref=f12e4]: Suite ERP
+    - navigation [ref=f12e5]:
+      - link "Inicio" [ref=f12e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f12e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f12e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f12e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f12e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f12e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f12e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f12e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f12e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f12e16]:
+    - generic [ref=f12e17]:
+      - generic [ref=f12e18]:
+        - heading "Cuentas por cobrar" [level=1] [ref=f12e19]
+        - generic [ref=f12e21]:
+          - link [ref=f12e22] [cursor=pointer]:
+            - /url: /cobranza/pagos
+            - button "Pagos" [ref=f12e23]
+          - link [ref=f12e24] [cursor=pointer]:
+            - /url: /cobranza/pagos/nuevo
+            - button "Registrar pago" [ref=f12e25]
+      - generic [ref=f12e26]:
+        - combobox [ref=f12e27]:
+          - option "Todos los clientes" [selected]
+          - option "Transportes Cliente Ltda"
+        - generic [ref=f12e28]:
+          - checkbox "Solo vencidas" [ref=f12e29]
+          - text: Solo vencidas
+        - button "Filtrar" [ref=f12e30]
+        - link "Limpiar" [ref=f12e31] [cursor=pointer]:
+          - /url: /cobranza
+      - table [ref=f12e33]:
+        - rowgroup [ref=f12e34]:
+          - row [ref=f12e35]:
+            - columnheader "Documento" [ref=f12e36]
+            - columnheader "Cliente" [ref=f12e37]
+            - columnheader "Emisión" [ref=f12e38]
+            - columnheader "Vencimiento" [ref=f12e39]
+            - columnheader "Total" [ref=f12e40]
+            - columnheader "Pagado" [ref=f12e41]
+            - columnheader "Saldo" [ref=f12e42]
+            - columnheader [ref=f12e43]
+        - rowgroup [ref=f12e44]:
+          - row [ref=f12e45]:
+            - cell "Factura 102" [ref=f12e46]
+            - cell "Transportes Cliente Ltda" [ref=f12e47]
+            - cell "30-05-2026" [ref=f12e48]
+            - cell "30-05-2026" [ref=f12e49]
+            - cell "$300.000" [ref=f12e50]
+            - cell "$0" [ref=f12e51]
+            - cell "$300.000" [ref=f12e52]
+            - cell "Vencida" [ref=f12e53]
+          - row [ref=f12e55]:
+            - cell "Factura 101" [ref=f12e56]
+            - cell "Transportes Cliente Ltda" [ref=f12e57]
+            - cell "14-07-2026" [ref=f12e58]
+            - cell "14-07-2026" [ref=f12e59]
+            - cell "$500.000" [ref=f12e60]
+            - cell "$0" [ref=f12e61]
+            - cell "$500.000" [ref=f12e62]
+            - cell [ref=f12e63]
+      - generic [ref=f12e64]:
+        - generic [ref=f12e65]:
+          - text: "Por cobrar:"
+          - strong [ref=f12e66]: $800.000
+        - generic [ref=f12e67]:
+          - text: "Vencido:"
+          - strong [ref=f12e68]: $300.000

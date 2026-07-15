@@ -1,0 +1,54 @@
+- generic [ref=f18e2]:
+  - complementary [ref=f18e3]:
+    - generic [ref=f18e4]: Suite ERP
+    - navigation [ref=f18e5]:
+      - link "Inicio" [ref=f18e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f18e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f18e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f18e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f18e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f18e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f18e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f18e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f18e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f18e16]:
+    - generic [ref=f18e17]:
+      - generic [ref=f18e18]:
+        - heading "Ventas" [level=1] [ref=f18e19]
+        - link [ref=f18e21] [cursor=pointer]:
+          - /url: /ventas/nueva
+          - button "Nueva venta" [ref=f18e22]
+      - table [ref=f18e24]:
+        - rowgroup [ref=f18e25]:
+          - row [ref=f18e26]:
+            - columnheader "Tipo" [ref=f18e27]
+            - columnheader "Folio" [ref=f18e28]
+            - columnheader "Cliente" [ref=f18e29]
+            - columnheader "Total" [ref=f18e30]
+            - columnheader "Estado" [ref=f18e31]
+        - rowgroup [ref=f18e32]:
+          - row [ref=f18e33]:
+            - cell [ref=f18e34]:
+              - link "factura" [ref=f18e35] [cursor=pointer]:
+                - /url: /ventas/4667c6ac-18a9-42a0-a8a8-7685696a519c
+            - cell "101" [ref=f18e36]
+            - cell "Transportes Cliente Ltda" [ref=f18e37]
+            - cell "$500.000" [ref=f18e38]
+            - cell "emitido" [ref=f18e39]
+          - row [ref=f18e41]:
+            - cell [ref=f18e42]:
+              - link "factura" [ref=f18e43] [cursor=pointer]:
+                - /url: /ventas/bb8ed069-7a51-4b52-a1d6-5d3010b21d5c
+            - cell "102" [ref=f18e44]
+            - cell "Transportes Cliente Ltda" [ref=f18e45]
+            - cell "$300.000" [ref=f18e46]
+            - cell "emitido" [ref=f18e47]

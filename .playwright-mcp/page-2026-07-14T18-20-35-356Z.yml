@@ -1,0 +1,66 @@
+- generic [ref=f10e2]:
+  - complementary [ref=f10e3]:
+    - generic [ref=f10e4]: Suite ERP
+    - navigation [ref=f10e5]:
+      - link "Inicio" [ref=f10e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f10e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f10e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f10e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f10e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f10e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f10e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f10e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f10e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f10e16]:
+    - generic [ref=f10e17]:
+      - 'heading "Editar: Transportes Cliente Ltda" [level=1] [ref=f10e19]'
+      - generic [ref=f10e21]:
+        - generic [ref=f10e22]:
+          - generic [ref=f10e23]: RUT *
+          - textbox "RUT *" [ref=f10e24]:
+            - /placeholder: 76.543.210-3
+            - text: 76.222.222-1
+        - generic [ref=f10e25]:
+          - generic [ref=f10e26]: Razón social *
+          - textbox "Razón social *" [ref=f10e27]: Transportes Cliente Ltda
+        - generic [ref=f10e28]:
+          - generic [ref=f10e29]: Giro
+          - textbox "Giro" [ref=f10e30]: Transporte de carga
+        - generic [ref=f10e31]:
+          - generic [ref=f10e32]: Correo
+          - textbox "Correo" [ref=f10e33]
+        - generic [ref=f10e34]:
+          - generic [ref=f10e35]: Teléfono
+          - textbox "Teléfono" [ref=f10e36]
+        - generic [ref=f10e37]:
+          - generic [ref=f10e38]: Comuna
+          - textbox "Comuna" [ref=f10e39]: Maipú
+        - generic [ref=f10e41]:
+          - generic [ref=f10e42]: Dirección
+          - textbox "Dirección" [ref=f10e43]
+        - generic [ref=f10e44]:
+          - generic [ref=f10e45]: Condición de pago (días; 0 = contado)
+          - textbox "Condición de pago (días; 0 = contado)" [ref=f10e46]: "0"
+        - button "Guardar" [ref=f10e48]
+      - generic [ref=f10e49]:
+        - heading "Estado de cuenta" [level=2] [ref=f10e50]
+        - generic [ref=f10e51]:
+          - paragraph [ref=f10e52]:
+            - text: "Deuda vigente:"
+            - strong [ref=f10e53]: $800.000
+          - list [ref=f10e54]:
+            - listitem [ref=f10e55]:
+              - generic [ref=f10e56]: Factura 102 · vence 30-05-2026
+              - generic [ref=f10e57]: $300.000
+            - listitem [ref=f10e58]:
+              - generic [ref=f10e59]: Factura 101 · vence 14-07-2026
+              - generic [ref=f10e60]: $500.000

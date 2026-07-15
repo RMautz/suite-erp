@@ -1,0 +1,46 @@
+- generic [ref=f4e2]:
+  - complementary [ref=f4e3]:
+    - generic [ref=f4e4]: Suite ERP
+    - navigation [ref=f4e5]:
+      - link "Inicio" [ref=f4e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f4e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f4e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f4e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f4e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f4e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f4e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f4e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f4e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f4e16]:
+    - generic [ref=f4e17]:
+      - generic [ref=f4e18]:
+        - heading "Demo Transportes SpA" [level=1] [ref=f4e19]
+        - generic [ref=f4e20]: 77.123.456-9
+      - generic [ref=f4e22]: Período de prueba hasta el 28-07-2026
+      - generic [ref=f4e24]:
+        - generic [ref=f4e25]:
+          - paragraph [ref=f4e26]: Productos activos
+          - paragraph [ref=f4e27]: "3"
+        - generic [ref=f4e28]:
+          - paragraph [ref=f4e29]: Clientes activos
+          - paragraph [ref=f4e30]: "1"
+        - link [ref=f4e31] [cursor=pointer]:
+          - /url: /productos?inactivos=0
+          - generic [ref=f4e32]:
+            - paragraph [ref=f4e33]: Stock crítico
+            - paragraph [ref=f4e34]: "1"
+        - link [ref=f4e35] [cursor=pointer]:
+          - /url: /cobranza?vencidas=1
+          - generic [ref=f4e36]:
+            - paragraph [ref=f4e37]: Por cobrar vencido
+            - paragraph [ref=f4e38]: $300.000
+            - paragraph [ref=f4e39]: 1 documento

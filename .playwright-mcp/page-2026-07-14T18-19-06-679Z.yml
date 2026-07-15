@@ -1,0 +1,38 @@
+- generic [ref=f3e2]:
+  - complementary [ref=f3e3]:
+    - generic [ref=f3e4]: Suite ERP
+    - navigation [ref=f3e5]:
+      - link "Inicio" [ref=f3e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f3e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f3e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f3e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f3e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f3e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f3e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f3e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f3e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f3e16]:
+    - generic [ref=f3e17]:
+      - heading "Pagos" [level=1] [ref=f3e19]
+      - table [ref=f3e21]:
+        - rowgroup [ref=f3e22]:
+          - row [ref=f3e23]:
+            - columnheader "Fecha" [ref=f3e24]
+            - columnheader "Cliente" [ref=f3e25]
+            - columnheader "Método" [ref=f3e26]
+            - columnheader "Monto" [ref=f3e27]
+            - columnheader "Aplicado a" [ref=f3e28]
+            - columnheader "Estado" [ref=f3e29]
+            - columnheader [ref=f3e30]
+        - rowgroup [ref=f3e31]:
+          - row [ref=f3e32]:
+            - cell "No hay pagos registrados." [ref=f3e33]

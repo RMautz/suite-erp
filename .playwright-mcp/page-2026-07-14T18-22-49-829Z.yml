@@ -1,0 +1,84 @@
+- generic [ref=f15e2]:
+  - complementary [ref=f15e3]:
+    - generic [ref=f15e4]: Suite ERP
+    - navigation [ref=f15e5]:
+      - link "Inicio" [ref=f15e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f15e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f15e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f15e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f15e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f15e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f15e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f15e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f15e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f15e16]:
+    - generic [ref=f15e17]:
+      - generic [ref=f15e18]:
+        - heading "Productos" [level=1] [ref=f15e19]
+        - link [ref=f15e21] [cursor=pointer]:
+          - /url: /productos/nuevo
+          - button "Nuevo producto" [ref=f15e22]
+      - generic [ref=f15e23]:
+        - textbox "Buscar por nombre o SKU…" [ref=f15e24]
+        - generic [ref=f15e25]:
+          - checkbox "Ver inactivos" [ref=f15e26]
+          - text: Ver inactivos
+        - button "Buscar" [ref=f15e27]
+      - table [ref=f15e29]:
+        - rowgroup [ref=f15e30]:
+          - row [ref=f15e31]:
+            - columnheader "SKU" [ref=f15e32]
+            - columnheader "Nombre" [ref=f15e33]
+            - columnheader "Categoría" [ref=f15e34]
+            - columnheader "Unidad" [ref=f15e35]
+            - columnheader "Precio neto" [ref=f15e36]
+            - columnheader "Stock" [ref=f15e37]
+            - columnheader "Estado" [ref=f15e38]
+            - columnheader [ref=f15e39]
+        - rowgroup [ref=f15e40]:
+          - row [ref=f15e41]:
+            - cell "ACE-15W40" [ref=f15e42]
+            - cell [ref=f15e43]:
+              - link "Aceite 15W40 balde 20L" [ref=f15e44] [cursor=pointer]:
+                - /url: /productos/2fb02f41-7ed6-4635-9f6b-a81e0450a1ac
+            - cell "—" [ref=f15e45]
+            - cell "UN" [ref=f15e46]
+            - cell "$89.900" [ref=f15e47]
+            - cell "12" [ref=f15e48]
+            - cell "Activo" [ref=f15e49]
+            - cell [ref=f15e51]:
+              - button "Desactivar" [ref=f15e53]
+          - row [ref=f15e54]:
+            - cell "FIL-100" [ref=f15e55]
+            - cell [ref=f15e56]:
+              - link "Filtro de aceite pesado" [ref=f15e57] [cursor=pointer]:
+                - /url: /productos/167da580-9a70-4905-9665-908d2bc0207a
+            - cell "—" [ref=f15e58]
+            - cell "UN" [ref=f15e59]
+            - cell "$12.900" [ref=f15e60]
+            - cell "6 ⚠" [ref=f15e61]:
+              - generic "Bajo el mínimo" [ref=f15e62]: 6 ⚠
+            - cell "Activo" [ref=f15e63]
+            - cell [ref=f15e65]:
+              - button "Desactivar" [ref=f15e67]
+          - row [ref=f15e68]:
+            - cell "NEU-295" [ref=f15e69]
+            - cell [ref=f15e70]:
+              - link "Neumático 295/80 R22.5" [ref=f15e71] [cursor=pointer]:
+                - /url: /productos/4ededd21-075b-4ba1-86c7-3717134a1e74
+            - cell "—" [ref=f15e72]
+            - cell "UN" [ref=f15e73]
+            - cell "$285.000" [ref=f15e74]
+            - cell "20" [ref=f15e75]
+            - cell "Activo" [ref=f15e76]
+            - cell [ref=f15e78]:
+              - button "Desactivar" [ref=f15e80]

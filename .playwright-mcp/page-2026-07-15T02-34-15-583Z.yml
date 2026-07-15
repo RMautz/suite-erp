@@ -1,0 +1,96 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - complementary [ref=f2e3]:
+      - generic [ref=f2e4]: Suite ERP
+      - navigation [ref=f2e5]:
+        - link "Inicio" [ref=f2e6] [cursor=pointer]:
+          - /url: /
+        - link "Productos" [ref=f2e7] [cursor=pointer]:
+          - /url: /productos
+        - link "Clientes" [ref=f2e8] [cursor=pointer]:
+          - /url: /clientes
+        - link "Importar" [ref=f2e9] [cursor=pointer]:
+          - /url: /importar
+        - link "Ventas" [ref=f2e10] [cursor=pointer]:
+          - /url: /ventas
+        - link "Inventario" [ref=f2e11] [cursor=pointer]:
+          - /url: /inventario
+        - link "Compras" [ref=f2e12] [cursor=pointer]:
+          - /url: /compras
+        - link "Cobranza" [ref=f2e13] [cursor=pointer]:
+          - /url: /cobranza
+        - link "Reportes" [ref=f2e14] [cursor=pointer]:
+          - /url: /reportes
+        - link "Configuración" [ref=f2e15] [cursor=pointer]:
+          - /url: /configuracion/dte
+    - main [ref=f2e17]:
+      - generic [ref=f2e18]:
+        - generic [ref=f2e19]:
+          - heading "Demo Transportes SpA" [level=1] [ref=f2e20]
+          - generic [ref=f2e21]: 77.123.456-9
+        - generic [ref=f2e23]: Período de prueba hasta el 28-07-2026
+        - generic [ref=f2e25]:
+          - link [ref=f2e26] [cursor=pointer]:
+            - /url: /reportes/ventas
+            - generic [ref=f2e27]:
+              - paragraph [ref=f2e28]: Ventas de hoy
+              - paragraph [ref=f2e29]: $0
+              - paragraph [ref=f2e30]: 0 documentos
+          - link [ref=f2e31] [cursor=pointer]:
+            - /url: /reportes/ventas
+            - generic [ref=f2e32]:
+              - paragraph [ref=f2e33]: Ventas del mes
+              - paragraph [ref=f2e34]: $500.000
+              - paragraph [ref=f2e35]: 1 documento
+          - link [ref=f2e36] [cursor=pointer]:
+            - /url: /cobranza?vencidas=1
+            - generic [ref=f2e37]:
+              - paragraph [ref=f2e38]: Por cobrar vencido
+              - paragraph [ref=f2e39]: $300.000
+              - paragraph [ref=f2e40]: 1 documento → Cobranza
+          - link [ref=f2e41] [cursor=pointer]:
+            - /url: /productos
+            - generic [ref=f2e42]:
+              - paragraph [ref=f2e43]: Stock crítico
+              - paragraph [ref=f2e44]: "1"
+              - paragraph [ref=f2e45]: bajo mínimo → Productos
+        - generic [ref=f2e46]:
+          - generic [ref=f2e47]:
+            - heading "Ventas últimos 14 días" [level=2] [ref=f2e48]
+            - generic [ref=f2e49]:
+              - 'generic "2026-07-02: $0" [ref=f2e50]': "02"
+              - 'generic "2026-07-03: $0" [ref=f2e53]': "03"
+              - 'generic "2026-07-04: $0" [ref=f2e56]': "04"
+              - 'generic "2026-07-05: $0" [ref=f2e59]': "05"
+              - 'generic "2026-07-06: $0" [ref=f2e62]': "06"
+              - 'generic "2026-07-07: $0" [ref=f2e65]': "07"
+              - 'generic "2026-07-08: $0" [ref=f2e68]': "08"
+              - 'generic "2026-07-09: $0" [ref=f2e71]': "09"
+              - 'generic "2026-07-10: $0" [ref=f2e74]': "10"
+              - 'generic "2026-07-11: $0" [ref=f2e77]': "11"
+              - 'generic "2026-07-12: $0" [ref=f2e80]': "12"
+              - 'generic "2026-07-13: $0" [ref=f2e83]': "13"
+              - 'generic "2026-07-14: $500.000" [ref=f2e86]': "14"
+              - 'generic "2026-07-15: $0" [ref=f2e89]': hoy
+          - generic [ref=f2e92]:
+            - heading "Top 5 productos del mes" [level=2] [ref=f2e93]
+            - paragraph [ref=f2e94]: Aún sin ventas este mes.
+        - generic [ref=f2e95]:
+          - link "+ Nueva venta boleta o factura" [ref=f2e96] [cursor=pointer]:
+            - /url: /ventas/nueva
+            - text: + Nueva venta
+            - generic [ref=f2e97]: boleta o factura
+          - link "+ Registrar pago cobranza" [ref=f2e98] [cursor=pointer]:
+            - /url: /cobranza/pagos/nuevo
+            - text: + Registrar pago
+            - generic [ref=f2e99]: cobranza
+          - link "+ Orden de compra a proveedor" [ref=f2e100] [cursor=pointer]:
+            - /url: /compras/nueva
+            - text: + Orden de compra
+            - generic [ref=f2e101]: a proveedor
+          - link "+ Movimiento entrada / ajuste / traslado" [ref=f2e102] [cursor=pointer]:
+            - /url: /inventario/movimientos
+            - text: + Movimiento
+            - generic [ref=f2e103]: entrada / ajuste / traslado
+  - button "Open Next.js Dev Tools" [ref=f2e109] [cursor=pointer]
+  - alert [ref=f2e113]

@@ -1,0 +1,49 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - complementary [ref=f3e3]:
+      - generic [ref=f3e4]: Suite ERP
+      - navigation [ref=f3e5]:
+        - link "Inicio" [ref=f3e6] [cursor=pointer]:
+          - /url: /
+        - link "Productos" [ref=f3e7] [cursor=pointer]:
+          - /url: /productos
+        - link "Clientes" [ref=f3e8] [cursor=pointer]:
+          - /url: /clientes
+        - link "Importar" [ref=f3e9] [cursor=pointer]:
+          - /url: /importar
+        - link "Ventas" [ref=f3e10] [cursor=pointer]:
+          - /url: /ventas
+        - link "Inventario" [ref=f3e11] [cursor=pointer]:
+          - /url: /inventario
+        - link "Compras" [ref=f3e12] [cursor=pointer]:
+          - /url: /compras
+        - link "Cobranza" [ref=f3e13] [cursor=pointer]:
+          - /url: /cobranza
+        - link "Configuración" [ref=f3e14] [cursor=pointer]:
+          - /url: /configuracion/dte
+    - main [ref=f3e16]:
+      - generic [ref=f3e17]:
+        - generic [ref=f3e18]:
+          - heading "Demo Transportes SpA" [level=1] [ref=f3e19]
+          - generic [ref=f3e20]: 77.123.456-9
+        - generic [ref=f3e22]: Período de prueba hasta el 28-07-2026
+        - generic [ref=f3e24]:
+          - generic [ref=f3e25]:
+            - paragraph [ref=f3e26]: Productos activos
+            - paragraph [ref=f3e27]: "3"
+          - generic [ref=f3e28]:
+            - paragraph [ref=f3e29]: Clientes activos
+            - paragraph [ref=f3e30]: "1"
+          - link [ref=f3e31] [cursor=pointer]:
+            - /url: /productos?inactivos=0
+            - generic [ref=f3e32]:
+              - paragraph [ref=f3e33]: Stock crítico
+              - paragraph [ref=f3e34]: "1"
+          - link [ref=f3e35] [cursor=pointer]:
+            - /url: /cobranza?vencidas=1
+            - generic [ref=f3e36]:
+              - paragraph [ref=f3e37]: Por cobrar vencido
+              - paragraph [ref=f3e38]: $300.000
+              - paragraph [ref=f3e39]: 1 documento
+  - button "Open Next.js Dev Tools" [ref=f3e45] [cursor=pointer]
+  - alert [ref=f3e49]

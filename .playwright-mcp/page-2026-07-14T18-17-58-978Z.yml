@@ -1,0 +1,10 @@
+- main [ref=e2]:
+  - heading "Iniciar sesión" [level=1] [ref=e3]
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - text: Correo
+      - textbox "Correo" [ref=e6]
+    - generic [ref=e7]:
+      - text: Contraseña
+      - textbox "Contraseña" [ref=e8]
+    - button "Entrar" [ref=e9]

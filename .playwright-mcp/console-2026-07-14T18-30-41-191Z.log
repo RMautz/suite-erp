@@ -1,0 +1,71 @@
+[    2201ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/login:0
+[    2601ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/react-dom@19.2.7_react@19.2.7/node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[    2705ms] Error: Cannot find module './963.js'
+Require stack:
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\webpack-runtime.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\app\icon.svg\route.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\require.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\load-components.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\build\utils.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\build\swc\options.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\build\swc\index.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\build\next-config-ts\transpile-config.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\config.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\next.js
+- C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at <unknown> (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\require-hook.js:57:36)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\require-hook.js:68:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\webpack-runtime.js:195:28)
+    at <unknown> (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\webpack-runtime.js:108:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\webpack-runtime.js:107:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\webpack-runtime.js:159:22)
+    at <unknown> (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\app\login\page.js:2:12223)
+    at Object.<anonymous> (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\apps\web\.next\server\app\login\page.js:2:12276)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\require-hook.js:68:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\require.js:99:80)
+    at loadComponentsImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\load-components.js:132:57)
+    at async DevServer.findPageComponentsImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\next-server.js:900:36)
+    at async DevServer.findPageComponents (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\dev\next-dev-server.js:706:16)
+    at async DevServer.renderPageComponent (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\base-server.js:1468:24)
+    at async DevServer.renderToResponseImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\base-server.js:1522:32)
+    at async DevServer.pipeImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\base-server.js:1026:25)
+    at async NextNodeServer.handleCatchallRenderRequest (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\next-server.js:394:17)
+    at async DevServer.handleRequestImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\base-server.js:917:17)
+    at async (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\dev\next-dev-server.js:400:20)
+    at async Span.traceAsyncFn (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\dev\next-dev-server.js:396:24)
+    at async invokeRender (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\lib\router-server.js:240:21)
+    at async handleRequest (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\lib\router-server.js:437:24)
+    at async requestHandlerImpl (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\lib\router-server.js:485:13)
+    at async Server.requestListener (file://C:\Users\ricar\OneDrive\Escritorio\Proyectos AI\ERP Transportes\node_modules\.pnpm\next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7\node_modules\next\dist\server\lib\start-server.js:226:13)
+[    2705ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[    2719ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[   26211ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   29588ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   32968ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   36340ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   42159ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[   42182ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/webpack/472c68504754284a.webpack.hot-update.json:0
+[   42182ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   43121ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[   46222ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/webpack/472c68504754284a.webpack.hot-update.json:0
+[   46223ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   46583ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/login:0
+[   46858ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@15.5.20_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630

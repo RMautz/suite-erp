@@ -1,0 +1,109 @@
+- generic [ref=f16e2]:
+  - complementary [ref=f16e3]:
+    - generic [ref=f16e4]: Suite ERP
+    - navigation [ref=f16e5]:
+      - link "Inicio" [ref=f16e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f16e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f16e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f16e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f16e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f16e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f16e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f16e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f16e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f16e16]:
+    - generic [ref=f16e17]:
+      - heading "Movimientos de stock" [level=1] [ref=f16e19]
+      - generic [ref=f16e20]:
+        - generic [ref=f16e21]:
+          - button "Entrada" [ref=f16e22]
+          - button "Ajuste" [ref=f16e23]
+          - button "Traslado" [ref=f16e24]
+        - generic [ref=f16e25]:
+          - generic [ref=f16e26]:
+            - generic [ref=f16e27]: Producto *
+            - combobox "Producto *" [ref=f16e28]:
+              - option "Producto…" [disabled] [selected]
+              - option "Aceite 15W40 balde 20L"
+              - option "Filtro de aceite pesado"
+              - option "Neumático 295/80 R22.5"
+          - generic [ref=f16e29]:
+            - generic [ref=f16e30]: Bodega *
+            - combobox "Bodega *" [ref=f16e31]:
+              - option "Bodega…" [disabled] [selected]
+              - option "Bodega Central"
+              - option "Bodega Norte"
+          - generic [ref=f16e32]:
+            - generic [ref=f16e33]: Cantidad *
+            - textbox "Cantidad *" [ref=f16e34]
+          - generic [ref=f16e35]:
+            - generic [ref=f16e36]: Proveedor
+            - combobox "Proveedor" [ref=f16e37]:
+              - option "Sin proveedor" [selected]
+              - option "Repuestos Proveedor SpA"
+          - generic [ref=f16e39]:
+            - generic [ref=f16e40]: Motivo
+            - textbox "Motivo" [ref=f16e41]:
+              - /placeholder: "Ej: Compra, ingreso inicial"
+          - button "Registrar entrada" [ref=f16e43]
+      - generic [ref=f16e44]:
+        - combobox [ref=f16e45]:
+          - option "Todos los productos" [selected]
+          - option "Aceite 15W40 balde 20L"
+          - option "Filtro de aceite pesado"
+          - option "Neumático 295/80 R22.5"
+        - combobox [ref=f16e46]:
+          - option "Todas las bodegas" [selected]
+          - option "Bodega Central"
+          - option "Bodega Norte"
+        - combobox [ref=f16e47]:
+          - option "Todos los tipos" [selected]
+          - option "entrada"
+          - option "salida"
+          - option "ajuste"
+          - option "traslado"
+        - textbox [ref=f16e48]
+        - textbox [ref=f16e49]
+        - button "Filtrar" [ref=f16e50]
+        - link "Limpiar" [ref=f16e51] [cursor=pointer]:
+          - /url: /inventario/movimientos
+      - table [ref=f16e53]:
+        - rowgroup [ref=f16e54]:
+          - row [ref=f16e55]:
+            - columnheader "Fecha" [ref=f16e56]
+            - columnheader "Tipo" [ref=f16e57]
+            - columnheader "Producto" [ref=f16e58]
+            - columnheader "Bodega" [ref=f16e59]
+            - columnheader "Cantidad" [ref=f16e60]
+            - columnheader "Motivo" [ref=f16e61]
+        - rowgroup [ref=f16e62]:
+          - row [ref=f16e63]:
+            - cell "14-07-2026" [ref=f16e64]
+            - cell "entrada" [ref=f16e65]
+            - cell "Neumático 295/80 R22.5" [ref=f16e67]
+            - cell "Bodega Central" [ref=f16e68]
+            - cell "20" [ref=f16e69]
+            - cell "Ingreso inicial" [ref=f16e70]
+          - row [ref=f16e71]:
+            - cell "14-07-2026" [ref=f16e72]
+            - cell "entrada" [ref=f16e73]
+            - cell "Filtro de aceite pesado" [ref=f16e75]
+            - cell "Bodega Central" [ref=f16e76]
+            - cell "6" [ref=f16e77]
+            - cell "Ingreso inicial" [ref=f16e78]
+          - row [ref=f16e79]:
+            - cell "14-07-2026" [ref=f16e80]
+            - cell "entrada" [ref=f16e81]
+            - cell "Aceite 15W40 balde 20L" [ref=f16e83]
+            - cell "Bodega Central" [ref=f16e84]
+            - cell "12" [ref=f16e85]
+            - cell "Ingreso inicial" [ref=f16e86]

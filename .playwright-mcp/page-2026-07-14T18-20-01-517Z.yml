@@ -1,0 +1,54 @@
+- generic [ref=f8e2]:
+  - complementary [ref=f8e3]:
+    - generic [ref=f8e4]: Suite ERP
+    - navigation [ref=f8e5]:
+      - link "Inicio" [ref=f8e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f8e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f8e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f8e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f8e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f8e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f8e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f8e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f8e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f8e16]:
+    - generic [ref=f8e17]:
+      - generic [ref=f8e18]:
+        - heading "Ventas" [level=1] [ref=f8e19]
+        - link [ref=f8e21] [cursor=pointer]:
+          - /url: /ventas/nueva
+          - button "Nueva venta" [ref=f8e22]
+      - table [ref=f8e24]:
+        - rowgroup [ref=f8e25]:
+          - row [ref=f8e26]:
+            - columnheader "Tipo" [ref=f8e27]
+            - columnheader "Folio" [ref=f8e28]
+            - columnheader "Cliente" [ref=f8e29]
+            - columnheader "Total" [ref=f8e30]
+            - columnheader "Estado" [ref=f8e31]
+        - rowgroup [ref=f8e32]:
+          - row [ref=f8e33]:
+            - cell [ref=f8e34]:
+              - link "factura" [ref=f8e35] [cursor=pointer]:
+                - /url: /ventas/4667c6ac-18a9-42a0-a8a8-7685696a519c
+            - cell "101" [ref=f8e36]
+            - cell "Transportes Cliente Ltda" [ref=f8e37]
+            - cell "$500.000" [ref=f8e38]
+            - cell "emitido" [ref=f8e39]
+          - row [ref=f8e41]:
+            - cell [ref=f8e42]:
+              - link "factura" [ref=f8e43] [cursor=pointer]:
+                - /url: /ventas/bb8ed069-7a51-4b52-a1d6-5d3010b21d5c
+            - cell "102" [ref=f8e44]
+            - cell "Transportes Cliente Ltda" [ref=f8e45]
+            - cell "$300.000" [ref=f8e46]
+            - cell "emitido" [ref=f8e47]

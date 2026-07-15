@@ -28,16 +28,18 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
     <html lang="es">
       <body className="bg-slate-100 text-slate-900 antialiased">
         <div className="flex">
-          <BarraLateral
-            titulo="Suite ERP"
-            items={NAV}
-            pie={
-              activa && (
-                <SelectorEmpresa empresas={empresas} activaId={activa.id} accion={cambiarEmpresaActiva} />
-              )
-            }
-          />
-          <main className="min-h-screen flex-1 p-8">{children}</main>
+          <div className="print:hidden">
+            <BarraLateral
+              titulo="Suite ERP"
+              items={NAV}
+              pie={
+                activa && (
+                  <SelectorEmpresa empresas={empresas} activaId={activa.id} accion={cambiarEmpresaActiva} />
+                )
+              }
+            />
+          </div>
+          <main className="min-h-screen flex-1 p-8 print:p-0">{children}</main>
         </div>
       </body>
     </html>

@@ -1,0 +1,52 @@
+- generic [ref=f7e2]:
+  - complementary [ref=f7e3]:
+    - generic [ref=f7e4]: Suite ERP
+    - navigation [ref=f7e5]:
+      - link "Inicio" [ref=f7e6] [cursor=pointer]:
+        - /url: /
+      - link "Productos" [ref=f7e7] [cursor=pointer]:
+        - /url: /productos
+      - link "Clientes" [ref=f7e8] [cursor=pointer]:
+        - /url: /clientes
+      - link "Importar" [ref=f7e9] [cursor=pointer]:
+        - /url: /importar
+      - link "Ventas" [ref=f7e10] [cursor=pointer]:
+        - /url: /ventas
+      - link "Inventario" [ref=f7e11] [cursor=pointer]:
+        - /url: /inventario
+      - link "Compras" [ref=f7e12] [cursor=pointer]:
+        - /url: /compras
+      - link "Cobranza" [ref=f7e13] [cursor=pointer]:
+        - /url: /cobranza
+      - link "Configuración" [ref=f7e14] [cursor=pointer]:
+        - /url: /configuracion/dte
+  - main [ref=f7e16]:
+    - generic [ref=f7e17]:
+      - generic [ref=f7e18]:
+        - heading "Órdenes de compra" [level=1] [ref=f7e19]
+        - link [ref=f7e21] [cursor=pointer]:
+          - /url: /compras/nueva
+          - button "Nueva orden" [ref=f7e22]
+      - generic [ref=f7e23]:
+        - combobox [ref=f7e24]:
+          - option "Todos los estados" [selected]
+          - option "Borrador"
+          - option "Enviada"
+          - option "Recibida parcial"
+          - option "Recibida total"
+          - option "Cancelada"
+        - textbox "Buscar por proveedor…" [ref=f7e25]
+        - button "Filtrar" [ref=f7e26]
+        - link "Limpiar" [ref=f7e27] [cursor=pointer]:
+          - /url: /compras
+      - table [ref=f7e29]:
+        - rowgroup [ref=f7e30]:
+          - row [ref=f7e31]:
+            - columnheader "N°" [ref=f7e32]
+            - columnheader "Proveedor" [ref=f7e33]
+            - columnheader "Fecha" [ref=f7e34]
+            - columnheader "Estado" [ref=f7e35]
+            - columnheader "Total" [ref=f7e36]
+        - rowgroup [ref=f7e37]:
+          - row [ref=f7e38]:
+            - cell "No hay órdenes todavía." [ref=f7e39]
