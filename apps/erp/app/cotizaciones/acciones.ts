@@ -66,3 +66,59 @@ export async function crearCotizacion(_prev: EstadoForm, formData: FormData): Pr
   revalidatePath('/cotizaciones')
   redirect('/cotizaciones')
 }
+
+const ESTADOS_DESTINO = ['enviada', 'aceptada', 'rechazada'] as const
+
+export async function cambiarEstadoCotizacion(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+  const cotizacion = String(formData.get('cotizacion_id') ?? '')
+  const estado = String(formData.get('estado') ?? '')
+  const motivo = String(formData.get('motivo') ?? '').trim()
+  if (!cotizacion) return { error: 'Cotización no válida' }
+  if (!(ESTADOS_DESTINO as readonly string[]).includes(estado)) return { error: 'Estado de destino no válido' }
+  if (estado === 'rechazada' && motivo === '') return { error: 'El rechazo requiere un motivo' }
+  const supabase = await crearClienteServidor()
+  // p_motivo acepta NULL en SQL (nullif/trim en la RPC), pero el codegen no refleja la
+  // nulabilidad de argumentos de función: el cast es sólo de tipo (mismo criterio que por-pagar).
+  const { error } = await supabase.rpc('cambiar_estado_cotizacion', {
+    p_empresa: activa.id,
+    p_cotizacion: cotizacion,
+    p_estado: estado,
+    p_motivo: (motivo || null) as string,
+  })
+  if (error) {
+    if (error.message.includes('rol')) return { error: 'Tu rol no permite gestionar cotizaciones' }
+    if (error.message.includes('Transición')) return { error: 'Esa transición de estado no está permitida' }
+    if (error.message.includes('vencida')) return { error: 'La cotización está vencida: ya no se puede aceptar' }
+    if (error.message.includes('motivo')) return { error: 'El rechazo requiere un motivo' }
+    if (error.message.includes('no existe')) return { error: 'La cotización no existe' }
+    return { error: 'No se pudo cambiar el estado de la cotización' }
+  }
+  revalidatePath('/cotizaciones')
+  revalidatePath(`/cotizaciones/${cotizacion}`)
+  return {}
+}
+
+export async function convertirCotizacion(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+  const cotizacion = String(formData.get('cotizacion_id') ?? '')
+  if (!cotizacion) return { error: 'Cotización no válida' }
+  const supabase = await crearClienteServidor()
+  const { data, error } = await supabase.rpc('convertir_cotizacion', {
+    p_empresa: activa.id,
+    p_cotizacion: cotizacion,
+  })
+  if (error) {
+    if (error.message.includes('rol')) return { error: 'Tu rol no permite convertir cotizaciones' }
+    if (error.message.includes('condición')) return { error: error.message }
+    if (error.message.includes('aceptada')) return { error: 'Solo se puede convertir una cotización aceptada' }
+    if (error.message.includes('no existe')) return { error: 'La cotización no existe' }
+    return { error: 'No se pudo convertir la cotización' }
+  }
+  revalidatePath('/cotizaciones')
+  revalidatePath('/ventas')
+  // redirect lanza NEXT_REDIRECT: va FUERA de cualquier try/catch. data = uuid del documento de venta creado.
+  redirect(`/ventas/${data}`)
+}
