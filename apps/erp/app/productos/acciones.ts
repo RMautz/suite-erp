@@ -22,7 +22,11 @@ async function resolverCategoria(
       )
       .select('id')
       .single()
-    if (error) return { id: null, error: 'No se pudo crear la categoría' }
+    if (error) {
+      // El onConflict apunta al unique case-sensitive; el índice CI (0015) lanza 23505 con variantes de caso.
+      if (error.code === '23505') return { id: null, error: 'Esa categoría ya existe (revisa mayúsculas/minúsculas)' }
+      return { id: null, error: 'No se pudo crear la categoría' }
+    }
     return { id: data.id }
   }
   return { id: categoriaId || null }
