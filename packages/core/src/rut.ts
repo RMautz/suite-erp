@@ -3,6 +3,8 @@ export function limpiarRut(rut: string): string {
 }
 
 export function calcularDV(cuerpo: string): string {
+  // Un DV solo existe para un cuerpo numérico no vacío: '' antes devolvía '0' (DV falso).
+  if (!/^\d+$/.test(cuerpo)) return ''
   let suma = 0
   let factor = 2
   for (let i = cuerpo.length - 1; i >= 0; i--) {

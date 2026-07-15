@@ -23,6 +23,12 @@ describe('calcularDV', () => {
   it('calcula 0 cuando el resto es 11', () => {
     expect(calcularDV('59')).toBe('0')
   })
+  it('calcularDV devuelve vacío para entrada vacía', () => {
+    expect(calcularDV('')).toBe('')
+  })
+  it('calcularDV devuelve vacío si el cuerpo trae no-dígitos', () => {
+    expect(calcularDV('12a45')).toBe('')
+  })
 })
 
 describe('validarRut', () => {
