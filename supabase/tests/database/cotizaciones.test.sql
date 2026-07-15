@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(27);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -288,8 +288,36 @@ select throws_ok(
   'no se convierte si un producto ya no está disponible'
 );
 
--- 24) Beto (org B) solo ve su cotizacion QB: aislamiento en AMBAS tablas
---     (las 3 cotizaciones de A y sus 4 lineas serian visibles si la RLS fallara).
+-- ===== Exención cambiada: C4 aceptada y P1 (afecto) se vuelve exento antes de convertir =====
+set local request.jwt.claims to '{"sub": "77777777-7777-7777-7777-777777777777", "role": "authenticated"}';
+select crear_cotizacion('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa',
+  current_date + 30, null,
+  '[{"productoId":"99999999-0000-0000-0000-aaaaaaaaaaaa","cantidad":1,"precioNeto":10000}]'::jsonb);
+select cambiar_estado_cotizacion('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',
+  (select id from cotizaciones where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and numero = 4), 'enviada');
+select cambiar_estado_cotizacion('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',
+  (select id from cotizaciones where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and numero = 4), 'aceptada');
+reset role;
+update public.productos set exento = true where id = '99999999-0000-0000-0000-aaaaaaaaaaaa';
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "77777777-7777-7777-7777-777777777777", "role": "authenticated"}';
+
+-- 24) La conversion re-valida el producto (misma vía si cambió la exención, no solo si se desactivó).
+select throws_ok(
+  $$select convertir_cotizacion('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',
+    (select id from cotizaciones where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and numero = 4))$$,
+  'P0001', 'Un producto de la cotización ya no está disponible o cambió su condición de IVA; crea una nueva cotización',
+  'no se convierte si un producto cambió su condición de IVA'
+);
+
+-- Restaurar el fixture: P1 vuelve a afecto.
+reset role;
+update public.productos set exento = false where id = '99999999-0000-0000-0000-aaaaaaaaaaaa';
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+-- 25) Beto (org B) solo ve su cotizacion QB: aislamiento en AMBAS tablas
+--     (las 4 cotizaciones de A y sus lineas serian visibles si la RLS fallara).
 set local request.jwt.claims to '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 select is(
   (select count(*) from cotizaciones) + (select count(*) from cotizaciones_lineas),
@@ -297,7 +325,7 @@ select is(
   'Beto ve solo su cotización: las de la empresa A y sus líneas quedan aisladas'
 );
 
--- 25) Escritura directa denegada: authenticated no puede insertar en cotizaciones (toda escritura es por RPC).
+-- 26) Escritura directa denegada: authenticated no puede insertar en cotizaciones (toda escritura es por RPC).
 select throws_ok(
   $$insert into cotizaciones (empresa_id, numero, cliente_id, fecha_validez)
     values ('eeeeeeee-0000-0000-0000-bbbbbbbbbbbb', 999, 'cccccccc-0000-0000-0000-bbbbbbbbbbbb', current_date + 30)$$,
@@ -305,7 +333,7 @@ select throws_ok(
   'authenticated no puede insertar directamente en cotizaciones'
 );
 
--- 26) Anonimo denegado de plano.
+-- 27) Anonimo denegado de plano.
 set local request.jwt.claims to '{"role": "anon"}';
 set local role anon;
 select throws_ok(

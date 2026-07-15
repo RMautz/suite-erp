@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 -- Usuarios: Ana (duena org A), Beto (dueno org B), Vito (vendedor org A).
 insert into auth.users (instance_id, id, aud, role, email)
@@ -107,7 +107,22 @@ select throws_ok(
   'RUT sin normalizar viola el check'
 );
 
--- 9) Anónimo: denegado de plano.
+-- 10) Categoría case-insensitive: 'Lubricantes' y 'LUBRICANTES' colisionan
+--     (índice único ci de la 0015, no solo el unique original case-sensitive).
+set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+insert into categorias_producto (empresa_id, nombre)
+values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'Lubricantes');
+
+select throws_ok(
+  $$insert into categorias_producto (empresa_id, nombre)
+    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'LUBRICANTES')$$,
+  '23505',
+  null,
+  'una categoría duplicada case-insensitive viola el índice único'
+);
+
+-- 11) Anónimo: denegado de plano.
 set local request.jwt.claims to '{"role": "anon"}';
 set local role anon;
 
