@@ -151,6 +151,158 @@ export type Database = {
           },
         ]
       }
+      cotizaciones: {
+        Row: {
+          cliente_id: string
+          creado_en: string
+          documento_venta_id: string | null
+          empresa_id: string
+          estado: string
+          exento: number
+          fecha_validez: string
+          id: string
+          iva: number
+          motivo_rechazo: string | null
+          neto: number
+          notas: string | null
+          numero: number
+          total: number
+        }
+        Insert: {
+          cliente_id: string
+          creado_en?: string
+          documento_venta_id?: string | null
+          empresa_id: string
+          estado?: string
+          exento?: number
+          fecha_validez: string
+          id?: string
+          iva?: number
+          motivo_rechazo?: string | null
+          neto?: number
+          notas?: string | null
+          numero: number
+          total?: number
+        }
+        Update: {
+          cliente_id?: string
+          creado_en?: string
+          documento_venta_id?: string | null
+          empresa_id?: string
+          estado?: string
+          exento?: number
+          fecha_validez?: string
+          id?: string
+          iva?: number
+          motivo_rechazo?: string | null
+          neto?: number
+          notas?: string | null
+          numero?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotizaciones_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cotizaciones_lineas: {
+        Row: {
+          cantidad: number
+          cotizacion_id: string
+          descripcion: string
+          empresa_id: string
+          exenta: boolean
+          id: string
+          precio_neto: number
+          producto_id: string
+          subtotal: number
+        }
+        Insert: {
+          cantidad: number
+          cotizacion_id: string
+          descripcion: string
+          empresa_id: string
+          exenta?: boolean
+          id?: string
+          precio_neto: number
+          producto_id: string
+          subtotal: number
+        }
+        Update: {
+          cantidad?: number
+          cotizacion_id?: string
+          descripcion?: string
+          empresa_id?: string
+          exenta?: boolean
+          id?: string
+          precio_neto?: number
+          producto_id?: string
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotizaciones_lineas_empresa_id_cotizacion_id_fkey"
+            columns: ["empresa_id", "cotizacion_id"]
+            isOneToOne: false
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_lineas_empresa_id_producto_id_fkey"
+            columns: ["empresa_id", "producto_id"]
+            isOneToOne: false
+            referencedRelation: "valorizacion_inventario"
+            referencedColumns: ["empresa_id", "producto_id"]
+          },
+        ]
+      }
       documentos_compra: {
         Row: {
           creado_en: string
@@ -1584,6 +1736,29 @@ export type Database = {
         Returns: undefined
       }
       bodega_por_defecto: { Args: { p_empresa: string }; Returns: string }
+      cambiar_estado_cotizacion: {
+        Args: {
+          p_cotizacion: string
+          p_empresa: string
+          p_estado: string
+          p_motivo?: string
+        }
+        Returns: undefined
+      }
+      convertir_cotizacion: {
+        Args: { p_cotizacion: string; p_empresa: string }
+        Returns: string
+      }
+      crear_cotizacion: {
+        Args: {
+          p_cliente: string
+          p_empresa: string
+          p_lineas: Json
+          p_notas: string
+          p_validez: string
+        }
+        Returns: string
+      }
       crear_documento_venta: {
         Args: {
           p_cliente: string
