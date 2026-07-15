@@ -18,7 +18,7 @@
 - Roles: TODO CxP (registrar factura, pagar, anular) = `dueno`/`admin`; lectura = cualquier miembro.
 - Saldo NUNCA almacenado: `saldo = total − Σ aplicaciones de pagos activos` (sin NC en v1 → saldo ≥ 0 siempre); `fecha_vencimiento = fecha_emision + proveedores.condicion_pago_dias`.
 - Mensajes exactos (contrato pgTAP): `'Tu rol no permite registrar pagos a proveedores'`, `'Tu rol no permite anular pagos a proveedores'`, `'Tu rol no permite anular facturas de compra'`, `'El monto aplicado supera el saldo del documento (saldo: $%)'`, `'La suma de las aplicaciones debe ser igual al monto del pago'`, `'Documento no válido o no pertenece al proveedor'`, `'La anulación requiere un motivo'`, `'El pago no existe o ya está anulado'`, `'La factura no existe o ya está anulada'`, `'La factura tiene pagos aplicados; anula primero esos pagos'`.
-- Libro de compras: solo documentos `activa`; columnas fecha/tipo/folio/RUT/razón social/neto/exento/IVA(crédito)/total; export CSV con `filasACsv` (BOM `﻿` escape, `;`); misma UX que libro de ventas.
+- Libro de compras: solo documentos `activa`; columnas fecha/tipo/folio/RUT/razón social/neto/exento/IVA(crédito)/total; export CSV con `filasACsv` (BOM `\uFEFF` escape, `;`); misma UX que libro de ventas.
 - CERO BOM literal en fuentes; UTF-8 sin BOM; español; CLP entero.
 - Windows/PowerShell 5.1: `&&` no encadena; prefijar todo comando con el refresh de PATH.
 
