@@ -26,7 +26,7 @@
 - CHECKs de BD: `vehiculos.patente ~ '^[A-Z]{4}[0-9]{2}$' or ~ '^[A-Z]{2}[0-9]{4}$'`; `conductores.rut = app.normalizar_rut(rut) and app.validar_rut(rut)`; destinos SOLO índice único CI `(empresa_id, lower(nombre))`.
 - Mensajes EXACTOS (contrato pgTAP — lista completa y literal en spec §4; NO inventar variantes): los 34 del spec, incluidos `'La carga es demasiado pequeña para tarifar'`, `'Los kilos superan el máximo admitido'`, `'Los M3 superan el máximo admitido'`, `'No se puede asignar despacho a una orden anulada'`, `'El documento no proviene de una proforma'`.
 - Server Actions: claves de mapeo del spec §7; `crear_proforma`/`facturar_proforma`/`anular_estado_pago` por IGUALDAD ESTRICTA del mensaje completo; redirect FUERA de try/catch; `p_empresa: activa.id` siempre.
-- Conteos finales: pgTAP **191** (134 + 57, `plan(57)`), unit **118** (core 106 = 83+23, auth 2, dte 10), 3 apps build.
+- Conteos finales: pgTAP **193** (134 + 59, `plan(59)`), unit **118** (core 106 = 83+23, auth 2, dte 10), 3 apps build.
 - CERO BOM literal (escribir siempre la secuencia de escape backslash-uFEFF, jamás el carácter; byte-scan = 0; `grep -c` sale con exit 1 cuando el conteo es 0 — eso es el pass); UTF-8 sin BOM; español; Windows/PowerShell 5.1 (`&&` no encadena; prefijar comandos con el refresh de PATH).
 
 ---
@@ -849,7 +849,7 @@ git commit -m "feat(db): RPCs del ciclo de transporte — ODEs, despacho, profor
 **Interfaces:**
 - Consumes: migración 0016 (Tasks 1-2): tablas `vehiculos`/`conductores`/`destinos`/`ordenes_entrega`/`proformas`, las 7 RPCs (`crear_orden_entrega`, `asignar_despacho`, `anular_orden_entrega`, `crear_proforma`, `cambiar_estado_proforma`, `facturar_proforma`, `anular_estado_pago`), el endurecimiento de `empresas` y `documentos_venta`/`documentos_venta_lineas` (0004).
 - RUTs NUEVOS reservados para este archivo (válidos módulo 11; únicos GLOBALES — sin colisión con tests `7611/7622/7633/7644/7655/7666/7677/76543210x`, seed `771234569`/`778899000` ni E2E `999999999`/`888888888`): `768888884` (Org/Empresa A), `761112228` (Org/Empresa B), `761234560` (Cliente A), `762223333` (Cliente Inactivo A), `763334449` (Cliente B). Conductores con DV real: `123456785` (Carlos Soto), `111111111` (inactivo), `222222222` (Chofer B); `123456780` es DELIBERADAMENTE inválido (el DV correcto de 12345678 es 5) para el CHECK.
-- Presupuesto EXACTO de `plan(57)` — los 34 mensajes del contrato §4 quedan TODOS testeados al menos una vez. Los ítems del spec §8 cuyo mensaje se repite quedan cubiertos por el assert canónico de ese mensaje y/o por SETUP que aborta el archivo si falla (documentado inline): feliz de crear_proforma → assert 29 (totales); duplicados→una vez → assert 29 (un doble conteo daría 369586, no 227836); rechazo desde enviada libera → la creación de P3 con la MISMA ODE (setup) + assert 39; correlativo de proformas → assert 39 (numero 3); no-aprobada de facturar → assert 48 (mismo mensaje que el doble); doble-anular → assert 50 (mismo mensaje de estado); módulo off en crear_proforma → assert 1 (mismo mensaje); vendedor permitido → setup de la ODE 2 + assert 2; cliente/vehículo inactivos en crear_orden_entrega → asserts 33 y 43 (mismos mensajes, guardas hermanas testeadas en 10 y 11); cross-tenant DIRECTO de crear_proforma/anular_orden/facturar contra un blanco de empresa B → asserts 31/45/46 (ya no solo por identidad de mensaje: cada uno apunta a un objeto real de B); cross-tenant de cambiar_estado_proforma → assert 37 (mismo mecanismo, blanco de B).
+- Presupuesto EXACTO de `plan(59)` — los 34 mensajes del contrato §4 quedan TODOS testeados al menos una vez. Los ítems del spec §8 cuyo mensaje se repite quedan cubiertos por el assert canónico de ese mensaje y/o por SETUP que aborta el archivo si falla (documentado inline): feliz de crear_proforma → assert 29 (totales); duplicados→una vez → assert 29 (un doble conteo daría 369586, no 227836); rechazo desde enviada libera → la creación de P3 con la MISMA ODE (setup) + assert 39; correlativo de proformas → assert 39 (numero 3); no-aprobada de facturar → assert 48 (mismo mensaje que el doble); doble-anular → assert 50 (mismo mensaje de estado); módulo off en crear_proforma → assert 1 (mismo mensaje); vendedor permitido → setup de la ODE 2 + assert 2; cliente/vehículo inactivos en crear_orden_entrega → asserts 33 y 43 (mismos mensajes, guardas hermanas testeadas en 10 y 11); cross-tenant DIRECTO de crear_proforma/anular_orden/facturar contra un blanco de empresa B → asserts 31/45/46 (ya no solo por identidad de mensaje: cada uno apunta a un objeto real de B); cross-tenant de cambiar_estado_proforma → assert 37 (mismo mecanismo, blanco de B).
 - Fixtures de B (`ordenes_entrega`/`proformas`) y la simulación de emisión/rechazo SII se hacen como superuser vía `reset role` (patrón cotizaciones.test.sql: el fixture directo salta grants y RLS a propósito).
 
 - [ ] **Step 1: Escribir el test**
@@ -859,7 +859,7 @@ git commit -m "feat(db): RPCs del ciclo de transporte — ODEs, despacho, profor
 ```sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(57);
+select plan(59);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -1548,7 +1548,7 @@ rollback;
 - [ ] **Step 2: Ejecutar**
 
 Run: `pnpm supabase test db`
-Expected: 11 archivos, **191 asserts** (aislamiento 6, cobranza 16, compras 19, cotizaciones 27, inventario 10, maestros 11, por_pagar 18, registro 7, reportes 11, transporte 57, ventas 9), todos verdes. Si un assert de transporte falla, el sospechoso es la migración 0016 (Tasks 1-2) — NO debilitar el test (única adaptación permitida: el TEXTO exacto de mensajes nativos de Postgres en los asserts 20-28 y 57, si la versión los formula distinto; el CÓDIGO de error, los mensajes de las RPCs y los valores dorados son el contrato).
+Expected: 11 archivos, **193 asserts** (aislamiento 6, cobranza 16, compras 19, cotizaciones 27, inventario 10, maestros 11, por_pagar 18, registro 7, reportes 11, transporte 59, ventas 9), todos verdes. Si un assert de transporte falla, el sospechoso es la migración 0016 (Tasks 1-2) — NO debilitar el test (única adaptación permitida: el TEXTO exacto de mensajes nativos de Postgres en los asserts 20-28 y 57, si la versión los formula distinto; el CÓDIGO de error, los mensajes de las RPCs y los valores dorados son el contrato).
 
 - [ ] **Step 3: Commit**
 
@@ -4223,7 +4223,7 @@ git commit -m "feat(erp): proformas — ciclo completo, facturación e impresió
 
 Run: `pnpm --filter @suite/db gen` — commitear solo si diff (`chore(db): tipos regenerados`).
 Run: `pnpm test` — **118 tests** (core 106 incl. transporte, auth 2, dte 10).
-Run: `pnpm supabase test db` — **191 asserts** (los archivos existentes suman 134 + transporte `plan(57)`), todos verdes.
+Run: `pnpm supabase test db` — **193 asserts** (los archivos existentes suman 134 + transporte `plan(59)`), todos verdes.
 Run: `pnpm build --concurrency=1` — 3 apps.
 
 - [ ] **Step 2: E2E integral (script Node en scratchpad)**
@@ -4268,6 +4268,6 @@ Checklist adicional de verificación de los endurecimientos de Task 6 (Playwrigh
 
 ## Verificación final del plan
 
-- `pnpm test` (**118**) + `pnpm supabase test db` (**191**) + `pnpm build` (3 apps) verdes.
+- `pnpm test` (**118**) + `pnpm supabase test db` (**193**) + `pnpm build` (3 apps) verdes.
 - Ciclo completo: módulo activado con factor propio → tarifario y flota cargados → ODE digitada con kilo afecto server-side y neto sugerido-pero-negociable → proforma `PF-000001` idéntica a la real (nómina completa, IVA sobre el neto TOTAL: 227836/43289/271125) → enviada → aprobada → facturada a nota de venta con líneas sin producto (`left(..., 80)`) → emisión sin bodega fantasma y NC igual → deshacer estado de pago revierte y se re-factura → el rechazo libera ODEs incluso aprobadas y la anulación exige motivo → despacho asignable a cualquier ODE no anulada → correlativos sin saltos, todo aislado por empresa y el módulo off bloquea la creación por API.
 - Criterio de éxito del spec §10 cumplido.

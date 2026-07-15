@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(57);
+select plan(59);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -680,6 +680,35 @@ select throws_ok(
   'select count(*) from ordenes_entrega',
   '42501', 'permission denied for table ordenes_entrega',
   'un anónimo no puede consultar órdenes de entrega'
+);
+
+-- ===== Módulo off: crear_proforma también lo bloquea; anular_orden_entrega sigue viva =====
+
+-- Setup: apagar el módulo de A y fabricar una ODE fresca por insert directo (superuser
+-- salta la RPC a propósito: aquí no se prueba crear_orden_entrega, sino que crear_proforma
+-- comparte su guard y que anular_orden_entrega no depende del módulo).
+reset role;
+update public.empresas set modulo_transporte = false where id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa';
+insert into public.ordenes_entrega (id, empresa_id, numero, cliente_id, fecha_ingreso, destino_id, bultos, kilos, kilo_afecto, neto)
+values ('0de00002-0000-0000-0000-aaaaaaaaaaaa', 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 6,
+        'cccccccc-0000-0000-0000-aaaaaaaaaaaa', current_date, 'dddd0001-0000-0000-0000-aaaaaaaaaaaa', 1, 10, 10, 1000);
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
+
+-- 58) Con el módulo apagado crear_proforma también se bloquea (mismo guard y mensaje que
+--     crear_orden_entrega; Ana es dueña así que el rol pasa: el único bloqueo es el módulo).
+select throws_ok(
+  $$select crear_proforma('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-0000-0000-0000-aaaaaaaaaaaa',
+    array['0de00002-0000-0000-0000-aaaaaaaaaaaa'::uuid], null)$$,
+  'P0001', 'El módulo de transporte no está activo',
+  'con el módulo apagado tampoco se crean proformas'
+);
+
+-- 59) Apagar el módulo NO bloquea la operación existente: anular_orden_entrega sigue viva.
+select lives_ok(
+  $$select anular_orden_entrega('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',
+    '0de00002-0000-0000-0000-aaaaaaaaaaaa', 'limpieza fin de suite')$$,
+  'apagar el módulo no bloquea la operación existente: anular_orden_entrega sigue viva'
 );
 
 select * from finish();
