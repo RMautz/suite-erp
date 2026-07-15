@@ -17,7 +17,7 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
   const supabase = await crearClienteServidor()
   const { data: prof } = await supabase
     .from('proformas')
-    .select('*, clientes (razon_social, rut), documentos_venta (folio, estado, emitido_en)')
+    .select('*, clientes (razon_social, rut), documentos_venta (tipo, folio, estado, emitido_en)')
     .eq('id', id).eq('empresa_id', activa.id).single()
   if (!prof) notFound()
 
@@ -116,7 +116,12 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
           proformaId={prof.id}
           estado={prof.estado}
           documentoVentaId={prof.documento_venta_id}
-          docEstado={fav?.estado ?? null}
+          // Espejo EXACTO de la condición de anular_estado_pago (no confiar en el
+          // invariante de emitir.ts): borrador de nota_venta sin folio, o DTE rechazado.
+          puedeDeshacer={
+            (fav?.tipo === 'nota_venta' && fav?.estado === 'borrador' && fav?.folio === null) ||
+            ((fav?.tipo === 'factura' || fav?.tipo === 'boleta') && fav?.estado === 'rechazado')
+          }
         />
       </div>
     </div>

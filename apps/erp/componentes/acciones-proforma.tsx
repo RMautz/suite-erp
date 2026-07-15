@@ -70,12 +70,13 @@ export function AccionesProforma({
   proformaId,
   estado,
   documentoVentaId,
-  docEstado,
+  puedeDeshacer,
 }: {
   proformaId: string
   estado: string
   documentoVentaId: string | null
-  docEstado: string | null
+  // Calculado en el server con la condición EXACTA de anular_estado_pago (tipo+estado+folio).
+  puedeDeshacer: boolean
 }) {
   if (estado === 'borrador') {
     return (
@@ -107,7 +108,7 @@ export function AccionesProforma({
         <Link href={`/ventas/${documentoVentaId}`}>
           <Boton variante="secundario" type="button">Ver documento de venta</Boton>
         </Link>
-        {(docEstado === 'borrador' || docEstado === 'rechazado') && (
+        {puedeDeshacer && (
           <BotonDeshacer proformaId={proformaId} documentoId={documentoVentaId} />
         )}
       </div>
