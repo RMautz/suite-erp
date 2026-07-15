@@ -100,6 +100,53 @@ const { error: eQs } = await userCli.rpc('cambiar_estado_cotizacion', { p_empres
 if (eQs) die('enviar cotización', eQs)
 console.log('✓ cotización N°1 enviada (2 líneas, precio negociado, 1 exenta)')
 
+// 8) Módulo de transporte (Plan 11): activado + tarifario + flota + ODEs que replican
+//    la proforma real del usuario (PF con neto 227.836 / IVA 43.289 / total 271.125).
+const { error: eMod } = await admin.from('empresas')
+  .update({ modulo_transporte: true, factor_volumetrico: 250 }).eq('id', empresaId)
+if (eMod) die('modulo_transporte', eMod)
+const { data: dests, error: eD } = await admin.from('destinos').insert([
+  { empresa_id: empresaId, nombre: 'Puerto Varas', tarifa_kg: 216 },
+  { empresa_id: empresaId, nombre: 'Fresia', tarifa_kg: 203 },
+]).select('id, nombre')
+if (eD) die('destinos', eD)
+const destino = Object.fromEntries(dests.map((d) => [d.nombre, d.id]))
+const { data: veh, error: eV } = await admin.from('vehiculos')
+  .insert({ empresa_id: empresaId, patente: 'JKLP23', descripcion: 'Camión Mercedes Actros', capacidad_kg: 12000 })
+  .select('id').single()
+if (eV) die('vehiculos', eV)
+const { data: cond, error: eCo } = await admin.from('conductores')
+  .insert({ empresa_id: empresaId, rut: '123456785', nombre: 'Pedro Soto', telefono: '+56 9 1234 5678' })
+  .select('id').single()
+if (eCo) die('conductores', eCo)
+console.log('✓ transporte: tarifario (2 destinos) + vehículo + conductor')
+
+// ODEs vía RPC (kilo_afecto lo calcula el servidor; netos negociados = los de la proforma real)
+const clienteOde = clis.find((c) => c.razon_social === 'Transportes Cliente Ltda').id
+const { data: ode1, error: eO1 } = await userCli.rpc('crear_orden_entrega', {
+  p_empresa: empresaId, p_cliente: clienteOde, p_fecha: '2026-07-01',
+  p_destino: destino['Puerto Varas'], p_docum: '401201-401202', p_oc: '408824',
+  p_bultos: 10, p_kilos: 175, p_m3: 1.26, p_neto: 68134,
+  p_vehiculo: veh.id, p_conductor: cond.id, p_notas: null,
+})
+if (eO1) die('ODE 1', eO1)
+const { data: ode2, error: eO2 } = await userCli.rpc('crear_orden_entrega', {
+  p_empresa: empresaId, p_cliente: clienteOde, p_fecha: '2026-07-09',
+  p_destino: destino['Fresia'], p_docum: '883395', p_oc: '409292',
+  p_bultos: 2, p_kilos: 787, p_m3: 2.88, p_neto: 159702,
+  p_vehiculo: null, p_conductor: null, p_notas: null,
+})
+if (eO2) die('ODE 2', eO2)
+const { data: pfId, error: ePf } = await userCli.rpc('crear_proforma', {
+  p_empresa: empresaId, p_cliente: clienteOde, p_ordenes: [ode1, ode2], p_notas: null,
+})
+if (ePf) die('crear_proforma', ePf)
+const { error: ePfE } = await userCli.rpc('cambiar_estado_proforma', {
+  p_empresa: empresaId, p_proforma: pfId, p_estado: 'enviada', p_motivo: null,
+})
+if (ePfE) die('enviar proforma', ePfE)
+console.log('✓ 2 ODEs (kilo afecto 315 y 787) + proforma PF-000001 enviada ($271.125)')
+
 console.log('\n=== LISTO ===')
 console.log('ERP:    http://localhost:3001  (o el puerto que muestre pnpm dev)')
 console.log('Login:  ' + EMAIL + '  /  ' + PASS)
