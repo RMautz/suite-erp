@@ -8,23 +8,33 @@ import { obtenerEmpresaActiva } from '../lib/empresa-activa'
 
 export const metadata = { title: 'Suite ERP' }
 
-const NAV = [
-  { href: '/', etiqueta: 'Inicio' },
-  { href: '/productos', etiqueta: 'Productos' },
-  { href: '/clientes', etiqueta: 'Clientes' },
-  { href: '/importar', etiqueta: 'Importar' },
-  { href: '/cotizaciones', etiqueta: 'Cotizaciones' },
-  { href: '/ventas', etiqueta: 'Ventas' },
-  { href: '/inventario', etiqueta: 'Inventario' },
-  { href: '/compras', etiqueta: 'Compras' },
-  { href: '/cobranza', etiqueta: 'Cobranza' },
-  { href: '/por-pagar', etiqueta: 'Por pagar' },
-  { href: '/reportes', etiqueta: 'Reportes' },
-  { href: '/configuracion/dte', etiqueta: 'Configuración' },
-]
-
 export default async function LayoutRaiz({ children }: { children: ReactNode }) {
   const { activa, empresas } = await obtenerEmpresaActiva()
+  // El NAV depende de la empresa activa: las entradas de transporte solo existen
+  // con el módulo activo. Esto es UX, no seguridad: RLS y las RPCs siguen
+  // mandando aunque alguien navegue a mano.
+  const nav = [
+    { href: '/', etiqueta: 'Inicio' },
+    { href: '/productos', etiqueta: 'Productos' },
+    { href: '/clientes', etiqueta: 'Clientes' },
+    { href: '/importar', etiqueta: 'Importar' },
+    { href: '/cotizaciones', etiqueta: 'Cotizaciones' },
+    ...(activa?.modulo_transporte
+      ? [
+          { href: '/flota', etiqueta: 'Flota' },
+          { href: '/tarifario', etiqueta: 'Tarifario' },
+          { href: '/entregas', etiqueta: 'Entregas' },
+          { href: '/proformas', etiqueta: 'Proformas' },
+        ]
+      : []),
+    { href: '/ventas', etiqueta: 'Ventas' },
+    { href: '/inventario', etiqueta: 'Inventario' },
+    { href: '/compras', etiqueta: 'Compras' },
+    { href: '/cobranza', etiqueta: 'Cobranza' },
+    { href: '/por-pagar', etiqueta: 'Por pagar' },
+    { href: '/reportes', etiqueta: 'Reportes' },
+    { href: '/configuracion', etiqueta: 'Configuración' },
+  ]
   return (
     <html lang="es">
       <body className="bg-slate-100 text-slate-900 antialiased">
@@ -32,7 +42,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
           <div className="print:hidden">
             <BarraLateral
               titulo="Suite ERP"
-              items={NAV}
+              items={nav}
               pie={
                 <div className="grid gap-2">
                   {activa && <SelectorEmpresa empresas={empresas} activaId={activa.id} accion={cambiarEmpresaActiva} />}
