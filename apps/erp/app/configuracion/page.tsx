@@ -12,6 +12,12 @@ export default function PaginaConfiguracion() {
             <p className="text-sm text-slate-600">Datos del emisor, certificado digital y folios CAF.</p>
           </Tarjeta>
         </Link>
+        <Link href="/configuracion/pagos" className="block">
+          <Tarjeta className="h-full transition hover:border-marca-500">
+            <h2 className="mb-1 text-lg font-semibold text-slate-800">Pagos (MercadoPago)</h2>
+            <p className="text-sm text-slate-600">Credenciales de MercadoPago para cobrar con links de pago.</p>
+          </Tarjeta>
+        </Link>
         <Link href="/configuracion/modulos" className="block">
           <Tarjeta className="h-full transition hover:border-marca-500">
             <h2 className="mb-1 text-lg font-semibold text-slate-800">Módulos</h2>
