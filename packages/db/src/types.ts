@@ -42,7 +42,7 @@ export type Database = {
           estado: string
           id: string
           monto: number
-          mp_payment_id: string
+          mp_payment_id: string | null
           origen_id: string
           origen_tipo: string
           pago_id: string | null
@@ -55,7 +55,7 @@ export type Database = {
           estado?: string
           id?: string
           monto: number
-          mp_payment_id: string
+          mp_payment_id?: string | null
           origen_id: string
           origen_tipo: string
           pago_id?: string | null
@@ -68,7 +68,7 @@ export type Database = {
           estado?: string
           id?: string
           monto?: number
-          mp_payment_id?: string
+          mp_payment_id?: string | null
           origen_id?: string
           origen_tipo?: string
           pago_id?: string | null

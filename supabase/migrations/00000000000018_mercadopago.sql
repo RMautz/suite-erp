@@ -48,8 +48,11 @@ create index links_pago_origen_idx on public.links_pago (empresa_id, origen_tipo
 
 -- ---------- anticipos (dinero recibido antes de la factura; jamas varado) ----------
 -- origen_tipo 'excedente' = pago MP mayor al saldo de una factura (el origen es
--- esa misma factura); 'proforma'/'cotizacion' = anticipo puro. mp_payment_id
--- NOT NULL y unico por empresa: la idempotencia del webhook se apoya aqui.
+-- esa misma factura) O el remanente de un anticipo aplicado a un documento de
+-- saldo menor; 'proforma'/'cotizacion' = anticipo puro. mp_payment_id NULLABLE
+-- (null en el split de un anticipo aplicado: es remanente, no un pago MP nuevo)
+-- y unico por empresa cuando no es null: la idempotencia del webhook se apoya en
+-- el valor no-null (nulls son distintos, asi el unique es de facto parcial).
 create table public.anticipos (
   id uuid primary key default gen_random_uuid(),
   empresa_id uuid not null references public.empresas (id),
@@ -57,7 +60,7 @@ create table public.anticipos (
   origen_tipo text not null check (origen_tipo in ('proforma', 'cotizacion', 'excedente')),
   origen_id uuid not null,
   monto integer not null check (monto > 0),
-  mp_payment_id text not null,
+  mp_payment_id text,
   estado text not null default 'recibido' check (estado in ('recibido', 'aplicado')),
   -- Se llenan al aplicar (aplicar_anticipo / aplicar_anticipo_manual, Task 2).
   documento_venta_id uuid,
@@ -399,6 +402,15 @@ begin
 
   update anticipos set estado = 'aplicado', pago_id = v_pago, documento_venta_id = p_documento
   where id = v_ant.id and empresa_id = p_empresa;
+
+  -- Excedente (anticipo > saldo): el remanente no aplicado se preserva como un
+  -- NUEVO anticipo 'recibido' (origen 'excedente' = este documento) — jamas dinero
+  -- invisible. mp_payment_id null: es remanente, no un pago MP nuevo; el anticipo
+  -- original queda 'aplicado' intacto para auditoria. v_aplicado > 0 ya garantizado.
+  if v_aplicado < v_ant.monto then
+    insert into anticipos (empresa_id, cliente_id, origen_tipo, origen_id, monto, mp_payment_id)
+    values (p_empresa, v_cliente, 'excedente', p_documento, v_ant.monto - v_aplicado, null);
+  end if;
 end $$;
 revoke execute on function public.aplicar_anticipo(uuid, uuid) from anon, public;
 grant execute on function public.aplicar_anticipo(uuid, uuid) to service_role;
@@ -469,6 +481,14 @@ begin
 
   update anticipos set estado = 'aplicado', pago_id = v_pago, documento_venta_id = p_documento
   where id = v_ant.id and empresa_id = p_empresa;
+
+  -- Mismo split que el hook: el excedente del anticipo aplicado se preserva como
+  -- un nuevo anticipo 'recibido' (origen 'excedente' = este documento), mp_payment_id
+  -- null. El saldo > 0 se valido arriba, asi que v_aplicado > 0.
+  if v_aplicado < v_ant.monto then
+    insert into anticipos (empresa_id, cliente_id, origen_tipo, origen_id, monto, mp_payment_id)
+    values (p_empresa, v_doc.cliente_id, 'excedente', p_documento, v_ant.monto - v_aplicado, null);
+  end if;
 end $$;
 revoke execute on function public.aplicar_anticipo_manual(uuid, uuid, uuid) from anon, public;
 grant execute on function public.aplicar_anticipo_manual(uuid, uuid, uuid) to authenticated;

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(31);
 
 insert into auth.users (instance_id, id, aud, role, email)
 values
@@ -256,6 +256,10 @@ select registrar_anticipo_mp('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'proforma',
 select registrar_anticipo_mp('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'proforma',
   (select id from proformas where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and numero = 3),
   71400, 'mp-ant-manual', (select id from links_pago where preferencia_id = 'pref-pf-manual'));
+-- Anticipo extra de A1 (60000) para el split: se aplicará al 103 (saldo 40000) → excedente 20000.
+select registrar_anticipo_mp('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'proforma',
+  (select id from proformas where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and numero = 3),
+  60000, 'mp-ant-split', null);
 reset role;
 
 -- ===== Ana: los efectos del webhook cuadran a mano =====
@@ -391,6 +395,36 @@ select throws_ok(
     'dddddddd-0000-0000-0000-000000000106')$$,
   'P0001', 'El anticipo no existe o ya fue aplicado',
   'un anticipo ya aplicado no se vuelve a aplicar'
+);
+
+-- SETUP: aplicar el anticipo 'mp-ant-split' (60000) al 103 (saldo 40000): pago 40000 + excedente 20000.
+select aplicar_anticipo_manual('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',
+  (select id from anticipos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and mp_payment_id = 'mp-ant-split'),
+  'dddddddd-0000-0000-0000-000000000103');
+
+-- 20a) SPLIT: anticipo > saldo → el pago es por el saldo (40000) y el remanente (20000) queda como
+--      un NUEVO anticipo 'recibido' 'excedente' (origen = el 103, mp_payment_id null): jamás dinero invisible.
+select is(
+  (select monto from pagos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and mp_payment_id = 'mp-ant-split')::text
+  || '/' ||
+  (select monto from anticipos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
+     and origen_tipo = 'excedente' and origen_id = 'dddddddd-0000-0000-0000-000000000103'
+     and estado = 'recibido' and mp_payment_id is null)::text,
+  '40000/20000',
+  'anticipo mayor al saldo: pago por el saldo y el remanente como nuevo anticipo recibido'
+);
+
+-- 20b) El anticipo original quedó 'aplicado' y el dinero rastreado (pago + nuevo anticipo) = monto original (60000).
+select is(
+  (select estado from anticipos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and mp_payment_id = 'mp-ant-split')
+  || '/' ||
+  (
+    (select monto from pagos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and mp_payment_id = 'mp-ant-split')
+    + (select monto from anticipos where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
+       and origen_tipo = 'excedente' and origen_id = 'dddddddd-0000-0000-0000-000000000103' and mp_payment_id is null)
+  )::text,
+  'aplicado/60000',
+  'anticipo original aplicado y pago + nuevo anticipo suman el monto original: nada se pierde'
 );
 
 -- 21) Cross-tenant: Ana (no es miembro de B) pide un link sobre la empresa B → rol denegado.
