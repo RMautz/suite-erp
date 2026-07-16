@@ -7,7 +7,7 @@ import type { Json } from '@suite/db'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import type { EstadoForm } from '../tipos'
 
-const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'otro'] as const
+const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'mercadopago', 'otro'] as const
 
 type AplicacionEntrada = { documentoId: string; monto: number }
 
@@ -80,5 +80,32 @@ export async function anularPago(_prev: EstadoForm, formData: FormData): Promise
   }
   revalidatePath('/cobranza')
   revalidatePath('/cobranza/pagos')
+  return {}
+}
+
+// Aplica un anticipo 'recibido' a una factura emitida con saldo del MISMO cliente (spec §3).
+// La RPC valida rol, existencia/estado del anticipo y que el documento admita la aplicación;
+// aquí solo se re-mapean sus mensajes exactos (documento antes que anticipo: el mensaje de
+// documento contiene la palabra "anticipo").
+export async function aplicarAnticipoManual(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+  const anticipo = String(formData.get('anticipo_id') ?? '')
+  const documento = String(formData.get('documento_id') ?? '')
+  if (!anticipo) return { error: 'Anticipo no válido' }
+  if (!documento) return { error: 'Selecciona una factura' }
+  const supabase = await crearClienteServidor()
+  const { error } = await supabase.rpc('aplicar_anticipo_manual', {
+    p_empresa: activa.id,
+    p_anticipo: anticipo,
+    p_documento: documento,
+  })
+  if (error) {
+    if (error.message.includes('rol')) return { error: 'Tu rol no permite aplicar anticipos' }
+    if (error.message.includes('documento')) return { error: 'El documento no permite aplicar el anticipo' }
+    if (error.message.includes('anticipo')) return { error: 'El anticipo no existe o ya fue aplicado' }
+    return { error: 'No se pudo aplicar el anticipo' }
+  }
+  revalidatePath('/cobranza')
   return {}
 }

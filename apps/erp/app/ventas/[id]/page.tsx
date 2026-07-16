@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearCLP, formatearRut } from '@suite/core'
 import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
+import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { emitirDocumento, emitirNotaCredito } from '../emitir'
 
@@ -18,6 +19,20 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
 
   const emitible = doc.estado === 'borrador' || doc.estado === 'pendiente_envio'
   const esNotaVenta = doc.tipo === 'nota_venta'
+
+  // Cobro con link MP: solo factura/boleta emitida con saldo > 0.
+  const cobrable = doc.estado === 'emitido' && doc.tipo !== 'nota_credito' && doc.tipo !== 'nota_venta'
+  let saldo = 0
+  let linkPago: { url: string } | null = null
+  if (cobrable) {
+    const [{ data: fila }, { data: link }] = await Promise.all([
+      supabase.from('saldos_documentos').select('saldo').eq('empresa_id', activa.id).eq('documento_id', doc.id).maybeSingle(),
+      supabase.from('links_pago').select('url')
+        .eq('empresa_id', activa.id).eq('origen_tipo', 'factura').eq('origen_id', doc.id).eq('estado', 'vigente').maybeSingle(),
+    ])
+    saldo = fila?.saldo ?? 0
+    linkPago = link ? { url: link.url } : null
+  }
 
   return (
     <div>
@@ -71,6 +86,18 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
           </>
         )}
       </div>
+
+      {cobrable && saldo > 0 && (
+        <Tarjeta className="mt-6 max-w-3xl">
+          <h2 className="text-lg font-semibold text-slate-900">Cobro con MercadoPago</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Saldo pendiente: <strong className="font-mono">{formatearCLP(saldo)}</strong>. Genera un link para que el cliente pague en línea.
+          </p>
+          <div className="mt-3">
+            <GenerarLinkPago tipo="factura" id={doc.id} linkVigente={linkPago} />
+          </div>
+        </Tarjeta>
+      )}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { cotizacionVencida, formatearCLP, formatearRut, type EstadoCotizacion } 
 import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { AccionesCotizacion } from '../../../componentes/acciones-cotizacion'
 import { BotonImprimir } from '../../../componentes/boton-imprimir'
+import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { ETIQUETA_ESTADO, TONO_ESTADO } from '../estados'
 
@@ -18,6 +19,16 @@ export default async function DetalleCotizacion({ params }: { params: Promise<{ 
     .select('*, clientes (razon_social, rut), cotizaciones_lineas (descripcion, cantidad, precio_neto, exenta, subtotal)')
     .eq('id', id).eq('empresa_id', activa.id).single()
   if (!cot) notFound()
+
+  let linkPago: { url: string } | null = null
+  if (cot.estado === 'aceptada') {
+    const { data: link } = await supabase
+      .from('links_pago')
+      .select('url')
+      .eq('empresa_id', activa.id).eq('origen_tipo', 'cotizacion').eq('origen_id', cot.id).eq('estado', 'vigente')
+      .maybeSingle()
+    linkPago = link ? { url: link.url } : null
+  }
 
   const hoy = new Date().toISOString().slice(0, 10)
   // estado es text + check en SQL; el codegen lo tipa string — cast solo de tipo.
@@ -81,6 +92,19 @@ export default async function DetalleCotizacion({ params }: { params: Promise<{ 
           </Link>
         )}
       </div>
+
+      {cot.estado === 'aceptada' && (
+        <Tarjeta className="mt-6 max-w-3xl print:hidden">
+          <h2 className="text-lg font-semibold text-slate-900">Anticipo con MercadoPago</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cobra el total de la cotización (<strong className="font-mono">{formatearCLP(cot.total)}</strong>) como anticipo;
+            se aplicará solo al facturarla.
+          </p>
+          <div className="mt-3">
+            <GenerarLinkPago tipo="cotizacion" id={cot.id} linkVigente={linkPago} />
+          </div>
+        </Tarjeta>
+      )}
     </div>
   )
 }

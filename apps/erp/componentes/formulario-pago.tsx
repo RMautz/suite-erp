@@ -48,6 +48,7 @@ export function FormularioPago({
               <option value="transferencia">Transferencia</option>
               <option value="tarjeta">Tarjeta</option>
               <option value="cheque">Cheque</option>
+              <option value="mercadopago">MercadoPago</option>
               <option value="otro">Otro</option>
             </Selector>
           </Campo>

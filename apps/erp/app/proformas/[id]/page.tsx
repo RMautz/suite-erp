@@ -4,6 +4,7 @@ import { formatearCLP, formatearNumeroProforma, formatearRut } from '@suite/core
 import { Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { AccionesProforma } from '../../../componentes/acciones-proforma'
 import { BotonImprimir } from '../../../componentes/boton-imprimir'
+import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { ETIQUETA_ESTADO, TONO_ESTADO } from '../estados'
 
@@ -34,6 +35,17 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
   const totBultos = odes.reduce((s, o) => s + o.bultos, 0)
   const totM3 = odes.reduce((s, o) => s + (o.m3 ?? 0), 0)
   const totKiloAfecto = odes.reduce((s, o) => s + o.kilo_afecto, 0)
+
+  const conLinkPago = prof.estado === 'enviada' || prof.estado === 'aprobada'
+  let linkPago: { url: string } | null = null
+  if (conLinkPago) {
+    const { data: link } = await supabase
+      .from('links_pago')
+      .select('url')
+      .eq('empresa_id', activa.id).eq('origen_tipo', 'proforma').eq('origen_id', prof.id).eq('estado', 'vigente')
+      .maybeSingle()
+    linkPago = link ? { url: link.url } : null
+  }
 
   const fav = prof.documentos_venta
   const fecha = new Date(prof.fecha + 'T00:00:00').toLocaleDateString('es-CL')
@@ -124,6 +136,19 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
           }
         />
       </div>
+
+      {conLinkPago && (
+        <Tarjeta className="mt-6 max-w-3xl print:hidden">
+          <h2 className="text-lg font-semibold text-slate-900">Anticipo con MercadoPago</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cobra el total de la proforma (<strong className="font-mono">{formatearCLP(prof.total)}</strong>) como anticipo;
+            se aplicará solo al facturarla.
+          </p>
+          <div className="mt-3">
+            <GenerarLinkPago tipo="proforma" id={prof.id} linkVigente={linkPago} />
+          </div>
+        </Tarjeta>
+      )}
     </div>
   )
 }

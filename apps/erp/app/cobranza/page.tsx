@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
-import { estaVencido, formatearCLP } from '@suite/core'
+import { estaVencido, formatearCLP, formatearNumeroProforma } from '@suite/core'
 import { Boton, Encabezado, Insignia, Selector, Tabla, Td, Th, Tr } from '@suite/ui'
+import { FormularioAplicarAnticipo } from '../../componentes/formulario-aplicar-anticipo'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
+import { aplicarAnticipoManual } from './acciones'
 
 const HOY = () => new Date().toISOString().slice(0, 10)
 
@@ -34,6 +36,49 @@ export default async function PaginaCobranza({
   if (vencidas === '1') filas = filas.filter((f) => estaVencido(f.fecha_vencimiento, hoy, f.saldo ?? 0))
   const porCobrar = filas.reduce((s, f) => s + Math.max(0, f.saldo ?? 0), 0)
   const vencido = filas.filter((f) => estaVencido(f.fecha_vencimiento, hoy, f.saldo ?? 0)).reduce((s, f) => s + (f.saldo ?? 0), 0)
+
+  // ---- Anticipos MercadoPago: etiqueta del origen (PF-N° / cotización N° / excedente de
+  // factura folio X) por queries por tipo + Map, y facturas emitidas con saldo por cliente
+  // para el botón Aplicar (mismo cliente). `.in('id', [])` devuelve 0 filas sin error.
+  const { data: anticipos } = await supabase
+    .from('anticipos')
+    .select('id, origen_tipo, origen_id, monto, estado, recibido_en, cliente_id, clientes (razon_social)')
+    .eq('empresa_id', activa.id)
+    .order('recibido_en', { ascending: false })
+    .limit(200)
+  const listaAnticipos = anticipos ?? []
+  const idsPF = [...new Set(listaAnticipos.filter((a) => a.origen_tipo === 'proforma').map((a) => a.origen_id))]
+  const idsCot = [...new Set(listaAnticipos.filter((a) => a.origen_tipo === 'cotizacion').map((a) => a.origen_id))]
+  const idsFac = [...new Set(listaAnticipos.filter((a) => a.origen_tipo === 'excedente').map((a) => a.origen_id))]
+  const [refsPF, refsCot, refsFac, saldosAplicables] = await Promise.all([
+    supabase.from('proformas').select('id, numero').eq('empresa_id', activa.id).in('id', idsPF),
+    supabase.from('cotizaciones').select('id, numero').eq('empresa_id', activa.id).in('id', idsCot),
+    supabase.from('documentos_venta').select('id, folio').eq('empresa_id', activa.id).in('id', idsFac),
+    supabase.from('saldos_documentos').select('documento_id, tipo, folio, cliente_id, saldo').eq('empresa_id', activa.id).gt('saldo', 0).limit(500),
+  ])
+  const mapaPF = new Map((refsPF.data ?? []).map((p) => [p.id, p.numero]))
+  const mapaCot = new Map((refsCot.data ?? []).map((c) => [c.id, c.numero]))
+  const mapaFac = new Map((refsFac.data ?? []).map((f) => [f.id, f.folio]))
+  const facturasPorCliente = new Map<string, { documentoId: string; etiqueta: string; saldo: number }[]>()
+  for (const s of saldosAplicables.data ?? []) {
+    if (!s.documento_id || !s.cliente_id) continue
+    const arr = facturasPorCliente.get(s.cliente_id) ?? []
+    arr.push({ documentoId: s.documento_id, etiqueta: `${s.tipo === 'factura' ? 'Factura' : 'Boleta'} ${s.folio ?? '—'}`, saldo: s.saldo ?? 0 })
+    facturasPorCliente.set(s.cliente_id, arr)
+  }
+  function etiquetaAnticipo(a: { origen_tipo: string; origen_id: string }): string {
+    if (a.origen_tipo === 'proforma') {
+      const n = mapaPF.get(a.origen_id)
+      return n ? formatearNumeroProforma(n) : 'Proforma'
+    }
+    if (a.origen_tipo === 'cotizacion') {
+      const n = mapaCot.get(a.origen_id)
+      return n != null ? `Cotización N° ${n}` : 'Cotización'
+    }
+    const folio = mapaFac.get(a.origen_id)
+    return `Excedente de factura ${folio ?? '—'}`
+  }
+
   return (
     <div>
       <Encabezado titulo="Cuentas por cobrar">
@@ -78,6 +123,30 @@ export default async function PaginaCobranza({
         <span>Por cobrar: <strong className="font-mono">{formatearCLP(porCobrar)}</strong></span>
         <span className="text-red-600">Vencido: <strong className="font-mono">{formatearCLP(vencido)}</strong></span>
       </div>
+
+      <section className="mt-10">
+        <h2 className="mb-3 text-lg font-semibold text-slate-800">Anticipos</h2>
+        <Tabla>
+          <thead><tr><Th>Cliente</Th><Th>Origen</Th><Th className="text-right">Monto</Th><Th>Estado</Th><Th>Fecha</Th><Th /></tr></thead>
+          <tbody>
+            {listaAnticipos.map((a) => (
+              <Tr key={a.id}>
+                <Td>{a.clientes?.razon_social ?? '—'}</Td>
+                <Td>{etiquetaAnticipo(a)}</Td>
+                <Td className="text-right font-mono">{formatearCLP(a.monto)}</Td>
+                <Td>{a.estado === 'aplicado' ? <Insignia tono="verde">Aplicado</Insignia> : <Insignia tono="amarillo">Recibido</Insignia>}</Td>
+                <Td>{new Date(a.recibido_en).toLocaleDateString('es-CL')}</Td>
+                <Td className="text-right">
+                  {a.estado === 'recibido' && (
+                    <FormularioAplicarAnticipo anticipoId={a.id} facturas={facturasPorCliente.get(a.cliente_id) ?? []} accion={aplicarAnticipoManual} />
+                  )}
+                </Td>
+              </Tr>
+            ))}
+            {listaAnticipos.length === 0 && <Tr><Td colSpan={6} className="py-8 text-center text-slate-500">No hay anticipos registrados.</Td></Tr>}
+          </tbody>
+        </Tabla>
+      </section>
     </div>
   )
 }
