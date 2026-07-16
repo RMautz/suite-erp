@@ -1691,6 +1691,60 @@ export type Database = {
           },
         ]
       }
+      pagos_suscripcion: {
+        Row: {
+          buy_order: string
+          creado_en: string
+          estado: string
+          id: string
+          monto: number
+          organizacion_id: string
+          pagado_en: string | null
+          pasarela: string
+          plan_id: string
+          referencia_externa: string | null
+        }
+        Insert: {
+          buy_order: string
+          creado_en?: string
+          estado?: string
+          id?: string
+          monto: number
+          organizacion_id: string
+          pagado_en?: string | null
+          pasarela: string
+          plan_id: string
+          referencia_externa?: string | null
+        }
+        Update: {
+          buy_order?: string
+          creado_en?: string
+          estado?: string
+          id?: string
+          monto?: number
+          organizacion_id?: string
+          pagado_en?: string | null
+          pasarela?: string
+          plan_id?: string
+          referencia_externa?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_suscripcion_organizacion_id_fkey"
+            columns: ["organizacion_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_suscripcion_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planes: {
         Row: {
           activo: boolean
@@ -2068,7 +2122,7 @@ export type Database = {
           {
             foreignKeyName: "suscripciones_organizacion_id_fkey"
             columns: ["organizacion_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "organizaciones"
             referencedColumns: ["id"]
           },
@@ -2355,6 +2409,7 @@ export type Database = {
       }
     }
     Functions: {
+      abortar_pago_suscripcion: { Args: { p_pago: string }; Returns: undefined }
       anular_documento_compra: {
         Args: { p_documento: string; p_empresa: string; p_motivo: string }
         Returns: undefined
@@ -2410,6 +2465,10 @@ export type Database = {
           p_proforma: string
         }
         Returns: undefined
+      }
+      confirmar_pago_suscripcion: {
+        Args: { p_monto: number; p_pago: string; p_referencia: string }
+        Returns: string
       }
       convertir_cotizacion: {
         Args: { p_cotizacion: string; p_empresa: string }
@@ -2472,6 +2531,10 @@ export type Database = {
           p_vehiculo: string
         }
         Returns: string
+      }
+      crear_pago_suscripcion: {
+        Args: { p_organizacion: string; p_pasarela: string }
+        Returns: Json
       }
       crear_proforma: {
         Args: {
