@@ -69,6 +69,91 @@ export type Database = {
           },
         ]
       }
+      cargas_combustible: {
+        Row: {
+          comuna: string | null
+          conductor_id: string | null
+          creado_en: string
+          empresa_id: string
+          estacion: string | null
+          fecha: string
+          guia: string | null
+          hora: string | null
+          id: string
+          litros: number
+          monto: number
+          odometro: number | null
+          origen: string
+          precio_litro: number | null
+          producto: string
+          rut_chofer: string | null
+          tarjeta: string | null
+          vehiculo_id: string
+        }
+        Insert: {
+          comuna?: string | null
+          conductor_id?: string | null
+          creado_en?: string
+          empresa_id: string
+          estacion?: string | null
+          fecha: string
+          guia?: string | null
+          hora?: string | null
+          id?: string
+          litros: number
+          monto: number
+          odometro?: number | null
+          origen: string
+          precio_litro?: number | null
+          producto?: string
+          rut_chofer?: string | null
+          tarjeta?: string | null
+          vehiculo_id: string
+        }
+        Update: {
+          comuna?: string | null
+          conductor_id?: string | null
+          creado_en?: string
+          empresa_id?: string
+          estacion?: string | null
+          fecha?: string
+          guia?: string | null
+          hora?: string | null
+          id?: string
+          litros?: number
+          monto?: number
+          odometro?: number | null
+          origen?: string
+          precio_litro?: number | null
+          producto?: string
+          rut_chofer?: string | null
+          tarjeta?: string | null
+          vehiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargas_combustible_empresa_id_conductor_id_fkey"
+            columns: ["empresa_id", "conductor_id"]
+            isOneToOne: false
+            referencedRelation: "conductores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cargas_combustible_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_combustible_empresa_id_vehiculo_id_fkey"
+            columns: ["empresa_id", "vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehiculos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       categorias_producto: {
         Row: {
           creado_en: string
@@ -745,6 +830,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos_vehiculo: {
+        Row: {
+          categoria: string
+          creado_en: string
+          empresa_id: string
+          fecha: string
+          id: string
+          monto: number
+          notas: string | null
+          vehiculo_id: string
+        }
+        Insert: {
+          categoria: string
+          creado_en?: string
+          empresa_id: string
+          fecha: string
+          id?: string
+          monto: number
+          notas?: string | null
+          vehiculo_id: string
+        }
+        Update: {
+          categoria?: string
+          creado_en?: string
+          empresa_id?: string
+          fecha?: string
+          id?: string
+          monto?: number
+          notas?: string | null
+          vehiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_vehiculo_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_vehiculo_empresa_id_vehiculo_id_fkey"
+            columns: ["empresa_id", "vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehiculos"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -1884,6 +2017,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rentabilidad_vehiculo: {
+        Row: {
+          combustible: number | null
+          empresa_id: string | null
+          gastos: number | null
+          ingresos: number | null
+          mes: string | null
+          vehiculo_id: string | null
+        }
+        Relationships: []
       }
       saldos_compras: {
         Row: {
