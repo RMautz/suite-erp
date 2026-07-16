@@ -1,17 +1,38 @@
 // Siembra la demo local COMPLETA (post-Plan 9). Correr tras cada `supabase db reset`
 // o `pnpm supabase test db` (los tests borran todo): node scripts/seed-demo.mjs
+// Requiere DTE_ENCRYPTION_KEY en el entorno (la misma que usa apps/erp/.env.local)
+// para cifrar los folios CAF sembrados — exportarla antes de correr el script.
 //
 // Lecciones acumuladas:
 // - RUT org 77.123.456-9: NO colisiona con fixtures pgTAP ni con los RUT de E2E.
 // - clientes/proveedores se insertan como usuario AUTHENTICATED (service_role no tiene USAGE en schema app).
-// - folios_caf via service_role con XML dummy (MockDTE no lo valida) para poder emitir factura/boleta.
+// - folios_caf via service_role con XML dummy (MockDTE no lo valida) para poder emitir factura/boleta,
+//   pero CIFRADO igual que cargarCAF (apps/erp/app/configuracion/dte/acciones.ts) — descifrar() truena
+//   con texto plano. cifrarComoDte() de abajo espeja packages/dte/src/cripto.ts#cifrar byte a byte
+//   (mismo algoritmo/formato); no se importa el paquete TS directo porque este script corre con
+//   `node` plano y el pipeline fija Node 20 (.nvmrc), sin type-stripping nativo.
 // - Claves: son las JWT públicas estándar del stack local de Supabase (issuer supabase-demo). Solo dev.
+import { createCipheriv, randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(raiz, 'packages/auth/package.json'))
 const { createClient } = require('@supabase/supabase-js')
+
+// Espeja packages/dte/src/cripto.ts#cifrar byte a byte (mismo algoritmo/formato,
+// descifrable por descifrar() sin cambios). No se importa el paquete TS directo:
+// este script corre con `node` plano y el pipeline fija Node 20 (.nvmrc), sin
+// type-stripping nativo para TypeScript.
+function cifrarComoDte(datosUtf8, claveHex) {
+  const clave = Buffer.from(claveHex, 'hex')
+  if (clave.length !== 32) throw new Error('DTE_ENCRYPTION_KEY debe ser 32 bytes en hex (64 caracteres)')
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', clave, iv)
+  const ct = Buffer.concat([cipher.update(Buffer.from(datosUtf8, 'utf8')), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return [iv.toString('base64'), tag.toString('base64'), ct.toString('base64')].join('.')
+}
 
 const API = 'http://127.0.0.1:54321'
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
@@ -21,6 +42,10 @@ const EMAIL = 'demo@suite-erp.cl', PASS = 'demo1234'
 const admin = createClient(API, SERVICE, { auth: { autoRefreshToken: false, persistSession: false } })
 const userCli = createClient(API, ANON, { auth: { autoRefreshToken: false, persistSession: false } })
 const die = (m, e) => { console.error('✗', m, e?.message ?? e ?? ''); process.exit(1) }
+
+// Falla rápido: los folios CAF (paso 6) necesitan esta clave para cifrar xml_caf.
+const claveDte = process.env.DTE_ENCRYPTION_KEY
+if (!claveDte) die('Falta DTE_ENCRYPTION_KEY en el entorno (export la misma clave que usa apps/erp/.env.local)', null)
 
 // 1) Usuario confirmado
 const { error: eCu } = await admin.auth.admin.createUser({ email: EMAIL, password: PASS, email_confirm: true })
@@ -73,11 +98,13 @@ const { error: eM } = await admin.from('movimientos_stock').insert([
 if (eM) die('movimientos', eM)
 console.log('✓ stock inicial (FIL-100 crítico)')
 
-// 6) Folios CAF (XML dummy: MockDTE no valida el CAF) para poder emitir
+// 6) Folios CAF (XML dummy: MockDTE no valida el CAF) para poder emitir.
+// xml_caf va CIFRADO (cifrarComoDte, misma clave DTE_ENCRYPTION_KEY) porque
+// descifrar() lo espera así en cualquier emisión real (ver apps/erp/lib/emision.ts).
 const { error: eF } = await admin.from('folios_caf').insert([
-  { empresa_id: empresaId, tipo_documento: 'factura', desde: 1, hasta: 100, siguiente: 1, xml_caf: '<CAF-DEMO/>' },
-  { empresa_id: empresaId, tipo_documento: 'boleta', desde: 1, hasta: 200, siguiente: 1, xml_caf: '<CAF-DEMO/>' },
-  { empresa_id: empresaId, tipo_documento: 'nota_credito', desde: 1, hasta: 50, siguiente: 1, xml_caf: '<CAF-DEMO/>' },
+  { empresa_id: empresaId, tipo_documento: 'factura', desde: 1, hasta: 100, siguiente: 1, xml_caf: cifrarComoDte('<CAF-DEMO/>', claveDte) },
+  { empresa_id: empresaId, tipo_documento: 'boleta', desde: 1, hasta: 200, siguiente: 1, xml_caf: cifrarComoDte('<CAF-DEMO/>', claveDte) },
+  { empresa_id: empresaId, tipo_documento: 'nota_credito', desde: 1, hasta: 50, siguiente: 1, xml_caf: cifrarComoDte('<CAF-DEMO/>', claveDte) },
 ])
 if (eF) die('folios_caf', eF)
 console.log('✓ folios CAF factura/boleta/NC')
