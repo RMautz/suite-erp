@@ -105,7 +105,10 @@ describe('MercadoPagoPasarela: no filtra secretos en los logs', () => {
 
     await expect(mp.obtenerPago('pay-1')).rejects.toThrow()
 
-    const loggeado = errSpy.mock.calls.flat().join(' ')
+    const loggeado = errSpy.mock.calls
+      .flat()
+      .map((a) => (typeof a === 'string' ? a : JSON.stringify(a)))
+      .join(' ')
     expect(loggeado).toContain('500')
     expect(loggeado).not.toContain('TOKEN-SUPER-SECRETO')
     expect(loggeado).not.toContain('Bearer')
