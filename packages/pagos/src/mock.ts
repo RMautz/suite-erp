@@ -10,7 +10,18 @@ import type {
 // Store a nivel de MÓDULO: el simulador (Server Action, solo dev) escribe con
 // registrarPagoMock y el webhook, en OTRA instancia de MockPasarela, lo lee con
 // obtenerPago. Un registro por-instancia no cruzaría ese límite proceso→proceso.
-const STORE: Record<string, PagoConsultado> = {}
+//
+// Respaldado en globalThis (no un `const` de módulo puro): en `next dev`, el
+// simulador y el webhook son rutas distintas que el bundler recompila bajo
+// demanda cada una con SU PROPIA instancia del módulo — un `const` normal se
+// reinicializaría vacío en cada recompilación y perdería el pago recién
+// registrado. `globalThis` sobrevive a la re-instanciación de módulos porque
+// es el mismo proceso Node. Solo dev/mock; en producción no se usa MockPasarela.
+interface GlobalConStorePagos {
+  __suitePagosMockStore?: Record<string, PagoConsultado>
+}
+const g = globalThis as unknown as GlobalConStorePagos
+const STORE: Record<string, PagoConsultado> = (g.__suitePagosMockStore ??= {})
 
 // Cabeceras de firma que MockPasarela.verificarFirma acepta (ignora su contenido:
 // solo el secret === 'mock' importa). El simulador las manda al webhook real.
