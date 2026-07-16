@@ -12,11 +12,14 @@ const SECCIONES = [
 export default async function IndiceReportes() {
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return <Encabezado titulo="Sin empresa activa" />
+  const secciones = activa.modulo_transporte
+    ? [...SECCIONES, { href: '/reportes/rentabilidad', titulo: 'Rentabilidad por vehículo', desc: 'Ingresos, combustible y gastos por camión, con export CSV' }]
+    : SECCIONES
   return (
     <div>
       <Encabezado titulo="Reportes" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {SECCIONES.map((s) => (
+        {secciones.map((s) => (
           <Link key={s.href} href={s.href}>
             <Tarjeta className="hover:border-marca-400">
               <p className="text-lg font-semibold text-slate-900">{s.titulo}</p>
