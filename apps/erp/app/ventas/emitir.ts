@@ -6,7 +6,7 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { CODIGO_SII, type TipoDocumento } from '@suite/core'
 import { proveedorPorAmbiente, type EstadoResultado } from '@suite/dte'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
-import { credencialesEmpresa, registrarMovimientosDocumento } from '../../lib/emision'
+import { aplicarAnticipoDocumento, credencialesEmpresa, registrarMovimientosDocumento } from '../../lib/emision'
 
 const TIPOS_EMISIBLES = ['factura', 'boleta'] as const
 
@@ -132,6 +132,10 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
         -1,
         'Venta ' + tipo + ' folio ' + folio
       )
+      // Anticipo recibido por un link de pago sobre la proforma/cotización de origen: se aplica
+      // solo al emitirse la factura. NUNCA lanza (espejo de registrarMovimientosDocumento): si
+      // lanzara, el catch revertiría un DTE vivo. Fallo best-effort → botón "Aplicar" en /cobranza.
+      await aplicarAnticipoDocumento(activa.id, id)
     }
   } catch (e) {
     // La decisión es sobre folio PERSISTIDO, no sobre la variable local `folio`: si se

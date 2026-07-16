@@ -76,5 +76,24 @@ export async function registrarMovimientosDocumento(
   }
 }
 
+// Aplica un anticipo `recibido` a la factura recién emitida cuyo origen (proforma/cotización)
+// enlaza a ese documento. Delegado a la RPC aplicar_anticipo (solo service_role): bajo lock del
+// documento aplica el anticipo hasta el saldo con un pago método 'mercadopago'; sin anticipo, no-op.
+// NUNCA lanza — espejo de registrarMovimientosDocumento: si lanzara, el catch de emitirDocumento
+// revertiría un DTE ya vivo (re-emisión con el mismo folio). El fallo best-effort se recupera con
+// el botón "Aplicar" manual de /cobranza (que también cubre la emisión anterior al webhook).
+export async function aplicarAnticipoDocumento(empresaId: string, documentoId: string): Promise<void> {
+  try {
+    const admin = clienteAdmin()
+    const { error } = await admin.rpc('aplicar_anticipo', {
+      p_empresa: empresaId,
+      p_documento: documentoId,
+    })
+    if (error) console.error('aplicarAnticipoDocumento:', error.message)
+  } catch (e) {
+    console.error('aplicarAnticipoDocumento:', e)
+  }
+}
+
 export { CODIGO_SII, proveedorPorAmbiente }
 export type { SolicitudEmision }
