@@ -76,6 +76,7 @@ export async function cambiarEstadoProforma(_prev: EstadoForm, formData: FormDat
     if (error.message.includes('Transición')) return { error: 'Transición de estado no válida' }
     if (error.message.includes('motivo')) return { error: 'El rechazo requiere un motivo' }
     if (error.message.includes('no existe')) return { error: 'La proforma no existe' }
+    if (error.message.includes('anticipo recibido')) return { error: 'La proforma tiene un anticipo recibido; gestiona la devolución primero' }
     return { error: 'No se pudo cambiar el estado de la proforma' }
   }
   revalidatePath('/proformas')
