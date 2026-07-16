@@ -8,7 +8,7 @@ export default async function PanelAdmin() {
   const admin = clienteAdmin()
   const { data: organizaciones, error } = await admin
     .from('organizaciones')
-    .select('id, rut, razon_social, estado, trial_hasta, creado_en, planes (nombre)')
+    .select('id, rut, razon_social, estado, trial_hasta, creado_en, planes (nombre), suscripciones (hasta)')
     .order('creado_en', { ascending: false })
 
   if (error) throw new Error('No se pudieron cargar las organizaciones')
@@ -24,6 +24,7 @@ export default async function PanelAdmin() {
             <th align="left">Plan</th>
             <th align="left">Estado</th>
             <th align="left">Trial hasta</th>
+            <th align="left">Suscrita hasta</th>
             <th align="left">Acciones</th>
           </tr>
         </thead>
@@ -35,6 +36,11 @@ export default async function PanelAdmin() {
               <td>{org.planes?.nombre ?? '—'}</td>
               <td>{org.estado}</td>
               <td>{new Date(org.trial_hasta + 'T00:00:00').toLocaleDateString('es-CL')}</td>
+              <td>
+                {org.suscripciones?.hasta
+                  ? new Date(org.suscripciones.hasta + 'T00:00:00').toLocaleDateString('es-CL')
+                  : '—'}
+              </td>
               <td>
                 <form action={activarOrganizacion} style={{ display: 'inline' }}>
                   <input type="hidden" name="id" value={org.id} />

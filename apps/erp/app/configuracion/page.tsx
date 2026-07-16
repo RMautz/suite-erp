@@ -24,6 +24,12 @@ export default function PaginaConfiguracion() {
             <p className="text-sm text-slate-600">Activa el módulo de transporte y define el factor volumétrico.</p>
           </Tarjeta>
         </Link>
+        <Link href="/configuracion/suscripcion" className="block">
+          <Tarjeta className="h-full transition hover:border-marca-500">
+            <h2 className="mb-1 text-lg font-semibold text-slate-800">Suscripción</h2>
+            <p className="text-sm text-slate-600">Estado de tu plan y pago mensual con MercadoPago o Webpay.</p>
+          </Tarjeta>
+        </Link>
       </div>
     </div>
   )
