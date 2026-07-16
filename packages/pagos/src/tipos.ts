@@ -18,6 +18,9 @@ export interface SolicitudPreferencia {
   monto: number
   externalReference: string
   urlRetorno: string
+  // Plan 14 (aditivo): si se define, viaja como notification_url de la preferencia
+  // (webhook de PLATAFORMA por-preferencia). Los llamadores del Plan 13 lo omiten.
+  notificationUrl?: string
 }
 
 export interface Preferencia {

@@ -25,6 +25,10 @@ export class MercadoPagoPasarela implements PasarelaPagos {
       external_reference: solicitud.externalReference,
       back_urls: { success: solicitud.urlRetorno },
       auto_return: 'approved',
+      // notification_url por PREFERENCIA (Plan 14): enruta el webhook de PLATAFORMA sin
+      // depender de configurar la cuenta MP. undefined → JSON.stringify lo omite, asi el
+      // body de los llamadores del Plan 13 (sin notificationUrl) queda idéntico al de hoy.
+      notification_url: solicitud.notificationUrl,
     })
     return { preferenciaId: String(data.id), url: String(data.init_point) }
   }
