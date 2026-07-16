@@ -74,8 +74,10 @@ export default async function PaginaRentabilidad({ searchParams }: { searchParam
               <Td className="text-right font-mono">{formatearCLP(f.ingresos)}</Td>
               <Td className="text-right font-mono">{formatearCLP(f.combustible)}</Td>
               <Td className="text-right font-mono">{formatearCLP(f.gastos)}</Td>
-              <Td className={`text-right font-mono ${f.margen < 0 ? 'text-red-600' : ''}`}>{formatearCLP(f.margen)}</Td>
-              <Td className={`text-right font-mono ${f.margen < 0 ? 'text-red-600' : ''}`}>{pct(f.margen, f.ingresos)}</Td>
+              {/* El rojo va en un span interno: el cn() del repo no resuelve conflictos
+                  y el text-slate-800 base del Td le ganaría a text-red-600 en la celda. */}
+              <Td className="text-right font-mono"><span className={f.margen < 0 ? 'text-red-600' : ''}>{formatearCLP(f.margen)}</span></Td>
+              <Td className="text-right font-mono"><span className={f.margen < 0 ? 'text-red-600' : ''}>{pct(f.margen, f.ingresos)}</span></Td>
             </Tr>
           ))}
           {filas.length > 0 && (
@@ -84,8 +86,8 @@ export default async function PaginaRentabilidad({ searchParams }: { searchParam
               <Td className="text-right font-mono font-semibold">{formatearCLP(tot.ingresos)}</Td>
               <Td className="text-right font-mono font-semibold">{formatearCLP(tot.combustible)}</Td>
               <Td className="text-right font-mono font-semibold">{formatearCLP(tot.gastos)}</Td>
-              <Td className={`text-right font-mono font-semibold ${tot.margen < 0 ? 'text-red-600' : ''}`}>{formatearCLP(tot.margen)}</Td>
-              <Td className={`text-right font-mono font-semibold ${tot.margen < 0 ? 'text-red-600' : ''}`}>{pct(tot.margen, tot.ingresos)}</Td>
+              <Td className="text-right font-mono font-semibold"><span className={tot.margen < 0 ? 'text-red-600' : ''}>{formatearCLP(tot.margen)}</span></Td>
+              <Td className="text-right font-mono font-semibold"><span className={tot.margen < 0 ? 'text-red-600' : ''}>{pct(tot.margen, tot.ingresos)}</span></Td>
             </Tr>
           )}
           {filas.length === 0 && <Tr><Td colSpan={6} className="py-8 text-center text-slate-500">Sin movimientos en {mesElegido}.</Td></Tr>}
