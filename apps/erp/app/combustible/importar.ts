@@ -28,6 +28,12 @@ const RE_HORA = /^\d{2}:\d{2}(:\d{2})?$/
 
 // Celda por índice de columna; tolera índice ausente (== null cubre null y
 // undefined: las columnas opcionales de ColumnasTct pueden venir de ambas formas).
+// Campos INFORMATIVOS (precio_litro, odómetro): fuera de rango int4 → null en vez
+// de error de fila — no son fuente de verdad y un desborde tumbaría el lote (22003).
+function enRangoInt4(valor: number | null): number | null {
+  return valor !== null && valor <= 2147483647 ? valor : null
+}
+
 function celda(fila: string[], indice: number | null | undefined): string {
   return indice == null ? '' : (fila[indice] ?? '').trim()
 }
@@ -232,8 +238,9 @@ export async function importarCargasTct(
         litros,
         // monto es LA fuente de verdad; el precio es informativo y JAMÁS se
         // valida contra litros × precio (Copec redondea distinto: 349,13 ×
-        // 1123 = 392.073 ≠ 392.076 del archivo real).
-        precio_litro: parsearMontoTct(celda(filaCsv, columnas.precio)),
+        // 1123 = 392.073 ≠ 392.076 del archivo real). Informativo fuera de
+        // rango int4 → null (no rechaza la fila ni tumba el lote con 22003).
+        precio_litro: enRangoInt4(parsearMontoTct(celda(filaCsv, columnas.precio))),
         monto,
         estacion: estacion || null,
         comuna: comuna || null,
@@ -241,8 +248,8 @@ export async function importarCargasTct(
         rut_chofer: conductorId === null && rutNormalizado !== '' ? rutNormalizado : null,
         tarjeta: tarjeta || null,
         // Odómetro CRUDO (viene basura, casi siempre '1'); mismo parser
-        // numérico TCT, null si no calza.
-        odometro: parsearMontoTct(celda(filaCsv, columnas.odometro)),
+        // numérico TCT, null si no calza o si desborda int4.
+        odometro: enRangoInt4(parsearMontoTct(celda(filaCsv, columnas.odometro))),
         producto: producto || 'Diésel',
         origen: 'tct',
       },
