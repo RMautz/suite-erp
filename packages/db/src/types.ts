@@ -34,6 +34,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      anticipos: {
+        Row: {
+          cliente_id: string
+          documento_venta_id: string | null
+          empresa_id: string
+          estado: string
+          id: string
+          monto: number
+          mp_payment_id: string
+          origen_id: string
+          origen_tipo: string
+          pago_id: string | null
+          recibido_en: string
+        }
+        Insert: {
+          cliente_id: string
+          documento_venta_id?: string | null
+          empresa_id: string
+          estado?: string
+          id?: string
+          monto: number
+          mp_payment_id: string
+          origen_id: string
+          origen_tipo: string
+          pago_id?: string | null
+          recibido_en?: string
+        }
+        Update: {
+          cliente_id?: string
+          documento_venta_id?: string | null
+          empresa_id?: string
+          estado?: string
+          id?: string
+          monto?: number
+          mp_payment_id?: string
+          origen_id?: string
+          origen_tipo?: string
+          pago_id?: string | null
+          recibido_en?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anticipos_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "anticipos_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_venta"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "anticipos_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "libro_ventas"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "anticipos_empresa_id_documento_venta_id_fkey"
+            columns: ["empresa_id", "documento_venta_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_documentos"
+            referencedColumns: ["empresa_id", "documento_id"]
+          },
+          {
+            foreignKeyName: "anticipos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anticipos_empresa_id_pago_id_fkey"
+            columns: ["empresa_id", "pago_id"]
+            isOneToOne: false
+            referencedRelation: "pagos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       bodegas: {
         Row: {
           activo: boolean
@@ -733,6 +818,8 @@ export type Database = {
           giro_emisor: string | null
           id: string
           modulo_transporte: boolean
+          mp_access_token_cifrado: string | null
+          mp_webhook_secret_cifrado: string | null
           organizacion_id: string
           razon_social: string
           resolucion_sii_fecha: string | null
@@ -753,6 +840,8 @@ export type Database = {
           giro_emisor?: string | null
           id?: string
           modulo_transporte?: boolean
+          mp_access_token_cifrado?: string | null
+          mp_webhook_secret_cifrado?: string | null
           organizacion_id: string
           razon_social: string
           resolucion_sii_fecha?: string | null
@@ -773,6 +862,8 @@ export type Database = {
           giro_emisor?: string | null
           id?: string
           modulo_transporte?: boolean
+          mp_access_token_cifrado?: string | null
+          mp_webhook_secret_cifrado?: string | null
           organizacion_id?: string
           razon_social?: string
           resolucion_sii_fecha?: string | null
@@ -878,6 +969,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vehiculos"
             referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      links_pago: {
+        Row: {
+          cliente_id: string
+          creado_en: string
+          empresa_id: string
+          estado: string
+          id: string
+          monto: number
+          mp_payment_id: string | null
+          origen_id: string
+          origen_tipo: string
+          preferencia_id: string
+          url: string
+        }
+        Insert: {
+          cliente_id: string
+          creado_en?: string
+          empresa_id: string
+          estado?: string
+          id?: string
+          monto: number
+          mp_payment_id?: string | null
+          origen_id: string
+          origen_tipo: string
+          preferencia_id: string
+          url: string
+        }
+        Update: {
+          cliente_id?: string
+          creado_en?: string
+          empresa_id?: string
+          estado?: string
+          id?: string
+          monto?: number
+          mp_payment_id?: string | null
+          origen_id?: string
+          origen_tipo?: string
+          preferencia_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_pago_empresa_id_cliente_id_fkey"
+            columns: ["empresa_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "links_pago_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1317,6 +1465,7 @@ export type Database = {
           metodo: string
           monto: number
           motivo_anulacion: string | null
+          mp_payment_id: string | null
           notas: string | null
           referencia: string | null
         }
@@ -1330,6 +1479,7 @@ export type Database = {
           metodo: string
           monto: number
           motivo_anulacion?: string | null
+          mp_payment_id?: string | null
           notas?: string | null
           referencia?: string | null
         }
@@ -1343,6 +1493,7 @@ export type Database = {
           metodo?: string
           monto?: number
           motivo_anulacion?: string | null
+          mp_payment_id?: string | null
           notas?: string | null
           referencia?: string | null
         }
@@ -2224,6 +2375,14 @@ export type Database = {
         Args: { p_empresa: string; p_motivo: string; p_pago: string }
         Returns: undefined
       }
+      aplicar_anticipo: {
+        Args: { p_documento: string; p_empresa: string }
+        Returns: undefined
+      }
+      aplicar_anticipo_manual: {
+        Args: { p_anticipo: string; p_documento: string; p_empresa: string }
+        Returns: undefined
+      }
       asignar_despacho: {
         Args: {
           p_conductor: string
@@ -2272,6 +2431,18 @@ export type Database = {
           p_empresa: string
           p_lineas: Json
           p_tipo: string
+        }
+        Returns: string
+      }
+      crear_link_pago: {
+        Args: {
+          p_empresa: string
+          p_id: string
+          p_monto: number
+          p_origen: string
+          p_origen_tipo: string
+          p_preferencia: string
+          p_url: string
         }
         Returns: string
       }
@@ -2325,6 +2496,17 @@ export type Database = {
         }
         Returns: string
       }
+      registrar_anticipo_mp: {
+        Args: {
+          p_empresa: string
+          p_link: string
+          p_monto: number
+          p_mp_payment_id: string
+          p_origen: string
+          p_origen_tipo: string
+        }
+        Returns: undefined
+      }
       registrar_entrada: {
         Args: {
           p_bodega: string
@@ -2362,6 +2544,16 @@ export type Database = {
           p_referencia: string
         }
         Returns: string
+      }
+      registrar_pago_mp: {
+        Args: {
+          p_documento: string
+          p_empresa: string
+          p_link: string
+          p_monto: number
+          p_mp_payment_id: string
+        }
+        Returns: undefined
       }
       registrar_pago_proveedor: {
         Args: {
