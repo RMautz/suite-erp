@@ -6,6 +6,7 @@ export const COOKIE_EMPRESA = 'empresa_activa'
 
 export interface EmpresaResumen {
   id: string
+  organizacion_id: string
   rut: string
   razon_social: string
   modulo_transporte: boolean
@@ -15,7 +16,7 @@ export async function obtenerEmpresas(): Promise<EmpresaResumen[]> {
   const supabase = await crearClienteServidor()
   const { data, error } = await supabase
     .from('empresas')
-    .select('id, rut, razon_social, modulo_transporte')
+    .select('id, organizacion_id, rut, razon_social, modulo_transporte')
     .order('razon_social')
   if (error) throw new Error('No se pudieron cargar tus empresas')
   return data ?? []
