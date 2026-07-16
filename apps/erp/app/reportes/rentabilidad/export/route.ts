@@ -5,6 +5,8 @@ import { obtenerEmpresaActiva } from '../../../../lib/empresa-activa'
 export async function GET(req: Request) {
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return new Response('No autorizado', { status: 401 })
+  // Paridad con la página: módulo apagado → 404 (misma condición que su notFound()).
+  if (!activa.modulo_transporte) return new Response('No encontrado', { status: 404 })
   const mes = new URL(req.url).searchParams.get('mes') ?? new Date().toISOString().slice(0, 7)
   const rango = rangoDeMes(mes)
   if (!rango) return new Response('Mes inválido (use YYYY-MM)', { status: 400 })
