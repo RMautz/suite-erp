@@ -25,6 +25,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
           { href: '/tarifario', etiqueta: 'Tarifario' },
           { href: '/entregas', etiqueta: 'Entregas' },
           { href: '/proformas', etiqueta: 'Proformas' },
+          { href: '/combustible', etiqueta: 'Combustible' },
         ]
       : []),
     { href: '/ventas', etiqueta: 'Ventas' },
