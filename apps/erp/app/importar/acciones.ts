@@ -2,32 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { crearClienteServidor } from '@suite/auth/server'
-import {
-  parsearCSV,
-  validarFilaCliente,
-  validarFilaProducto,
-} from '@suite/core'
+import { validarFilaCliente, validarFilaProducto } from '@suite/core'
+import { leerCSV } from '../../lib/csv'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import type { ResultadoImport } from '../tipos'
 
 const MAX_FILAS = 1000
-
-async function leerCSV(formData: FormData): Promise<{ filas?: string[][]; error?: string }> {
-  const archivo = formData.get('archivo')
-  if (!(archivo instanceof File) || archivo.size === 0) {
-    return { error: 'Selecciona un archivo CSV' }
-  }
-  const bytes = new Uint8Array(await archivo.arrayBuffer())
-  // Excel en Windows suele exportar CP-1252; si UTF-8 falla, reintentar.
-  let texto = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
-  if (texto.includes('�')) {
-    texto = new TextDecoder('windows-1252').decode(bytes)
-  }
-  const filas = parsearCSV(texto)
-  if (filas.length < 2) return { error: 'El archivo no tiene filas de datos' }
-  if (filas.length - 1 > MAX_FILAS) return { error: `Máximo ${MAX_FILAS} filas por archivo` }
-  return { filas }
-}
 
 function filasComoObjetos(filas: string[][]): Record<string, string>[] {
   const encabezados = filas[0]!.map((h) => h.trim().toLowerCase())
@@ -44,7 +24,7 @@ export async function importarProductos(_prev: ResultadoImport, formData: FormDa
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return { error: 'No tienes una empresa activa' }
 
-  const lectura = await leerCSV(formData)
+  const lectura = await leerCSV(formData, MAX_FILAS)
   if (lectura.error || !lectura.filas) return { error: lectura.error }
 
   const objetos = filasComoObjetos(lectura.filas)
@@ -124,7 +104,7 @@ export async function importarClientes(_prev: ResultadoImport, formData: FormDat
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return { error: 'No tienes una empresa activa' }
 
-  const lectura = await leerCSV(formData)
+  const lectura = await leerCSV(formData, MAX_FILAS)
   if (lectura.error || !lectura.filas) return { error: lectura.error }
 
   const objetos = filasComoObjetos(lectura.filas)
