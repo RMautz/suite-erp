@@ -2,12 +2,7 @@ import 'server-only'
 import { clienteAdmin } from '@suite/auth/admin'
 import { descifrar } from '@suite/dte'
 import { pasarelaPorAmbiente, type PasarelaPagos } from '@suite/pagos'
-
-function clave(): string {
-  const k = process.env.DTE_ENCRYPTION_KEY
-  if (!k) throw new Error('Falta DTE_ENCRYPTION_KEY')
-  return k
-}
+import { claveCifrado } from './cifrado'
 
 // Devuelve la pasarela ligada al token MP de la empresa, o null si NO está configurada.
 // SOLO server-side: usa service_role (clienteAdmin) para leer la columna cifrada (sin
@@ -21,6 +16,6 @@ export async function pasarelaParaEmpresa(empresaId: string): Promise<PasarelaPa
     .eq('id', empresaId)
     .single()
   if (error || !emp?.mp_access_token_cifrado) return null
-  const token = descifrar(emp.mp_access_token_cifrado, clave()).toString('utf8')
+  const token = descifrar(emp.mp_access_token_cifrado, claveCifrado()).toString('utf8')
   return pasarelaPorAmbiente(process.env.PASARELA_PAGOS, token)
 }

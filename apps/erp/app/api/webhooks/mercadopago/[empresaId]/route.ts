@@ -1,6 +1,7 @@
 import { clienteAdmin } from '@suite/auth/admin'
 import { descifrar } from '@suite/dte'
 import { pasarelaPorAmbiente, parsearReferencia } from '@suite/pagos'
+import { claveCifrado } from '../../../../../lib/cifrado'
 
 // Webhook de MercadoPago POR EMPRESA (Plan 13, spec §5). POST público: MP no trae sesión, y la
 // empresa viaja en la URL porque el payload de MP solo trae data.id (fuera de banda). El dinero se
@@ -16,12 +17,6 @@ import { pasarelaPorAmbiente, parsearReferencia } from '@suite/pagos'
 // quedar solo en un log de paso.
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function clave(): string {
-  const k = process.env.DTE_ENCRYPTION_KEY
-  if (!k) throw new Error('Falta DTE_ENCRYPTION_KEY')
-  return k
-}
 
 // MP notifica con { data: { id } } en el body (webhooks v2) o ?data.id= en la query (IPN legacy).
 function extraerDataId(cuerpo: unknown, url: string): string | null {
@@ -77,7 +72,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ empresa
   let token: string
   let secret: string
   try {
-    const k = clave()
+    const k = claveCifrado()
     token = descifrar(emp.mp_access_token_cifrado, k).toString('utf8')
     secret = descifrar(emp.mp_webhook_secret_cifrado, k).toString('utf8')
   } catch {

@@ -4,13 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { crearClienteServidor } from '@suite/auth/server'
 import { cifrar } from '@suite/dte'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
+import { claveCifrado } from '../../../lib/cifrado'
 import type { EstadoForm } from '../../tipos'
-
-function claveCifrado(): string {
-  const clave = process.env.DTE_ENCRYPTION_KEY
-  if (!clave) throw new Error('Falta DTE_ENCRYPTION_KEY en el servidor')
-  return clave
-}
 
 export async function guardarCredencialesMp(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
   const { activa } = await obtenerEmpresaActiva()

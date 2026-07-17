@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearNumeroProforma } from '@suite/core'
+import { armarReferencia } from '@suite/pagos'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { pasarelaParaEmpresa } from '../../lib/pagos'
 import type { EstadoForm } from '../tipos'
@@ -63,11 +64,11 @@ export async function generarLinkPago(_prev: EstadoForm, formData: FormData): Pr
     monto = data.total
   }
 
-  // external_reference (spec §2): "{tipo}:{empresa_id}:{objeto_id}:{link_id}". El link_id se
-  // genera acá porque la preferencia se crea ANTES de crear_link_pago (preferencia_id/url son
-  // NOT NULL) y el webhook parsea link_id de la referencia — la fila persiste ESTE id (p_id).
+  // external_reference (spec §2). El link_id se genera acá porque la preferencia se crea
+  // ANTES de crear_link_pago (preferencia_id/url son NOT NULL) y el webhook parsea link_id
+  // de la referencia — la fila persiste ESTE id (p_id).
   const linkId = crypto.randomUUID()
-  const referencia = `${origen}:${activa.id}:${objetoId}:${linkId}`
+  const referencia = armarReferencia({ tipo: origen, empresaId: activa.id, objetoId, linkId })
   const h = await headers()
   const base = `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host') ?? 'localhost:3000'}`
   const urlRetorno = `${base}/${RUTA[origen]}/${objetoId}`
@@ -90,6 +91,11 @@ export async function generarLinkPago(_prev: EstadoForm, formData: FormData): Pr
   })
   if (error) {
     if (error.message.includes('rol')) return { error: 'Tu rol no permite generar links de pago' }
+    // Carreras UI↔RPC (el botón se gateó por estado, pero el estado cambió entre el render
+    // y el click): el mensaje exacto de la RPC es más útil que el genérico.
+    if (error.message.includes('no permite link de pago') || error.message.includes('El documento no existe')) {
+      return { error: error.message }
+    }
     // Saldo/monto/total ya no calzan (otro abono, link viejo): la preferencia queda huérfana
     // y expira sola (spec §2) — el usuario regenera.
     if (error.message.includes('saldo') || error.message.includes('monto') || error.message.includes('total')) {

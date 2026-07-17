@@ -3,12 +3,7 @@ import { clienteAdmin } from '@suite/auth/admin'
 import { descifrar, proveedorPorAmbiente, type CredencialesDTE, type SolicitudEmision } from '@suite/dte'
 import { CODIGO_SII, type TipoDocumento } from '@suite/core'
 import type { Json } from '@suite/db'
-
-function clave(): string {
-  const k = process.env.DTE_ENCRYPTION_KEY
-  if (!k) throw new Error('Falta DTE_ENCRYPTION_KEY')
-  return k
-}
+import { claveCifrado } from './cifrado'
 
 // Descifra las credenciales de la empresa. SOLO server-side. Usa service_role para leer
 // las columnas cifradas de forma controlada (nunca expuestas al cliente).
@@ -32,7 +27,7 @@ export async function credencialesEmpresa(empresaId: string, tipo: TipoDocumento
     .single()
   if (!caf) throw new Error('Falta cargar folios CAF para ' + tipo)
 
-  const k = clave()
+  const k = claveCifrado()
   return {
     apiKey: descifrar(emp.dte_api_key_cifrada, k).toString('utf8'),
     certificadoPfx: descifrar(emp.certificado_cifrado, k),
