@@ -3,9 +3,11 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { formatearCLP, formatearNumeroProforma, formatearRut } from '@suite/core'
 import { Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { AccionesProforma } from '../../../componentes/acciones-proforma'
+import { BotonEnviarCorreo } from '../../../componentes/boton-enviar-correo'
 import { BotonImprimir } from '../../../componentes/boton-imprimir'
 import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
+import { enviarProformaCorreo } from '../../correo/acciones'
 import { ETIQUETA_ESTADO, TONO_ESTADO } from '../estados'
 
 const NUM = (n: number | null) => (n == null ? '—' : n.toLocaleString('es-CL', { maximumFractionDigits: 2 }))
@@ -46,6 +48,15 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
       .maybeSingle()
     linkPago = link ? { url: link.url } : null
   }
+
+  const enviable = prof.estado === 'borrador' || prof.estado === 'enviada' || prof.estado === 'aprobada'
+  const { data: ultimoCorreo } = enviable
+    ? await supabase
+        .from('correos_enviados')
+        .select('para, creado_en')
+        .eq('empresa_id', activa.id).eq('tipo', 'proforma').eq('referencia_id', prof.id)
+        .order('creado_en', { ascending: false }).limit(1).maybeSingle()
+    : { data: null }
 
   const fav = prof.documentos_venta
   const fecha = new Date(prof.fecha + 'T00:00:00').toLocaleDateString('es-CL')
@@ -135,6 +146,13 @@ export default async function DetalleProforma({ params }: { params: Promise<{ id
             ((fav?.tipo === 'factura' || fav?.tipo === 'boleta') && fav?.estado === 'rechazado')
           }
         />
+        {enviable && (
+          <BotonEnviarCorreo
+            accion={enviarProformaCorreo}
+            id={prof.id}
+            ultimoEnvio={ultimoCorreo ? { para: ultimoCorreo.para, fecha: ultimoCorreo.creado_en } : null}
+          />
+        )}
       </div>
 
       {conLinkPago && (

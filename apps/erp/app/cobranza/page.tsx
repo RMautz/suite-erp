@@ -2,9 +2,11 @@ import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
 import { estaVencido, formatearCLP, formatearNumeroProforma } from '@suite/core'
 import { Boton, Encabezado, Insignia, Selector, Tabla, Td, Th, Tr } from '@suite/ui'
+import { BotonRecordar, BotonRecordarTodas } from '../../componentes/boton-enviar-correo'
 import { FormularioAplicarAnticipo } from '../../componentes/formulario-aplicar-anticipo'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { aplicarAnticipoManual } from './acciones'
+import { enviarRecordatorio, enviarRecordatorios } from '../correo/acciones'
 
 const HOY = () => new Date().toISOString().slice(0, 10)
 
@@ -98,6 +100,9 @@ export default async function PaginaCobranza({
         <Boton variante="secundario" type="submit">Filtrar</Boton>
         <Link className="text-sm text-marca-700 hover:underline" href="/cobranza">Limpiar</Link>
       </form>
+      <div className="mb-4">
+        <BotonRecordarTodas accion={enviarRecordatorios} />
+      </div>
       <Tabla>
         <thead><tr><Th>Documento</Th><Th>Cliente</Th><Th>Emisión</Th><Th>Vencimiento</Th><Th className="text-right">Total</Th><Th className="text-right">Pagado</Th><Th className="text-right">Saldo</Th><Th /></tr></thead>
         <tbody>
@@ -112,7 +117,14 @@ export default async function PaginaCobranza({
                 <Td className="text-right font-mono">{formatearCLP(f.total ?? 0)}</Td>
                 <Td className="text-right font-mono">{formatearCLP((f.pagado ?? 0) + (f.notas_credito ?? 0))}</Td>
                 <Td className="text-right font-mono">{(f.saldo ?? 0) < 0 ? <span className="text-marca-700">{formatearCLP(f.saldo ?? 0)} (a favor)</span> : formatearCLP(f.saldo ?? 0)}</Td>
-                <Td>{venc && <Insignia tono="rojo">Vencida</Insignia>}</Td>
+                <Td>
+                  <div className="flex items-center justify-end gap-2">
+                    {venc && <Insignia tono="rojo">Vencida</Insignia>}
+                    {venc && f.documento_id && (
+                      <BotonRecordar accion={enviarRecordatorio} documentoId={f.documento_id} />
+                    )}
+                  </div>
+                </Td>
               </Tr>
             )
           })}

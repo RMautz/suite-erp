@@ -4,9 +4,11 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { cotizacionVencida, formatearCLP, formatearRut, type EstadoCotizacion } from '@suite/core'
 import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { AccionesCotizacion } from '../../../componentes/acciones-cotizacion'
+import { BotonEnviarCorreo } from '../../../componentes/boton-enviar-correo'
 import { BotonImprimir } from '../../../componentes/boton-imprimir'
 import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
+import { enviarCotizacionCorreo } from '../../correo/acciones'
 import { ETIQUETA_ESTADO, TONO_ESTADO } from '../estados'
 
 export default async function DetalleCotizacion({ params }: { params: Promise<{ id: string }> }) {
@@ -29,6 +31,15 @@ export default async function DetalleCotizacion({ params }: { params: Promise<{ 
       .maybeSingle()
     linkPago = link ? { url: link.url } : null
   }
+
+  const enviable = cot.estado === 'borrador' || cot.estado === 'enviada' || cot.estado === 'aceptada'
+  const { data: ultimoCorreo } = enviable
+    ? await supabase
+        .from('correos_enviados')
+        .select('para, creado_en')
+        .eq('empresa_id', activa.id).eq('tipo', 'cotizacion').eq('referencia_id', cot.id)
+        .order('creado_en', { ascending: false }).limit(1).maybeSingle()
+    : { data: null }
 
   const hoy = new Date().toISOString().slice(0, 10)
   // estado es text + check en SQL; el codegen lo tipa string — cast solo de tipo.
@@ -86,6 +97,13 @@ export default async function DetalleCotizacion({ params }: { params: Promise<{ 
 
       <div className="mt-6 flex flex-wrap items-center gap-3 print:hidden">
         <AccionesCotizacion cotizacionId={cot.id} estado={cot.estado} vencida={vencida} />
+        {enviable && (
+          <BotonEnviarCorreo
+            accion={enviarCotizacionCorreo}
+            id={cot.id}
+            ultimoEnvio={ultimoCorreo ? { para: ultimoCorreo.para, fecha: ultimoCorreo.creado_en } : null}
+          />
+        )}
         {cot.estado === 'convertida' && cot.documento_venta_id && (
           <Link href={`/ventas/${cot.documento_venta_id}`}>
             <Boton variante="secundario" type="button">Ver nota de venta</Boton>

@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearCLP, formatearRut } from '@suite/core'
 import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
+import { BotonEnviarCorreo } from '../../../componentes/boton-enviar-correo'
 import { GenerarLinkPago } from '../../../componentes/generar-link-pago'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
+import { enviarDocumentoCorreo } from '../../correo/acciones'
 import { emitirDocumento, emitirNotaCredito } from '../emitir'
 
 export default async function DetalleVenta({ params }: { params: Promise<{ id: string }> }) {
@@ -33,6 +35,15 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
     saldo = fila?.saldo ?? 0
     linkPago = link ? { url: link.url } : null
   }
+
+  const enviable = doc.estado === 'emitido' && (doc.tipo === 'factura' || doc.tipo === 'boleta')
+  const { data: ultimoCorreo } = enviable
+    ? await supabase
+        .from('correos_enviados')
+        .select('para, creado_en')
+        .eq('empresa_id', activa.id).eq('tipo', 'documento').eq('referencia_id', doc.id)
+        .order('creado_en', { ascending: false }).limit(1).maybeSingle()
+    : { data: null }
 
   return (
     <div>
@@ -84,6 +95,13 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
               <Boton variante="peligro" type="submit">Anular con nota de crédito</Boton>
             </form>
           </>
+        )}
+        {enviable && (
+          <BotonEnviarCorreo
+            accion={enviarDocumentoCorreo}
+            id={doc.id}
+            ultimoEnvio={ultimoCorreo ? { para: ultimoCorreo.para, fecha: ultimoCorreo.creado_en } : null}
+          />
         )}
       </div>
 
