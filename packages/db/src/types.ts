@@ -364,6 +364,7 @@ export type Database = {
           asunto: string
           creado_en: string
           empresa_id: string
+          html: string | null
           id: string
           para: string
           proveedor_id: string
@@ -374,6 +375,7 @@ export type Database = {
           asunto: string
           creado_en?: string
           empresa_id: string
+          html?: string | null
           id?: string
           para: string
           proveedor_id: string
@@ -384,6 +386,7 @@ export type Database = {
           asunto?: string
           creado_en?: string
           empresa_id?: string
+          html?: string | null
           id?: string
           para?: string
           proveedor_id?: string

@@ -192,7 +192,7 @@ export default async function PaginaCobranza({
       <section className="mt-10">
         <h2 className="mb-3 text-lg font-semibold text-slate-800">Recordatorios enviados</h2>
         <Tabla>
-          <thead><tr><Th>Fecha</Th><Th>Documento</Th><Th>Destinatario</Th><Th>Asunto</Th></tr></thead>
+          <thead><tr><Th>Fecha</Th><Th>Documento</Th><Th>Destinatario</Th><Th>Asunto</Th><Th /></tr></thead>
           <tbody>
             {recientes.map((r) => (
               <Tr key={r.id}>
@@ -200,9 +200,10 @@ export default async function PaginaCobranza({
                 <Td>{mapaDocRecordado.get(r.referencia_id) ?? '—'}</Td>
                 <Td>{r.para}</Td>
                 <Td className="max-w-md truncate">{r.asunto}</Td>
+                <Td className="text-right"><Link className="text-sm text-marca-700 hover:underline" href={`/correo/${r.id}`}>Ver</Link></Td>
               </Tr>
             ))}
-            {recientes.length === 0 && <Tr><Td colSpan={4} className="py-8 text-center text-slate-500">Aún no se envían recordatorios.</Td></Tr>}
+            {recientes.length === 0 && <Tr><Td colSpan={5} className="py-8 text-center text-slate-500">Aún no se envían recordatorios.</Td></Tr>}
           </tbody>
         </Tabla>
       </section>

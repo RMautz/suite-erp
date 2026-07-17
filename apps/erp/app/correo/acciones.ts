@@ -88,6 +88,7 @@ async function enviarYRegistrar(
     para: mensaje.para,
     asunto: mensaje.asunto,
     proveedor_id: proveedorId,
+    html: mensaje.html,
   })
   if (error) return { error: 'El correo se envió pero no se pudo registrar el envío.' }
   return { ok: true }
