@@ -389,6 +389,14 @@ const { data: resConf, error: eConf } = await admin.rpc('confirmar_pago_suscripc
 if (eConf) die('confirmar_pago_suscripcion', eConf)
 console.log('✓ suscripción demo confirmada (' + resConf + ') → org activa, recaudación del mes')
 
+// 17b) Cuenta ADMIN de plataforma dedicada (sin organización — solo opera el panel 3002).
+//      Debe estar en ADMIN_EMAILS de apps/admin/.env.local; demo@ NO es admin.
+const EMAIL_ADMIN = 'admin@suite-erp.cl'
+const PASS_ADMIN = 'admin-suite-2026'
+const { error: eCuA } = await admin.auth.admin.createUser({ email: EMAIL_ADMIN, password: PASS_ADMIN, email_confirm: true })
+if (eCuA) die('createUser admin', eCuA)
+console.log('✓ cuenta admin de plataforma: ' + EMAIL_ADMIN + ' / ' + PASS_ADMIN + ' (sin organización)')
+
 // 18) Segunda organización en TRIAL sin pagar (otro usuario) → panel admin con 2 filas y estados distintos.
 const EMAIL2 = 'ficticio2@suite-erp.cl'
 const { error: eCu2 } = await admin.auth.admin.createUser({ email: EMAIL2, password: PASS, email_confirm: true })
