@@ -61,6 +61,30 @@ export default async function PaginaCobranza({
   const mapaPF = new Map((refsPF.data ?? []).map((p) => [p.id, p.numero]))
   const mapaCot = new Map((refsCot.data ?? []).map((c) => [c.id, c.numero]))
   const mapaFac = new Map((refsFac.data ?? []).map((f) => [f.id, f.folio]))
+
+  // ---- Recordatorios enviados: el último por factura (para el "Recordado el X" junto al
+  // botón) y los 20 más recientes para la sección de auditoría. Ordenado desc: la primera
+  // aparición de cada documento en el Map es la más reciente.
+  const { data: recordatorios } = await supabase
+    .from('correos_enviados')
+    .select('id, referencia_id, para, asunto, creado_en')
+    .eq('empresa_id', activa.id)
+    .eq('tipo', 'recordatorio')
+    .order('creado_en', { ascending: false })
+    .limit(200)
+  const listaRecordatorios = recordatorios ?? []
+  const ultimoRecordatorio = new Map<string, string>()
+  for (const r of listaRecordatorios) {
+    if (!ultimoRecordatorio.has(r.referencia_id)) ultimoRecordatorio.set(r.referencia_id, r.creado_en)
+  }
+  const recientes = listaRecordatorios.slice(0, 20)
+  const idsRecordados = [...new Set(recientes.map((r) => r.referencia_id))]
+  const { data: docsRecordados } = await supabase
+    .from('documentos_venta')
+    .select('id, tipo, folio')
+    .eq('empresa_id', activa.id)
+    .in('id', idsRecordados)
+  const mapaDocRecordado = new Map((docsRecordados ?? []).map((d) => [d.id, `${d.tipo === 'factura' ? 'Factura' : 'Boleta'} ${d.folio ?? '—'}`]))
   const facturasPorCliente = new Map<string, { documentoId: string; etiqueta: string; saldo: number }[]>()
   for (const s of saldosAplicables.data ?? []) {
     if (!s.documento_id || !s.cliente_id) continue
@@ -119,6 +143,11 @@ export default async function PaginaCobranza({
                 <Td className="text-right font-mono">{(f.saldo ?? 0) < 0 ? <span className="text-marca-700">{formatearCLP(f.saldo ?? 0)} (a favor)</span> : formatearCLP(f.saldo ?? 0)}</Td>
                 <Td>
                   <div className="flex items-center justify-end gap-2">
+                    {venc && f.documento_id && ultimoRecordatorio.has(f.documento_id) && (
+                      <span className="text-xs text-slate-500">
+                        Recordado el {new Date(ultimoRecordatorio.get(f.documento_id)!).toLocaleDateString('es-CL')}
+                      </span>
+                    )}
                     {venc && <Insignia tono="rojo">Vencida</Insignia>}
                     {venc && f.documento_id && (
                       <BotonRecordar accion={enviarRecordatorio} documentoId={f.documento_id} />
@@ -156,6 +185,24 @@ export default async function PaginaCobranza({
               </Tr>
             ))}
             {listaAnticipos.length === 0 && <Tr><Td colSpan={6} className="py-8 text-center text-slate-500">No hay anticipos registrados.</Td></Tr>}
+          </tbody>
+        </Tabla>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="mb-3 text-lg font-semibold text-slate-800">Recordatorios enviados</h2>
+        <Tabla>
+          <thead><tr><Th>Fecha</Th><Th>Documento</Th><Th>Destinatario</Th><Th>Asunto</Th></tr></thead>
+          <tbody>
+            {recientes.map((r) => (
+              <Tr key={r.id}>
+                <Td>{new Date(r.creado_en).toLocaleDateString('es-CL')}</Td>
+                <Td>{mapaDocRecordado.get(r.referencia_id) ?? '—'}</Td>
+                <Td>{r.para}</Td>
+                <Td className="max-w-md truncate">{r.asunto}</Td>
+              </Tr>
+            ))}
+            {recientes.length === 0 && <Tr><Td colSpan={4} className="py-8 text-center text-slate-500">Aún no se envían recordatorios.</Td></Tr>}
           </tbody>
         </Tabla>
       </section>
