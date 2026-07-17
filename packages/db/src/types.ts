@@ -359,6 +359,47 @@ export type Database = {
           },
         ]
       }
+      correos_enviados: {
+        Row: {
+          asunto: string
+          creado_en: string
+          empresa_id: string
+          id: string
+          para: string
+          proveedor_id: string
+          referencia_id: string
+          tipo: string
+        }
+        Insert: {
+          asunto: string
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          para: string
+          proveedor_id: string
+          referencia_id: string
+          tipo: string
+        }
+        Update: {
+          asunto?: string
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          para?: string
+          proveedor_id?: string
+          referencia_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "correos_enviados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cotizaciones: {
         Row: {
           cliente_id: string
