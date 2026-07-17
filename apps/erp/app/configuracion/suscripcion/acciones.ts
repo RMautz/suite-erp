@@ -32,7 +32,14 @@ export async function pagarSuscripcion(
     // MP real necesita el access token Y el webhook secret (sin secret el webhook no verifica
     // firma → la confirmación quedaría solo en el retorno-mp; se exige antes de crear el pago).
     if (metodo === 'mercadopago' && (!process.env.MP_PLATAFORMA_ACCESS_TOKEN || !process.env.MP_PLATAFORMA_WEBHOOK_SECRET)) return { error: NO_DISPONIBLE }
-    if (metodo === 'webpay' && (!process.env.TBK_COMMERCE_CODE || !process.env.TBK_API_KEY)) return { error: NO_DISPONIBLE }
+    // Webpay real exige también un ambiente válido: webpaySuscripciones lanzaría DESPUÉS
+    // de la RPC (pendiente huérfano + excepción cruda en vez de banner).
+    if (
+      metodo === 'webpay' &&
+      (!process.env.TBK_COMMERCE_CODE ||
+        !process.env.TBK_API_KEY ||
+        (process.env.TBK_AMBIENTE !== 'integracion' && process.env.TBK_AMBIENTE !== 'produccion'))
+    ) return { error: NO_DISPONIBLE }
   }
 
   const supabase = await crearClienteServidor()
