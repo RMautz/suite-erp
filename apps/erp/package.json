@@ -10,6 +10,7 @@
   "dependencies": {
     "@suite/auth": "workspace:*",
     "@suite/core": "workspace:*",
+    "@suite/correo": "workspace:*",
     "@suite/db": "workspace:*",
     "@suite/dte": "workspace:*",
     "@suite/pagos": "workspace:*",

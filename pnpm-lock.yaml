@@ -72,6 +72,9 @@ importers:
       '@suite/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@suite/correo':
+        specifier: workspace:*
+        version: link:../../packages/correo
       '@suite/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -182,6 +185,19 @@ importers:
         version: 3.2.7(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
   packages/core:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  packages/correo:
+    dependencies:
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       typescript:
         specifier: ^5.7.0
