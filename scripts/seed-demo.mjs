@@ -55,7 +55,7 @@ console.log('✓ usuario', EMAIL)
 // 2) Organización por el camino real
 const { error: eSi } = await userCli.auth.signInWithPassword({ email: EMAIL, password: PASS })
 if (eSi) die('signIn', eSi)
-const { data: orgId, error: eOrg } = await userCli.rpc('registrar_organizacion', { p_rut: '77.123.456-9', p_razon_social: 'Demo Transportes SpA' })
+const { data: orgId, error: eOrg } = await userCli.rpc('registrar_organizacion', { p_rut: '77.123.456-9', p_razon_social: 'Demo Transportes SpA', p_rubro: 'transporte' })
 if (eOrg) die('registrar_organizacion', eOrg)
 const { data: emp, error: eEmp } = await admin.from('empresas').select('id').eq('organizacion_id', orgId).single()
 if (eEmp) die('empresas', eEmp)
@@ -127,11 +127,17 @@ const { error: eQs } = await userCli.rpc('cambiar_estado_cotizacion', { p_empres
 if (eQs) die('enviar cotización', eQs)
 console.log('✓ cotización N°1 enviada (2 líneas, precio negociado, 1 exenta)')
 
-// 8) Módulo de transporte (Plan 11): activado + tarifario + flota + ODEs que replican
-//    la proforma real del usuario (PF con neto 227.836 / IVA 43.289 / total 271.125).
+// 8) Módulo de transporte (Plan 11): la empresa ya nació con rubro 'transporte'
+//    (registrar_organizacion setea modulo_transporte junto al rubro). El update
+//    directo con service_role SÍ pasaría (los grants de 0023 solo limitan a
+//    authenticated; service_role conserva update total de 0001), pero rompería
+//    el invariante rubro/modulo_transporte — por eso el flag solo lo mueven
+//    registrar_organizacion y cambiar_rubro. Tarifario + flota + ODEs que
+//    replican la proforma real del usuario (PF con neto 227.836 / IVA 43.289 /
+//    total 271.125).
 const { error: eMod } = await admin.from('empresas')
-  .update({ modulo_transporte: true, factor_volumetrico: 250 }).eq('id', empresaId)
-if (eMod) die('modulo_transporte', eMod)
+  .update({ factor_volumetrico: 250 }).eq('id', empresaId)
+if (eMod) die('factor_volumetrico', eMod)
 const { data: dests, error: eD } = await admin.from('destinos').insert([
   { empresa_id: empresaId, nombre: 'Puerto Varas', tarifa_kg: 216 },
   { empresa_id: empresaId, nombre: 'Fresia', tarifa_kg: 203 },
