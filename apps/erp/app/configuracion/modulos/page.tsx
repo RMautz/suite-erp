@@ -2,7 +2,8 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { Encabezado } from '@suite/ui'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { FormularioModulos } from '../../../componentes/formulario-modulos'
-import { guardarModulos } from './acciones'
+import { PanelContabilidad } from '../../../componentes/panel-contabilidad'
+import { alternarContabilidad, guardarModulos } from './acciones'
 
 export default async function ConfigModulos() {
   const { activa } = await obtenerEmpresaActiva()
@@ -25,6 +26,7 @@ export default async function ConfigModulos() {
           factorVolumetrico: empresa?.factor_volumetrico ?? 250,
         }}
       />
+      <PanelContabilidad accion={alternarContabilidad} activo={activa.modulo_contabilidad} />
     </div>
   )
 }

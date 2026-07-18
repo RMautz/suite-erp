@@ -5,6 +5,7 @@ import { cambiarEmpresaActiva } from './acciones'
 import { BotonCerrarSesion } from '../componentes/boton-cerrar-sesion'
 import { SelectorEmpresa } from '../componentes/selector-empresa'
 import { obtenerEmpresaActiva } from '../lib/empresa-activa'
+import { puedeVerContabilidad } from '../lib/contabilidad-acceso'
 
 export const metadata = { title: 'Suite ERP' }
 
@@ -34,6 +35,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
     { href: '/cobranza', etiqueta: 'Cobranza' },
     { href: '/por-pagar', etiqueta: 'Por pagar' },
     { href: '/reportes', etiqueta: 'Reportes' },
+    ...(puedeVerContabilidad(activa) ? [{ href: '/contabilidad', etiqueta: 'Contabilidad' }] : []),
     { href: '/configuracion', etiqueta: 'Configuración' },
   ]
   return (

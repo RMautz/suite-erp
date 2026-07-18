@@ -30,3 +30,40 @@ export async function guardarModulos(_prev: EstadoForm, formData: FormData): Pro
   revalidatePath('/', 'layout')
   return {}
 }
+
+export type EstadoContabilidad = { error?: string; mensaje?: string }
+
+export async function alternarContabilidad(
+  _prev: EstadoContabilidad,
+  formData: FormData,
+): Promise<EstadoContabilidad> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+
+  const activar = formData.get('modulo_contabilidad') === 'on'
+  const supabase = await crearClienteServidor()
+
+  // Desactivar: solo apaga el flag (asientos y cuentas quedan). Es la ÚNICA vía junto
+  // con activar de mover modulo_contabilidad (la columna no tiene grant de UPDATE).
+  if (!activar) {
+    const { error } = await supabase.rpc('desactivar_contabilidad', { p_empresa: activa.id })
+    if (error) return { error: error.message }
+    revalidatePath('/', 'layout')
+    return { mensaje: 'Contabilidad desactivada.' }
+  }
+
+  // Activar = sembrar el catálogo + prender el flag (RPC 1) y luego contabilizar el
+  // histórico (RPC 2, mismo motor que el botón "Contabilizar pendientes"). AMBAS por el
+  // cliente del usuario: son authenticated dueno/admin (el admin client daría 42501).
+  const { error: eActivar } = await supabase.rpc('activar_contabilidad', { p_empresa: activa.id })
+  if (eActivar) return { error: eActivar.message }
+  const { data: pendientes, error: ePend } = await supabase.rpc('contabilizar_pendientes', {
+    p_empresa: activa.id,
+  })
+  if (ePend) return { error: ePend.message }
+  const creados = (pendientes as unknown as { creados: number } | null)?.creados ?? 0
+  revalidatePath('/', 'layout')
+  return {
+    mensaje: `Contabilidad activada. ${creados} asiento${creados === 1 ? '' : 's'} creado${creados === 1 ? '' : 's'} del historial.`,
+  }
+}
