@@ -1019,6 +1019,7 @@ export type Database = {
           razon_social: string
           resolucion_sii_fecha: string | null
           resolucion_sii_numero: number | null
+          rubro: string
           rut: string
         }
         Insert: {
@@ -1042,6 +1043,7 @@ export type Database = {
           razon_social: string
           resolucion_sii_fecha?: string | null
           resolucion_sii_numero?: number | null
+          rubro?: string
           rut: string
         }
         Update: {
@@ -1065,6 +1067,7 @@ export type Database = {
           razon_social?: string
           resolucion_sii_fecha?: string | null
           resolucion_sii_numero?: number | null
+          rubro?: string
           rut?: string
         }
         Relationships: [
@@ -2674,6 +2677,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      cambiar_rubro: {
+        Args: { p_empresa: string; p_rubro: string }
+        Returns: undefined
+      }
       confirmar_pago_suscripcion: {
         Args: { p_monto: number; p_pago: string; p_referencia: string }
         Returns: string
@@ -2830,7 +2837,7 @@ export type Database = {
         Returns: undefined
       }
       registrar_organizacion: {
-        Args: { p_razon_social: string; p_rut: string }
+        Args: { p_razon_social: string; p_rubro?: string; p_rut: string }
         Returns: string
       }
       registrar_pago: {
