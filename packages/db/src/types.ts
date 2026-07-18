@@ -374,6 +374,60 @@ export type Database = {
           },
         ]
       }
+      cierres_ejercicio: {
+        Row: {
+          anio: number
+          asiento_cierre_id: string
+          creado_en: string
+          creado_por: string
+          empresa_id: string
+          estado: string
+          id: string
+          reabierto_en: string | null
+          reabierto_por: string | null
+          resultado: number
+        }
+        Insert: {
+          anio: number
+          asiento_cierre_id: string
+          creado_en?: string
+          creado_por: string
+          empresa_id: string
+          estado?: string
+          id?: string
+          reabierto_en?: string | null
+          reabierto_por?: string | null
+          resultado: number
+        }
+        Update: {
+          anio?: number
+          asiento_cierre_id?: string
+          creado_en?: string
+          creado_por?: string
+          empresa_id?: string
+          estado?: string
+          id?: string
+          reabierto_en?: string | null
+          reabierto_por?: string | null
+          resultado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_ejercicio_empresa_id_asiento_cierre_id_fkey"
+            columns: ["empresa_id", "asiento_cierre_id"]
+            isOneToOne: false
+            referencedRelation: "asientos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "cierres_ejercicio_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           activo: boolean
@@ -2681,6 +2735,10 @@ export type Database = {
         Args: { p_empresa: string; p_rubro: string }
         Returns: undefined
       }
+      cerrar_ejercicio: {
+        Args: { p_anio: number; p_empresa: string }
+        Returns: string
+      }
       confirmar_pago_suscripcion: {
         Args: { p_monto: number; p_pago: string; p_referencia: string }
         Returns: string
@@ -2794,6 +2852,10 @@ export type Database = {
         }
         Returns: string
       }
+      reabrir_ejercicio: {
+        Args: { p_anio: number; p_empresa: string }
+        Returns: string
+      }
       registrar_ajuste: {
         Args: {
           p_bodega: string
@@ -2899,6 +2961,10 @@ export type Database = {
       revertir_asiento: {
         Args: { p_asiento: string; p_empresa: string; p_glosa: string }
         Returns: string
+      }
+      revision_periodo: {
+        Args: { p_anio: number; p_empresa: string; p_mes: number }
+        Returns: Json
       }
       tomar_folio: {
         Args: { p_empresa: string; p_tipo: string }
