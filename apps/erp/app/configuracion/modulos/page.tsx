@@ -1,5 +1,6 @@
 import { crearClienteServidor } from '@suite/auth/server'
 import { Encabezado } from '@suite/ui'
+import type { CodigoRubro } from '@suite/core'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { FormularioModulos } from '../../../componentes/formulario-modulos'
 import { PanelContabilidad } from '../../../componentes/panel-contabilidad'
@@ -12,7 +13,7 @@ export default async function ConfigModulos() {
   const supabase = await crearClienteServidor()
   const { data: empresa } = await supabase
     .from('empresas')
-    .select('modulo_transporte, factor_volumetrico')
+    .select('rubro, factor_volumetrico')
     .eq('id', activa.id)
     .single()
 
@@ -22,7 +23,7 @@ export default async function ConfigModulos() {
       <FormularioModulos
         accion={guardarModulos}
         inicial={{
-          moduloTransporte: empresa?.modulo_transporte ?? false,
+          rubro: (empresa?.rubro ?? 'negocio') as CodigoRubro,
           factorVolumetrico: empresa?.factor_volumetrico ?? 250,
         }}
       />

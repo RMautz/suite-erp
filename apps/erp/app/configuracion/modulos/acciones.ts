@@ -9,7 +9,8 @@ export async function guardarModulos(_prev: EstadoForm, formData: FormData): Pro
   const { activa } = await obtenerEmpresaActiva()
   if (!activa) return { error: 'No tienes una empresa activa' }
 
-  const moduloTransporte = formData.get('modulo_transporte') === 'on'
+  // modulo_transporte ya no se escribe aquí: es un flag derivado del rubro (0023)
+  // y su columna no tiene grant de UPDATE — solo se mueve por cambiar_rubro.
   const factor = Number(String(formData.get('factor_volumetrico') ?? '').trim())
   // Mismo rango que el check de la tabla (0016): rechazar aquí da mensaje claro
   // en vez de un 23514 crudo.
@@ -20,7 +21,7 @@ export async function guardarModulos(_prev: EstadoForm, formData: FormData): Pro
   const supabase = await crearClienteServidor()
   const { data, error } = await supabase
     .from('empresas')
-    .update({ modulo_transporte: moduloTransporte, factor_volumetrico: factor })
+    .update({ factor_volumetrico: factor })
     .eq('id', activa.id)
     .select('id')
   if (error) return { error: 'No se pudo guardar la configuración de módulos' }
