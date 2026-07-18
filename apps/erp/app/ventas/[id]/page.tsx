@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearCLP, formatearRut } from '@suite/core'
@@ -18,6 +19,16 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
     .select('*, clientes (razon_social, rut), documentos_venta_lineas (descripcion, cantidad, precio_neto, subtotal)')
     .eq('id', id).eq('empresa_id', activa.id).single()
   if (!doc) notFound()
+
+  // Asiento contable del documento (si el módulo está activo y el rol lo ve — la RLS por
+  // rol devuelve 0 filas al resto). venta y nota_credito comparten referencia_id = doc.id.
+  const { data: asiento } = await supabase
+    .from('asientos')
+    .select('id, numero')
+    .eq('empresa_id', activa.id)
+    .in('origen', ['venta', 'nota_credito'])
+    .eq('referencia_id', doc.id)
+    .maybeSingle()
 
   const emitible = doc.estado === 'borrador' || doc.estado === 'pendiente_envio'
   const esNotaVenta = doc.tipo === 'nota_venta'
@@ -56,6 +67,11 @@ export default async function DetalleVenta({ params }: { params: Promise<{ id: s
       <Tarjeta className="mb-4 max-w-3xl">
         <p><strong>Cliente:</strong> {doc.clientes?.razon_social} ({doc.clientes && formatearRut(doc.clientes.rut)})</p>
         {doc.error_emision && <p className="mt-2 text-sm text-amber-700">Último error: {doc.error_emision}</p>}
+        {asiento && (
+          <p className="mt-2 text-sm text-slate-600">
+            Asiento contable: <Link className="text-marca-700 hover:underline" href={`/contabilidad/asientos/${asiento.id}`}>N° {asiento.numero}</Link>
+          </p>
+        )}
       </Tarjeta>
 
       <Tabla>

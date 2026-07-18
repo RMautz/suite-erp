@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
 import { formatearCLP } from '@suite/core'
 import { Encabezado, Insignia, Tabla, Td, Th, Tr } from '@suite/ui'
@@ -16,11 +17,16 @@ export default async function PaginaPagos() {
     .eq('empresa_id', activa.id)
     .order('creado_en', { ascending: false })
     .limit(100)
+  const ids = (pagos ?? []).map((p) => p.id)
+  const { data: asientos } = ids.length
+    ? await supabase.from('asientos').select('id, numero, referencia_id').eq('empresa_id', activa.id).eq('origen', 'pago').in('referencia_id', ids)
+    : { data: [] as { id: string; numero: number; referencia_id: string | null }[] }
+  const asientoPorPago = new Map((asientos ?? []).map((a) => [a.referencia_id, a] as const))
   return (
     <div>
       <Encabezado titulo="Pagos" />
       <Tabla>
-        <thead><tr><Th>Fecha</Th><Th>Cliente</Th><Th>Método</Th><Th className="text-right">Monto</Th><Th>Aplicado a</Th><Th>Estado</Th><Th /></tr></thead>
+        <thead><tr><Th>Fecha</Th><Th>Cliente</Th><Th>Método</Th><Th className="text-right">Monto</Th><Th>Aplicado a</Th><Th>Estado</Th><Th>Asiento</Th><Th /></tr></thead>
         <tbody>
           {(pagos ?? []).map((p) => (
             <Tr key={p.id}>
@@ -34,10 +40,15 @@ export default async function PaginaPagos() {
                 ))}
               </Td>
               <Td>{p.estado === 'activo' ? <Insignia tono="verde">Activo</Insignia> : <Insignia tono="rojo">Anulado</Insignia>}</Td>
+              <Td className="text-sm">
+                {asientoPorPago.has(p.id)
+                  ? <Link className="text-marca-700 hover:underline" href={`/contabilidad/asientos/${asientoPorPago.get(p.id)!.id}`}>N° {asientoPorPago.get(p.id)!.numero}</Link>
+                  : <span className="text-slate-400">—</span>}
+              </Td>
               <Td>{p.estado === 'activo' ? <FormularioAnular pagoId={p.id} /> : <span className="text-xs text-slate-400">{p.motivo_anulacion}</span>}</Td>
             </Tr>
           ))}
-          {(pagos ?? []).length === 0 && <Tr><Td colSpan={7} className="py-8 text-center text-slate-500">No hay pagos registrados.</Td></Tr>}
+          {(pagos ?? []).length === 0 && <Tr><Td colSpan={8} className="py-8 text-center text-slate-500">No hay pagos registrados.</Td></Tr>}
         </tbody>
       </Tabla>
     </div>
