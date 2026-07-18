@@ -4,6 +4,7 @@ import { descifrar, proveedorPorAmbiente, type CredencialesDTE, type SolicitudEm
 import { CODIGO_SII, type TipoDocumento } from '@suite/core'
 import type { Json } from '@suite/db'
 import { claveCifrado } from './cifrado'
+import { contabilizarAsiento } from './contabilidad'
 
 // Descifra las credenciales de la empresa. SOLO server-side. Usa service_role para leer
 // las columnas cifradas de forma controlada (nunca expuestas al cliente).
@@ -80,11 +81,15 @@ export async function registrarMovimientosDocumento(
 export async function aplicarAnticipoDocumento(empresaId: string, documentoId: string): Promise<void> {
   try {
     const admin = clienteAdmin()
-    const { error } = await admin.rpc('aplicar_anticipo', {
+    const { data: pagoId, error } = await admin.rpc('aplicar_anticipo', {
       p_empresa: empresaId,
       p_documento: documentoId,
     })
     if (error) console.error('aplicarAnticipoDocumento:', error.message)
+    // aplicar_anticipo retorna el pago_id de la reclasificacion (null si no habia anticipo que
+    // aplicar). Se contabiliza como 'pago': la regla ramifica el debe por anticipo_id -> Anticipos
+    // de clientes (reclasificacion, no plata nueva). contabilizarAsiento nunca lanza.
+    else if (pagoId) await contabilizarAsiento(empresaId, 'pago', pagoId)
   } catch (e) {
     console.error('aplicarAnticipoDocumento:', e)
   }

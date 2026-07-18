@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import type { Json } from '@suite/db'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
+import { contabilizarAsiento } from '../../lib/contabilidad'
 import type { EstadoForm } from '../tipos'
 
 const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'mercadopago', 'otro'] as const
@@ -42,7 +43,7 @@ export async function registrarPago(_prev: EstadoForm, formData: FormData): Prom
   // p_aplicaciones es jsonb en SQL; el generador de tipos lo tipa como Json, no como el shape real: castea sólo el tipo.
   // p_fecha/p_referencia/p_notas aceptan NULL en SQL (coalesce/nullif), pero el generador no refleja la nulabilidad
   // de argumentos de función: castea sólo el tipo, no el valor (mismo criterio que compras/acciones.ts).
-  const { error } = await supabase.rpc('registrar_pago', {
+  const { data: pagoId, error } = await supabase.rpc('registrar_pago', {
     p_empresa: activa.id,
     p_cliente: cliente,
     p_fecha: (fecha || null) as string,
@@ -59,6 +60,9 @@ export async function registrarPago(_prev: EstadoForm, formData: FormData): Prom
     if (error.message.includes('cobrable')) return { error: 'Hay un documento no cobrable o de otro cliente' }
     return { error: 'No se pudo registrar el pago' }
   }
+  // Contabiliza el pago en tiempo real: Debe Banco (pago manual, sin anticipo_id) / Haber Clientes.
+  // registrar_pago retorna el uuid del pago; el hook nunca lanza.
+  if (pagoId) await contabilizarAsiento(activa.id, 'pago', pagoId)
   revalidatePath('/cobranza')
   revalidatePath('/cobranza/pagos')
   redirect('/cobranza')
@@ -95,7 +99,7 @@ export async function aplicarAnticipoManual(_prev: EstadoForm, formData: FormDat
   if (!anticipo) return { error: 'Anticipo no válido' }
   if (!documento) return { error: 'Selecciona una factura' }
   const supabase = await crearClienteServidor()
-  const { error } = await supabase.rpc('aplicar_anticipo_manual', {
+  const { data: pagoId, error } = await supabase.rpc('aplicar_anticipo_manual', {
     p_empresa: activa.id,
     p_anticipo: anticipo,
     p_documento: documento,
@@ -106,6 +110,9 @@ export async function aplicarAnticipoManual(_prev: EstadoForm, formData: FormDat
     if (error.message.includes('anticipo')) return { error: 'El anticipo no existe o ya fue aplicado' }
     return { error: 'No se pudo aplicar el anticipo' }
   }
+  // La re-create de aplicar_anticipo_manual ahora retorna el pago_id de la reclasificación: se
+  // contabiliza como 'pago' (debe Anticipos de clientes, por anticipo_id no nulo). Nunca lanza.
+  if (pagoId) await contabilizarAsiento(activa.id, 'pago', pagoId)
   revalidatePath('/cobranza')
   return {}
 }

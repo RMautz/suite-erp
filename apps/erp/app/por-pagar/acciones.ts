@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import type { Json } from '@suite/db'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
+import { contabilizarAsiento } from '../../lib/contabilidad'
 import type { EstadoForm } from '../tipos'
 
 const TIPOS = ['factura', 'factura_exenta'] as const
@@ -50,24 +51,31 @@ export async function registrarFacturaCompra(_prev: EstadoForm, formData: FormDa
       .maybeSingle()
     if (!oc) return { error: 'La orden de compra no corresponde a ese proveedor' }
   }
-  const { error } = await supabase.from('documentos_compra').insert({
-    empresa_id: activa.id,
-    proveedor_id: proveedor,
-    tipo,
-    folio,
-    fecha_emision: fecha,
-    neto,
-    exento,
-    iva,
-    total,
-    orden_id: orden || null,
-    notas: notas || null,
-  })
+  const { data: compra, error } = await supabase
+    .from('documentos_compra')
+    .insert({
+      empresa_id: activa.id,
+      proveedor_id: proveedor,
+      tipo,
+      folio,
+      fecha_emision: fecha,
+      neto,
+      exento,
+      iva,
+      total,
+      orden_id: orden || null,
+      notas: notas || null,
+    })
+    .select('id')
+    .single()
   if (error) {
     if (error.code === '23505') return { error: 'Ya registraste esa factura de ese proveedor' }
     if (error.code === '42501') return { error: 'Tu rol no permite registrar facturas de compra' }
     return { error: 'No se pudo registrar la factura' }
   }
+  // Contabiliza la compra en tiempo real: Debe Compras/Gastos (neto+exento) + IVA crédito (iva) /
+  // Haber Proveedores (total). El .select('id') del insert entrega la referencia; el hook nunca lanza.
+  if (compra) await contabilizarAsiento(activa.id, 'compra', compra.id)
   revalidatePath('/por-pagar')
   revalidatePath('/por-pagar/facturas')
   redirect('/por-pagar/facturas')
@@ -124,7 +132,7 @@ export async function registrarPagoProveedor(_prev: EstadoForm, formData: FormDa
   // p_aplicaciones es jsonb en SQL; el generador de tipos lo tipa como Json, no como el shape real: castea sólo el tipo.
   // p_fecha/p_referencia/p_notas aceptan NULL en SQL (coalesce/nullif), pero el generador no refleja la nulabilidad
   // de argumentos de función: castea sólo el tipo, no el valor (mismo criterio que cobranza/acciones.ts).
-  const { error } = await supabase.rpc('registrar_pago_proveedor', {
+  const { data: pagoId, error } = await supabase.rpc('registrar_pago_proveedor', {
     p_empresa: activa.id,
     p_proveedor: proveedor,
     p_fecha: (fecha || null) as string,
@@ -142,6 +150,9 @@ export async function registrarPagoProveedor(_prev: EstadoForm, formData: FormDa
     if (error.message.includes('válido')) return { error: 'Hay un documento no válido o de otro proveedor' }
     return { error: 'No se pudo registrar el pago' }
   }
+  // Contabiliza el pago a proveedor en tiempo real: Debe Proveedores (monto) / Haber Banco (monto).
+  // registrar_pago_proveedor retorna el uuid del pago; el hook nunca lanza.
+  if (pagoId) await contabilizarAsiento(activa.id, 'pago_proveedor', pagoId)
   revalidatePath('/por-pagar')
   revalidatePath('/por-pagar/pagos')
   redirect('/por-pagar')

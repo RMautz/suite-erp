@@ -7,6 +7,7 @@ import { CODIGO_SII, type TipoDocumento } from '@suite/core'
 import { proveedorPorAmbiente, type EstadoResultado } from '@suite/dte'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { aplicarAnticipoDocumento, credencialesEmpresa, registrarMovimientosDocumento } from '../../lib/emision'
+import { contabilizarAsiento } from '../../lib/contabilidad'
 
 const TIPOS_EMISIBLES = ['factura', 'boleta'] as const
 
@@ -136,6 +137,10 @@ export async function emitirDocumento(formData: FormData): Promise<void> {
       // solo al emitirse la factura. NUNCA lanza (espejo de registrarMovimientosDocumento): si
       // lanzara, el catch revertiría un DTE vivo. Fallo best-effort → botón "Aplicar" en /cobranza.
       await aplicarAnticipoDocumento(activa.id, id)
+      // Contabiliza la venta en tiempo real: Debe Clientes (total) / Haber Ventas (neto) + Ventas
+      // exentas (exento) + IVA débito (iva). Hook nunca-lanza; si el módulo está inactivo o el
+      // mapeo da 0 líneas (boleta total 0), la RPC es no-op.
+      await contabilizarAsiento(activa.id, 'venta', id)
     }
   } catch (e) {
     // La decisión es sobre folio PERSISTIDO, no sobre la variable local `folio`: si se
@@ -255,6 +260,9 @@ export async function emitirNotaCredito(formData: FormData): Promise<void> {
         1,
         'Nota de crédito folio ' + (folioNc as number)
       )
+      // Contabiliza la NC en tiempo real: Debe Ventas (neto) + Ventas exentas (exento) + IVA débito
+      // (iva) / Haber Clientes (total) — inversa de la venta. Hook nunca-lanza.
+      await contabilizarAsiento(activa.id, 'nota_credito', ncId)
     }
   } catch (e) {
     // No silencioso: registra el error en la NC (si se creó) para que el usuario lo vea y la

@@ -2,6 +2,7 @@ import { clienteAdmin } from '@suite/auth/admin'
 import { descifrar } from '@suite/dte'
 import { pasarelaPorAmbiente, parsearReferencia } from '@suite/pagos'
 import { claveCifrado } from '../../../../../lib/cifrado'
+import { contabilizarAsiento } from '../../../../../lib/contabilidad'
 
 // Webhook de MercadoPago POR EMPRESA (Plan 13, spec §5). POST público: MP no trae sesión, y la
 // empresa viaja en la URL porque el payload de MP solo trae data.id (fuera de banda). El dinero se
@@ -159,6 +160,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ empresa
     console.error('webhook mercadopago: error de BD al registrar; MP reintentará:', empresaId, eRpc.message)
     return new Response(null, { status: 500 })
   }
+
+  // Contabilización en tiempo real (hooks nunca-lanza). Un mismo mp_payment_id pudo crear un pago
+  // (min(recibido, saldo)) Y un anticipo-excedente: ambos llevan este mp_payment_id (= dataId), se
+  // resuelven por él (índices unique parciales -> maybeSingle) y se contabilizan por separado.
+  // registrar_anticipo_mp crea solo el anticipo (el select de pagos no encuentra fila). El
+  // excedente-DE-APLICACIÓN (mp_payment_id null) no entra por aquí: es reclasificación, no plata nueva.
+  const { data: pagoContab } = await admin
+    .from('pagos')
+    .select('id')
+    .eq('empresa_id', empresaId)
+    .eq('mp_payment_id', dataId)
+    .maybeSingle()
+  if (pagoContab) await contabilizarAsiento(empresaId, 'pago', pagoContab.id)
+  const { data: anticipoContab } = await admin
+    .from('anticipos')
+    .select('id')
+    .eq('empresa_id', empresaId)
+    .eq('mp_payment_id', dataId)
+    .maybeSingle()
+  if (anticipoContab) await contabilizarAsiento(empresaId, 'anticipo', anticipoContab.id)
 
   return new Response(null, { status: 200 })
 }
