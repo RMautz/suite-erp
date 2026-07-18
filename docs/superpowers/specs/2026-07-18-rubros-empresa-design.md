@@ -69,7 +69,7 @@ Consumidores: tarjetas del registro (web), etiqueta en Configuración → Módul
 
 ## 8. Seed demo (scripts/seed-demo.mjs)
 
-- Org 1 "Demo Transportes SpA": `registrar_organizacion` con `p_rubro: 'transporte'`; el update directo de `modulo_transporte` (línea ~133) se elimina (fallaría por el grant) — queda solo el de `factor_volumetrico`.
+- Org 1 "Demo Transportes SpA": `registrar_organizacion` con `p_rubro: 'transporte'`; el update directo de `modulo_transporte` (línea ~133) se elimina para no romper el invariante rubro/modulo_transporte — la empresa ya nace 'transporte' por la RPC. (Ese update usa service_role, que conserva el grant completo de 0001 y SÍ pasaría: la disciplina es no escribir el flag fuera de `cambiar_rubro`.) Queda solo el update de `factor_volumetrico`.
 - Org 2 "Comercial Ficticia SpA": sin `p_rubro` → nace `negocio` (hoy ya no usa transporte; sirve además para demostrar el NAV reducido).
 
 ## 9. Tests
