@@ -433,6 +433,19 @@ const { error: eCor } = await admin.from('correos_enviados').insert([
 if (eCor) die('correos_enviados', eCor)
 console.log('✓ correos: recordatorio (hace 5d) + cotización, HTML de plantillas reales')
 
+// 20) Contabilidad: la demo NACE con el módulo activo y el histórico contabilizado.
+//     VÍA userCli (el dueño): activar_contabilidad + contabilizar_pendientes son RPCs
+//     authenticated — el admin client (service_role) daría 42501. activar siembra el
+//     catálogo pyme chileno; contabilizar_pendientes recorre en orden de fecha todo lo
+//     contabilizable (ventas/NC/compras/pagos/anticipos) y crea sus asientos cuadrados.
+//     La 2da org (sección 18) queda SIN activar → muestra el gating del módulo.
+const { error: eActC } = await userCli.rpc('activar_contabilidad', { p_empresa: empresaId })
+if (eActC) die('activar_contabilidad', eActC)
+const { data: pendCont, error: ePendCont } = await userCli.rpc('contabilizar_pendientes', { p_empresa: empresaId })
+if (ePendCont) die('contabilizar_pendientes', ePendCont)
+const { count: nAsientos } = await admin.from('asientos').select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
+console.log('✓ contabilidad activada (' + (nAsientos ?? 0) + ' asientos, ' + (pendCont?.creados ?? 0) + ' contabilizados)')
+
 // ----- Resumen de conteos -----
 const cuenta = async (tabla, filtros = {}) => {
   let q = admin.from(tabla).select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
@@ -456,6 +469,7 @@ console.log('órdenes de entrega:   ', await cuenta('ordenes_entrega'))
 console.log('proformas:            ', await cuenta('proformas'))
 console.log('anticipos:            ', await cuenta('anticipos'))
 console.log('correos enviados:     ', await cuenta('correos_enviados'))
+console.log('asientos contables:   ', await cuenta('asientos'))
 console.log('pagos suscripción pag:', susPagados ?? 0)
 console.log('organizaciones:       ', orgsCount ?? 0)
 
