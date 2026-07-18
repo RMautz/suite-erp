@@ -23,6 +23,7 @@ export default async function PaginaContabilidad() {
         <div className="flex items-center gap-2">
           <Link href="/contabilidad/cuentas"><Boton variante="secundario">Plan de cuentas</Boton></Link>
           <Link href="/contabilidad/asientos"><Boton variante="secundario">Ver asientos</Boton></Link>
+          <Link href="/contabilidad/balance"><Boton variante="secundario">Balance</Boton></Link>
           <Link href="/contabilidad/asientos/nuevo"><Boton>Nuevo asiento</Boton></Link>
         </div>
       </Encabezado>
