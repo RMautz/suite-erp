@@ -14,14 +14,17 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
   // El NAV depende de la empresa activa: las entradas de transporte solo existen
   // con el módulo activo. Esto es UX, no seguridad: RLS y las RPCs siguen
   // mandando aunque alguien navegue a mano.
+  // NAV agrupado por categorías. Los condicionales siguen siendo UX, no seguridad:
+  // RLS y las RPCs mandan aunque alguien navegue a mano.
   const nav = [
     { href: '/', etiqueta: 'Inicio' },
-    { href: '/productos', etiqueta: 'Productos' },
-    { href: '/clientes', etiqueta: 'Clientes' },
-    { href: '/importar', etiqueta: 'Importar' },
+    { seccion: 'Comercial' },
     { href: '/cotizaciones', etiqueta: 'Cotizaciones' },
+    { href: '/ventas', etiqueta: 'Ventas' },
+    { href: '/cobranza', etiqueta: 'Cobranza' },
     ...(activa?.modulo_transporte
       ? [
+          { seccion: 'Transporte' },
           { href: '/flota', etiqueta: 'Flota' },
           { href: '/tarifario', etiqueta: 'Tarifario' },
           { href: '/entregas', etiqueta: 'Entregas' },
@@ -29,13 +32,18 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
           { href: '/combustible', etiqueta: 'Combustible' },
         ]
       : []),
-    { href: '/ventas', etiqueta: 'Ventas' },
-    { href: '/inventario', etiqueta: 'Inventario' },
+    { seccion: 'Compras' },
     { href: '/compras', etiqueta: 'Compras' },
-    { href: '/cobranza', etiqueta: 'Cobranza' },
     { href: '/por-pagar', etiqueta: 'Por pagar' },
+    { href: '/inventario', etiqueta: 'Inventario' },
+    { seccion: 'Maestros' },
+    { href: '/productos', etiqueta: 'Productos' },
+    { href: '/clientes', etiqueta: 'Clientes' },
+    { href: '/importar', etiqueta: 'Importar' },
+    { seccion: 'Análisis' },
     { href: '/reportes', etiqueta: 'Reportes' },
     ...(puedeVerContabilidad(activa) ? [{ href: '/contabilidad', etiqueta: 'Contabilidad' }] : []),
+    { seccion: 'Sistema' },
     { href: '/configuracion', etiqueta: 'Configuración' },
   ]
   return (

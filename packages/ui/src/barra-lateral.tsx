@@ -5,10 +5,8 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { cn } from './cn'
 
-export interface ItemNav {
-  href: string
-  etiqueta: string
-}
+// Un item del NAV: un link navegable o un encabezado de sección (agrupa los que siguen).
+export type ItemNav = { href: string; etiqueta: string } | { seccion: string }
 
 export function BarraLateral({
   titulo,
@@ -23,8 +21,18 @@ export function BarraLateral({
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-marca-950 text-white">
       <div className="px-4 py-5 text-lg font-semibold">{titulo}</div>
-      <nav className="flex-1 space-y-1 px-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 pb-4">
         {items.map((item) => {
+          if ('seccion' in item) {
+            return (
+              <div
+                key={'seccion:' + item.seccion}
+                className="mt-4 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-marca-100/60"
+              >
+                {item.seccion}
+              </div>
+            )
+          }
           const activo = item.href === '/' ? ruta === '/' : ruta.startsWith(item.href)
           return (
             <Link
