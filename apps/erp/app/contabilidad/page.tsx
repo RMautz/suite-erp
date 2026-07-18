@@ -24,6 +24,7 @@ export default async function PaginaContabilidad() {
           <Link href="/contabilidad/cuentas"><Boton variante="secundario">Plan de cuentas</Boton></Link>
           <Link href="/contabilidad/asientos"><Boton variante="secundario">Ver asientos</Boton></Link>
           <Link href="/contabilidad/balance"><Boton variante="secundario">Balance</Boton></Link>
+          <Link href="/contabilidad/eerr"><Boton variante="secundario">EERR</Boton></Link>
           <Link href="/contabilidad/asientos/nuevo"><Boton>Nuevo asiento</Boton></Link>
         </div>
       </Encabezado>
