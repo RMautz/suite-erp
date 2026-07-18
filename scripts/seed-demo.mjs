@@ -452,6 +452,37 @@ if (ePendCont) die('contabilizar_pendientes', ePendCont)
 const { count: nAsientos } = await admin.from('asientos').select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
 console.log('✓ contabilidad activada (' + (nAsientos ?? 0) + ' asientos, ' + (pendCont?.creados ?? 0) + ' contabilizados)')
 
+// 21) Asientos 2025 para el cierre asistido: 3 asientos manuales del año pasado,
+//     cuadrados y chicos, VÍA userCli (crear_asiento es authenticated; service_role
+//     daría 42501). Con movimientos 2025 sin cerrar, el Contador Auditor dispara la
+//     regla ejercicio_anterior_abierto y /contabilidad/revision muestra el cierre
+//     asistido de 2025 preparado (utilidad esperada $150.000 = 500.000 − 200.000 − 150.000).
+//     NO se cierra ningún ejercicio aquí: la aprobación se vive en la demo (spec P17 §6).
+const { data: ctasRows, error: eCtas } = await admin.from('cuentas_contables').select('id, clave_sistema, codigo').eq('empresa_id', empresaId)
+if (eCtas) die('cuentas para asientos 2025', eCtas)
+const porClave = Object.fromEntries(ctasRows.filter((c) => c.clave_sistema).map((c) => [c.clave_sistema, c.id]))
+const ctaArriendos = ctasRows.find((c) => c.codigo === '5.1.03')?.id
+if (!porClave.banco || !porClave.ventas || !porClave.compras_gastos || !ctaArriendos) die('faltan cuentas del catálogo para los asientos 2025', null)
+const asientos2025 = [
+  { fecha: '2025-03-14', glosa: 'Venta contado de servicios de flete', lineas: [
+    { cuentaId: porClave.banco, debe: 500000, haber: 0 },
+    { cuentaId: porClave.ventas, debe: 0, haber: 500000 },
+  ] },
+  { fecha: '2025-06-20', glosa: 'Compra de repuestos pagada por banco', lineas: [
+    { cuentaId: porClave.compras_gastos, debe: 200000, haber: 0 },
+    { cuentaId: porClave.banco, debe: 0, haber: 200000 },
+  ] },
+  { fecha: '2025-11-07', glosa: 'Arriendo de bodega de noviembre', lineas: [
+    { cuentaId: ctaArriendos, debe: 150000, haber: 0 },
+    { cuentaId: porClave.banco, debe: 0, haber: 150000 },
+  ] },
+]
+for (const a of asientos2025) {
+  const { error: eA25 } = await userCli.rpc('crear_asiento', { p_empresa: empresaId, p_fecha: a.fecha, p_glosa: a.glosa, p_lineas: a.lineas })
+  if (eA25) die('crear_asiento 2025 (' + a.glosa + ')', eA25)
+}
+console.log('✓ 3 asientos manuales de 2025 (utilidad esperada $150.000) — cierre asistido de 2025 listo, ejercicio SIN cerrar')
+
 // ----- Resumen de conteos -----
 const cuenta = async (tabla, filtros = {}) => {
   let q = admin.from(tabla).select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
