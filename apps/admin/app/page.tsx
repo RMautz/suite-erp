@@ -1,8 +1,8 @@
 import { clienteAdmin } from '@suite/auth/admin'
-import { formatearCLP, formatearRut } from '@suite/core'
+import { RUBROS, formatearCLP, formatearRut } from '@suite/core'
 import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { verificarAdmin } from '../lib/guardia'
-import { activarOrganizacion, suspenderOrganizacion } from './acciones'
+import { activarOrganizacion, cambiarRubro, suspenderOrganizacion } from './acciones'
 
 // Clave 'yyyy-mm' del mes calendario (fechas locales del servidor; la deuda
 // timezone Chile es repo-wide y explícitamente no se resuelve aquí).
@@ -31,7 +31,9 @@ export default async function PanelAdmin() {
   const [{ data: organizaciones, error: errOrg }, { data: pagosData, error: errPagos }] = await Promise.all([
     admin
       .from('organizaciones')
-      .select('id, rut, razon_social, estado, trial_hasta, creado_en, planes (nombre, precio_clp), suscripciones (hasta)')
+      .select(
+        'id, rut, razon_social, estado, trial_hasta, creado_en, planes (nombre, precio_clp), suscripciones (hasta), empresas (id, razon_social, rubro)'
+      )
       .order('creado_en', { ascending: false }),
     admin
       .from('pagos_suscripcion')
@@ -235,6 +237,7 @@ export default async function PanelAdmin() {
               <Tr>
                 <Th>RUT</Th>
                 <Th>Razón social</Th>
+                <Th>Rubro</Th>
                 <Th>Plan</Th>
                 <Th>Estado</Th>
                 <Th>Trial hasta</Th>
@@ -247,6 +250,38 @@ export default async function PanelAdmin() {
                 <Tr key={org.id}>
                   <Td className="tabular-nums">{formatearRut(org.rut)}</Td>
                   <Td className="font-medium text-slate-900">{org.razon_social}</Td>
+                  <Td>
+                    {(org.empresas ?? []).length === 0 ? (
+                      <span className="text-slate-400">—</span>
+                    ) : (
+                      <div className="space-y-2">
+                        {(org.empresas ?? []).map((emp) => (
+                          <form key={emp.id} action={cambiarRubro} className="flex items-center gap-2">
+                            <input type="hidden" name="empresa_id" value={emp.id} />
+                            {(org.empresas ?? []).length > 1 && (
+                              <span className="max-w-32 truncate text-xs text-slate-500" title={emp.razon_social}>
+                                {emp.razon_social}
+                              </span>
+                            )}
+                            <select
+                              name="rubro"
+                              defaultValue={emp.rubro}
+                              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+                            >
+                              {RUBROS.map((r) => (
+                                <option key={r.codigo} value={r.codigo}>
+                                  {r.nombre}
+                                </option>
+                              ))}
+                            </select>
+                            <Boton type="submit" variante="secundario">
+                              Cambiar
+                            </Boton>
+                          </form>
+                        ))}
+                      </div>
+                    )}
+                  </Td>
                   <Td>
                     {org.planes?.nombre ?? '—'}
                     {org.planes && (
