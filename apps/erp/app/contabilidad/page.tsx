@@ -50,7 +50,7 @@ export default async function PaginaContabilidad() {
                 <Insignia tono={TONO_ESTADO[revision.estado]}>{ETIQUETA_ESTADO[revision.estado]}</Insignia>
                 {revision.observaciones.length === 0
                   ? 'El Contador Auditor no encontró observaciones.'
-                  : `${revision.observaciones.length} observación${revision.observaciones.length === 1 ? '' : 'es'} este mes.`}
+                  : `${revision.observaciones.length} ${revision.observaciones.length === 1 ? 'observación' : 'observaciones'} este mes.`}
               </p>
             ) : (
               <p className="text-sm text-slate-500">No se pudo obtener la revisión del mes.</p>

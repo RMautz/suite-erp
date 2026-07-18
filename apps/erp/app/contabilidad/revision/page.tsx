@@ -151,7 +151,7 @@ export default async function PaginaRevision({
           <p className="text-sm">
             {observaciones.length === 0
               ? 'El Contador Auditor no encontró observaciones en este período.'
-              : `${observaciones.length} observación${observaciones.length === 1 ? '' : 'es'} en ${etiquetaMes}.`}
+              : `${observaciones.length} ${observaciones.length === 1 ? 'observación' : 'observaciones'} en ${etiquetaMes}.`}
           </p>
         </div>
       )}

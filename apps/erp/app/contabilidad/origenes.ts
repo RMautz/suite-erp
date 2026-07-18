@@ -9,6 +9,7 @@ export const ETIQUETA_ORIGEN: Record<string, string> = {
   pago_proveedor: 'Pago a proveedor',
   anticipo: 'Anticipo',
   reversa: 'Reversa',
+  cierre: 'Cierre de ejercicio',
 }
 
 // Ruta del documento de origen SOLO cuando existe una pantalla de detalle para él:
