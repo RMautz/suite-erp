@@ -76,14 +76,14 @@ set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111",
 select activar_contabilidad('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa');
 select activar_contabilidad('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa');
 
--- 1) Idempotente: 10 claves de sistema (no 20) y el flag encendido.
+-- 1) Idempotente: 11 claves de sistema (no 22) y el flag encendido.
 select is(
   (select count(*) from cuentas_contables
    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and clave_sistema is not null)::text
   || '/' ||
   (select modulo_contabilidad from empresas where id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa')::text,
-  '10/true',
-  'activar es idempotente: las 10 claves de sistema y el flag encendido'
+  '11/true',
+  'activar es idempotente: las 11 claves de sistema y el flag encendido'
 );
 
 -- 2) Flip crudo del flag bloqueado: modulo_contabilidad quedó FUERA del grant por columnas.
