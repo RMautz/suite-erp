@@ -525,3 +525,432 @@ revoke execute on function public.contabilizar_pendientes(uuid) from anon, publi
 grant execute on function public.contabilizar_pendientes(uuid) to authenticated;
 
 -- ===== RPCs de cierre y revision (Task 2) =====
+
+-- ================== Cierre de ejercicio y Contador Auditor (Task 2) ==================
+-- security definer + set search_path = public. cerrar/reabrir toman PRIMERO el
+-- advisory xact-lock del correlativo (patron 0022): tambien serializa la fila
+-- de cierres_ejercicio (anti doble-cierre concurrente). revision_periodo es
+-- solo lectura: no crea asientos, no toma el candado.
+
+-- ---------- Cerrar ejercicio (dueno/admin/contador; asiento ANTES de la marca) ----------
+-- Una linea inversa por cuenta de resultado con saldo del anio (excluyendo
+-- cierres previos y sus reversas) la deja en 0; contrapartida unica a
+-- 'utilidad_ejercicio' (haber si utilidad, debe si perdida). Sin cuentas de
+-- resultado con saldo neto <> 0 -> noop (null, ni asiento ni fila — patron noop
+-- P16). El "cierre en orden" usa el MISMO criterio del noop (saldo neto por
+-- cuenta <> 0, no la mera existencia de lineas): un anio con solo movimientos
+-- de balance, o cuyas lineas de resultado netean 0 por cuenta, cierra en noop
+-- (sin fila) y no debe bloquear los cierres siguientes.
+create or replace function public.cerrar_ejercicio(p_empresa uuid, p_anio integer)
+returns uuid
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_abierto integer;
+  v_lineas jsonb;
+  v_resultado bigint;
+  v_utilidad uuid;
+  v_asiento uuid;
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite cerrar el ejercicio';
+  end if;
+  if not exists (select 1 from empresas where id = p_empresa and modulo_contabilidad) then
+    raise exception 'La contabilidad no está activada';
+  end if;
+  if p_anio is null or p_anio >= extract(year from current_date)::integer then
+    raise exception 'Solo se puede cerrar un ejercicio terminado';
+  end if;
+
+  -- Candado del correlativo PRIMERO (patron 0022).
+  perform pg_advisory_xact_lock(hashtextextended('asientos:' || p_empresa::text, 42));
+
+  if exists (select 1 from cierres_ejercicio
+             where empresa_id = p_empresa and anio = p_anio and estado = 'cerrado') then
+    raise exception 'El ejercicio % ya está cerrado', p_anio;
+  end if;
+
+  -- Cierre EN ORDEN: el anio mas antiguo abierto con algo que cerrar, primero.
+  -- Criterio UNIFICADO con el noop y la regla 7 (Global Constraints): alguna
+  -- cuenta de resultado con saldo neto <> 0 en el anio (mismo having que arma
+  -- las lineas del cierre) — la mera existencia de lineas que netean 0 NO cuenta.
+  select min(t.anio) into v_abierto
+  from (
+    select extract(year from a.fecha)::integer as anio
+    from asientos_lineas l
+    join asientos a on a.id = l.asiento_id and a.empresa_id = l.empresa_id
+    join cuentas_contables c on c.id = l.cuenta_id and c.empresa_id = l.empresa_id
+    where l.empresa_id = p_empresa
+      and extract(year from a.fecha)::integer < p_anio
+      and c.tipo in ('ingreso', 'gasto')
+      and a.origen <> 'cierre'
+      and not exists (
+        select 1 from asientos x
+        where x.empresa_id = p_empresa and x.id = a.reversa_de and x.origen = 'cierre')
+    group by extract(year from a.fecha)::integer, l.cuenta_id
+    having sum(l.debe - l.haber) <> 0
+  ) t
+  where not exists (
+    select 1 from cierres_ejercicio ce
+    where ce.empresa_id = p_empresa and ce.anio = t.anio and ce.estado = 'cerrado');
+  if v_abierto is not null then
+    raise exception 'Cierra primero el ejercicio %', v_abierto;
+  end if;
+
+  -- Saldos de resultado del anio (excluyendo cierres previos y sus reversas):
+  -- linea inversa por cuenta; el neto (haber - debe) es el resultado.
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'cuentaId', s.cuenta_id,
+           'debe',  case when s.saldo < 0 then -s.saldo else 0 end,
+           'haber', case when s.saldo > 0 then s.saldo else 0 end) order by s.codigo), '[]'::jsonb),
+         coalesce(sum(-s.saldo), 0)
+  into v_lineas, v_resultado
+  from (
+    select l.cuenta_id, c.codigo, sum(l.debe - l.haber)::bigint as saldo
+    from asientos_lineas l
+    join asientos a on a.id = l.asiento_id and a.empresa_id = l.empresa_id
+    join cuentas_contables c on c.id = l.cuenta_id and c.empresa_id = l.empresa_id
+    where l.empresa_id = p_empresa
+      and extract(year from a.fecha)::integer = p_anio
+      and c.tipo in ('ingreso', 'gasto')
+      and a.origen <> 'cierre'
+      and not exists (
+        select 1 from asientos x
+        where x.empresa_id = p_empresa and x.id = a.reversa_de and x.origen = 'cierre')
+    group by l.cuenta_id, c.codigo
+    having sum(l.debe - l.haber) <> 0
+  ) s;
+
+  -- Sin movimientos de resultado -> noop (ni asiento ni fila).
+  if jsonb_array_length(v_lineas) = 0 then
+    return null;
+  end if;
+
+  -- Contrapartida unica (si el resultado es exactamente 0, las lineas cuadran solas).
+  if v_resultado <> 0 then
+    select id into v_utilidad from cuentas_contables
+    where empresa_id = p_empresa and clave_sistema = 'utilidad_ejercicio';
+    v_lineas := v_lineas || jsonb_build_array(jsonb_build_object(
+      'cuentaId', v_utilidad,
+      'debe',  case when v_resultado < 0 then -v_resultado else 0 end,
+      'haber', case when v_resultado > 0 then v_resultado else 0 end));
+  end if;
+
+  -- Asiento PRIMERO (la fila aun no esta 'cerrado': el candado del helper no
+  -- bloquea); referencia_id null (la anti-doble-ejecucion es la fila + el lock).
+  v_asiento := app._insertar_asiento(
+    p_empresa, make_date(p_anio, 12, 31), 'Cierre del ejercicio ' || p_anio,
+    'cierre', null, null, auth.uid(), v_lineas);
+
+  -- LUEGO la marca: insert la primera vez; al re-cerrar tras reabrir, la fila
+  -- vuelve a 'cerrado' con el asiento nuevo (update via on conflict).
+  insert into cierres_ejercicio (empresa_id, anio, asiento_cierre_id, resultado, creado_por)
+  values (p_empresa, p_anio, v_asiento, v_resultado::integer, auth.uid())
+  on conflict (empresa_id, anio) do update
+    set estado = 'cerrado', asiento_cierre_id = excluded.asiento_cierre_id,
+        resultado = excluded.resultado, creado_por = excluded.creado_por,
+        creado_en = now(), reabierto_por = null, reabierto_en = null;
+
+  return v_asiento;
+end $$;
+revoke execute on function public.cerrar_ejercicio(uuid, integer) from anon, public;
+grant execute on function public.cerrar_ejercicio(uuid, integer) to authenticated;
+
+-- ---------- Reabrir ejercicio (dueno/admin/contador; marca ANTES de la reversa) ----------
+-- Solo el ultimo cierre vigente se reabre (sin cierre posterior 'cerrado').
+-- La reversa liga reversa_de = asiento_cierre_id con la MISMA fecha 31-dic (no
+-- contamina el ejercicio siguiente). La unicidad una-reversa-por-asiento (0022)
+-- se respeta: cada re-cierre crea asiento nuevo, cada reapertura revierte el vigente.
+create or replace function public.reabrir_ejercicio(p_empresa uuid, p_anio integer)
+returns uuid
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_cierre record;
+  v_posterior integer;
+  v_lineas jsonb;
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite reabrir el ejercicio';
+  end if;
+
+  -- Candado del correlativo PRIMERO (patron 0022).
+  perform pg_advisory_xact_lock(hashtextextended('asientos:' || p_empresa::text, 42));
+
+  select * into v_cierre from cierres_ejercicio
+  where empresa_id = p_empresa and anio = p_anio and estado = 'cerrado'
+  for update;
+  if not found then
+    raise exception 'El ejercicio % no está cerrado', p_anio;
+  end if;
+
+  select max(anio) into v_posterior from cierres_ejercicio
+  where empresa_id = p_empresa and anio > p_anio and estado = 'cerrado';
+  if v_posterior is not null then
+    raise exception 'Reabre primero el ejercicio %', v_posterior;
+  end if;
+
+  -- Marca PRIMERO (el candado del helper deja de bloquear el anio), LUEGO la reversa.
+  update cierres_ejercicio
+  set estado = 'reabierto', reabierto_por = auth.uid(), reabierto_en = now()
+  where id = v_cierre.id and empresa_id = p_empresa;
+
+  -- Lineas inversas del asiento de cierre vigente (debe <-> haber, patron revertir_asiento).
+  select jsonb_agg(jsonb_build_object('cuentaId', cuenta_id, 'debe', haber, 'haber', debe, 'glosa', glosa))
+  into v_lineas
+  from asientos_lineas
+  where empresa_id = p_empresa and asiento_id = v_cierre.asiento_cierre_id;
+
+  return app._insertar_asiento(
+    p_empresa, make_date(p_anio, 12, 31), 'Reapertura del ejercicio ' || p_anio,
+    'reversa', null, v_cierre.asiento_cierre_id, auth.uid(), v_lineas);
+end $$;
+revoke execute on function public.reabrir_ejercicio(uuid, integer) from anon, public;
+grant execute on function public.reabrir_ejercicio(uuid, integer) to authenticated;
+
+-- ---------- Revision del periodo (Contador Auditor: 7 reglas deterministas) ----------
+-- Solo lectura; jsonb {periodo, estado, observaciones}. severidad critica >
+-- media > ok; estado = la peor presente (sin observaciones -> 'ok'). Los
+-- montos van crudos en el detalle (CLP enteros, sin separador de miles: los
+-- goldens pgTAP comparan byte a byte; la UI puede reformatear).
+create or replace function public.revision_periodo(p_empresa uuid, p_anio integer, p_mes integer)
+returns jsonb
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_desde date;
+  v_hasta date;             -- exclusivo (primer dia del mes siguiente)
+  v_obs jsonb := '[]'::jsonb;
+  v_n bigint;
+  v_libro bigint;
+  v_cuenta bigint;
+  v_actual bigint;
+  v_meses integer;
+  v_prom numeric;
+  v_doc record;
+  v_ant record;
+  v_tar record;
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite ver la revisión';
+  end if;
+  -- Periodo valido (tras el rol): sin esto, make_date reventaria con un error
+  -- crudo de Postgres ante p_mes fuera de 1-12.
+  if p_anio is null or p_mes is null or p_mes not between 1 and 12 then
+    raise exception 'Período no válido';
+  end if;
+
+  v_desde := make_date(p_anio, p_mes, 1);
+  v_hasta := (v_desde + interval '1 month')::date;
+
+  -- Regla 1: documentos_sin_contabilizar (CRITICA). Mismo criterio de
+  -- pendientes de contabilizar_pendientes (0022), acotado al periodo.
+  select count(*) into v_n from (
+                  select 'venta'::text as origen, d.id as referencia_id, coalesce(d.emitido_en, d.creado_en)::date as fecha
+    from documentos_venta d
+    where d.empresa_id = p_empresa and d.estado = 'emitido' and d.tipo in ('factura', 'boleta')
+    union all select 'nota_credito', d.id, coalesce(d.emitido_en, d.creado_en)::date
+    from documentos_venta d
+    where d.empresa_id = p_empresa and d.estado = 'emitido' and d.tipo = 'nota_credito'
+    union all select 'compra', c.id, c.fecha_emision
+    from documentos_compra c
+    where c.empresa_id = p_empresa and c.estado = 'activa'
+    union all select 'pago', pg.id, pg.fecha
+    from pagos pg
+    where pg.empresa_id = p_empresa and pg.estado = 'activo'
+    union all select 'pago_proveedor', pp.id, pp.fecha
+    from pagos_proveedor pp
+    where pp.empresa_id = p_empresa and pp.estado = 'activo'
+    union all select 'anticipo', a.id, a.recibido_en::date
+    from anticipos a
+    where a.empresa_id = p_empresa and a.mp_payment_id is not null
+  ) t
+  where t.fecha >= v_desde and t.fecha < v_hasta
+    and not exists (
+      select 1 from asientos x
+      where x.empresa_id = p_empresa and x.origen = t.origen and x.referencia_id = t.referencia_id);
+  if v_n > 0 then
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'documentos_sin_contabilizar', 'severidad', 'critica',
+      'titulo', 'Documentos sin contabilizar',
+      'detalle', v_n || case when v_n = 1
+        then ' documento del período sin asiento contable'
+        else ' documentos del período sin asiento contable' end,
+      'enlace_tipo', null, 'enlace_id', null));
+  end if;
+
+  -- Regla 2: iva_descuadrado (CRITICA). IVA debito del libro de ventas del mes
+  -- (0011: NC con signo negativo) vs movimientos del mes en la cuenta ancla.
+  select coalesce(sum(iva), 0) into v_libro
+  from libro_ventas
+  where empresa_id = p_empresa and fecha >= v_desde and fecha < v_hasta;
+  select coalesce(sum(l.haber - l.debe), 0) into v_cuenta
+  from asientos_lineas l
+  join asientos a on a.id = l.asiento_id and a.empresa_id = l.empresa_id
+  join cuentas_contables c on c.id = l.cuenta_id and c.empresa_id = l.empresa_id
+  where l.empresa_id = p_empresa and c.clave_sistema = 'iva_debito'
+    and a.fecha >= v_desde and a.fecha < v_hasta;
+  if v_libro <> v_cuenta then
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'iva_descuadrado', 'severidad', 'critica',
+      'titulo', 'IVA débito descuadrado',
+      'detalle', 'IVA débito del libro de ventas: $' || v_libro
+        || ' · movimientos de la cuenta: $' || v_cuenta
+        || ' · diferencia: $' || (v_libro - v_cuenta),
+      'enlace_tipo', null, 'enlace_id', null));
+  end if;
+
+  -- Regla 3: facturas_vencidas_sin_gestion (MEDIA). Con saldo, vencidas hace
+  -- mas de 30 dias y sin recordatorio (0020) en los ultimos 30 dias.
+  for v_doc in
+    select s.documento_id, s.folio, s.saldo, s.fecha_vencimiento
+    from saldos_documentos s
+    where s.empresa_id = p_empresa and s.tipo = 'factura' and s.saldo > 0
+      and s.fecha_vencimiento < current_date - 30
+      and not exists (
+        select 1 from correos_enviados ce
+        where ce.empresa_id = p_empresa and ce.tipo = 'recordatorio'
+          and ce.referencia_id = s.documento_id
+          and ce.creado_en > now() - interval '30 days')
+    order by s.fecha_vencimiento, s.documento_id
+  loop
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'facturas_vencidas_sin_gestion', 'severidad', 'media',
+      'titulo', 'Factura vencida sin gestión',
+      'detalle', 'Factura N° ' || v_doc.folio || ' vencida el ' || v_doc.fecha_vencimiento
+        || ' con saldo $' || v_doc.saldo || ' y sin recordatorio en los últimos 30 días',
+      'enlace_tipo', 'documento_venta', 'enlace_id', v_doc.documento_id));
+  end loop;
+
+  -- Regla 4: anomalia_vs_promedio (MEDIA). Banda 60%-140% del promedio de los
+  -- hasta 6 meses anteriores CON datos; minimo 2 meses para opinar (filosofia
+  -- del semaforo del dashboard). Ventas por libro_ventas; gastos por compras activas.
+  select coalesce(sum(total), 0) into v_actual
+  from libro_ventas
+  where empresa_id = p_empresa and fecha >= v_desde and fecha < v_hasta;
+  select count(*), avg(m.monto) into v_meses, v_prom
+  from (
+    select date_trunc('month', fecha)::date as mes, sum(total) as monto
+    from libro_ventas
+    where empresa_id = p_empresa
+      and fecha >= (v_desde - interval '6 months')::date and fecha < v_desde
+    group by 1
+  ) m;
+  if v_meses >= 2 and (v_actual < 0.6 * v_prom or v_actual > 1.4 * v_prom) then
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'anomalia_vs_promedio', 'severidad', 'media',
+      'titulo', 'Ventas fuera de lo normal',
+      'detalle', 'Ventas del mes: $' || v_actual || ' · promedio de los últimos '
+        || v_meses || ' meses: $' || round(v_prom)::bigint || ' · banda normal: 60%-140%',
+      'enlace_tipo', null, 'enlace_id', null));
+  end if;
+  select coalesce(sum(total), 0) into v_actual
+  from documentos_compra
+  where empresa_id = p_empresa and estado = 'activa'
+    and fecha_emision >= v_desde and fecha_emision < v_hasta;
+  select count(*), avg(m.monto) into v_meses, v_prom
+  from (
+    select date_trunc('month', fecha_emision)::date as mes, sum(total) as monto
+    from documentos_compra
+    where empresa_id = p_empresa and estado = 'activa'
+      and fecha_emision >= (v_desde - interval '6 months')::date and fecha_emision < v_desde
+    group by 1
+  ) m;
+  if v_meses >= 2 and (v_actual < 0.6 * v_prom or v_actual > 1.4 * v_prom) then
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'anomalia_vs_promedio', 'severidad', 'media',
+      'titulo', 'Gastos fuera de lo normal',
+      'detalle', 'Gastos del mes: $' || v_actual || ' · promedio de los últimos '
+        || v_meses || ' meses: $' || round(v_prom)::bigint || ' · banda normal: 60%-140%',
+      'enlace_tipo', null, 'enlace_id', null));
+  end if;
+
+  -- Regla 5: anticipos_sin_aplicar (MEDIA). Recibidos hace mas de 60 dias.
+  for v_ant in
+    select a.id, a.monto, a.recibido_en::date as recibido
+    from anticipos a
+    where a.empresa_id = p_empresa and a.estado = 'recibido'
+      and a.recibido_en < now() - interval '60 days'
+    order by a.recibido_en, a.id
+  loop
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'anticipos_sin_aplicar', 'severidad', 'media',
+      'titulo', 'Anticipo sin aplicar',
+      'detalle', 'Anticipo de $' || v_ant.monto || ' recibido el ' || v_ant.recibido
+        || ' sigue sin aplicarse (más de 60 días)',
+      'enlace_tipo', 'anticipo', 'enlace_id', v_ant.id));
+  end loop;
+
+  -- Regla 6: asientos_tardios (MEDIA). Asientos automaticos del periodo cuya
+  -- fecha difiere de la del documento origen (el clamping de app._fecha_contable
+  -- o cualquier descalce): join por origen/referencia_id, misma expresion de
+  -- fecha por origen que contabilizar_documento.
+  for v_tar in
+    select a.id, a.numero, a.fecha, d.fecha_doc
+    from asientos a
+    cross join lateral (
+      select case a.origen
+        when 'venta'          then (select coalesce(v.emitido_en, v.creado_en)::date from documentos_venta v  where v.id = a.referencia_id and v.empresa_id = a.empresa_id)
+        when 'nota_credito'   then (select coalesce(v.emitido_en, v.creado_en)::date from documentos_venta v  where v.id = a.referencia_id and v.empresa_id = a.empresa_id)
+        when 'compra'         then (select c.fecha_emision                          from documentos_compra c where c.id = a.referencia_id and c.empresa_id = a.empresa_id)
+        when 'pago'           then (select p.fecha                                  from pagos p             where p.id = a.referencia_id and p.empresa_id = a.empresa_id)
+        when 'pago_proveedor' then (select pp.fecha                                 from pagos_proveedor pp  where pp.id = a.referencia_id and pp.empresa_id = a.empresa_id)
+        when 'anticipo'       then (select an.recibido_en::date                     from anticipos an        where an.id = a.referencia_id and an.empresa_id = a.empresa_id)
+      end as fecha_doc
+    ) d
+    where a.empresa_id = p_empresa
+      and a.fecha >= v_desde and a.fecha < v_hasta
+      and a.referencia_id is not null
+      and a.origen in ('venta', 'nota_credito', 'compra', 'pago', 'pago_proveedor', 'anticipo')
+      and d.fecha_doc is not null and d.fecha_doc <> a.fecha
+    order by a.numero
+  loop
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'asientos_tardios', 'severidad', 'media',
+      'titulo', 'Asiento con fecha distinta al documento',
+      'detalle', 'Asiento N° ' || v_tar.numero || ' con fecha ' || v_tar.fecha
+        || ' registra un documento del ' || v_tar.fecha_doc,
+      'enlace_tipo', 'asiento', 'enlace_id', v_tar.id));
+  end loop;
+
+  -- Regla 7: ejercicio_anterior_abierto (MEDIA, CTA al cierre asistido).
+  -- Criterio UNIFICADO con el noop y el candado de orden de cerrar_ejercicio
+  -- (Global Constraints): alguna cuenta de resultado con saldo neto <> 0 en el
+  -- anio anterior (un anio sin nada que cerrar no genera observacion).
+  if exists (
+       select 1
+       from asientos_lineas l
+       join asientos a on a.id = l.asiento_id and a.empresa_id = l.empresa_id
+       join cuentas_contables c on c.id = l.cuenta_id and c.empresa_id = l.empresa_id
+       where l.empresa_id = p_empresa
+         and extract(year from a.fecha)::integer = p_anio - 1
+         and c.tipo in ('ingreso', 'gasto')
+         and a.origen <> 'cierre'
+         and not exists (
+           select 1 from asientos x
+           where x.empresa_id = p_empresa and x.id = a.reversa_de and x.origen = 'cierre')
+       group by l.cuenta_id
+       having sum(l.debe - l.haber) <> 0)
+     and not exists (
+       select 1 from cierres_ejercicio ce
+       where ce.empresa_id = p_empresa and ce.anio = p_anio - 1 and ce.estado = 'cerrado') then
+    v_obs := v_obs || jsonb_build_array(jsonb_build_object(
+      'regla', 'ejercicio_anterior_abierto', 'severidad', 'media',
+      'titulo', 'Ejercicio anterior sin cerrar',
+      'detalle', 'El ejercicio ' || (p_anio - 1) || ' tiene movimientos de resultado y aún no está cerrado',
+      'enlace_tipo', 'cierre', 'enlace_id', null));
+  end if;
+
+  return jsonb_build_object(
+    'periodo', jsonb_build_object('anio', p_anio, 'mes', p_mes),
+    'estado', case
+      when v_obs @> '[{"severidad": "critica"}]'::jsonb then 'critica'
+      when v_obs @> '[{"severidad": "media"}]'::jsonb then 'media'
+      else 'ok' end,
+    'observaciones', v_obs);
+end $$;
+revoke execute on function public.revision_periodo(uuid, integer, integer) from anon, public;
+grant execute on function public.revision_periodo(uuid, integer, integer) to authenticated;
