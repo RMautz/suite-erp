@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { validarRut } from '@suite/core'
+import { RUBROS, validarRut } from '@suite/core'
 import { crearClienteServidor } from '@suite/auth/server'
 import type { EstadoForm } from '../tipos'
 
@@ -10,11 +10,13 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
   const password = String(formData.get('password') ?? '')
   const rut = String(formData.get('rut') ?? '').trim()
   const razonSocial = String(formData.get('razon_social') ?? '').trim()
+  const rubro = String(formData.get('rubro') ?? '')
 
   if (!email.includes('@')) return { error: 'Ingresa un correo válido' }
   if (password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres' }
   if (!validarRut(rut)) return { error: 'El RUT ingresado no es válido' }
   if (!razonSocial) return { error: 'Ingresa la razón social de tu empresa' }
+  if (!RUBROS.some((r) => r.codigo === rubro)) return { error: 'Elige el rubro de tu Pyme' }
 
   const supabase = await crearClienteServidor()
 
@@ -45,6 +47,7 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
   const { error: errorOrg } = await supabase.rpc('registrar_organizacion', {
     p_rut: rut,
     p_razon_social: razonSocial,
+    p_rubro: rubro,
   })
   if (errorOrg) return { error: errorOrg.message }
 

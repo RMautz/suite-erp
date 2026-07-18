@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState } from 'react'
+import { RUBROS } from '@suite/core'
 import { registrar } from './acciones'
 import type { EstadoForm } from '../tipos'
 
@@ -41,6 +42,26 @@ export default function PaginaRegistro() {
               <span className="mb-1 block text-sm font-medium text-slate-700">Razón social</span>
               <input name="razon_social" placeholder="Mi Empresa SpA" required className={CLASES_INPUT} />
             </label>
+            <fieldset>
+              <legend className="mb-1 block text-sm font-medium text-slate-700">Rubro de tu Pyme</legend>
+              <div className="grid gap-2">
+                {RUBROS.map((r) => (
+                  <label key={r.codigo} className="block cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rubro"
+                      value={r.codigo}
+                      required
+                      className="peer sr-only"
+                    />
+                    <span className="block rounded-md border border-slate-300 px-3 py-2 transition-colors peer-checked:border-marca-500 peer-checked:bg-marca-50 peer-checked:ring-1 peer-checked:ring-marca-500 peer-focus-visible:ring-2 peer-focus-visible:ring-marca-500">
+                      <span className="block text-sm font-medium text-slate-900">{r.nombre}</span>
+                      <span className="mt-0.5 block text-xs text-slate-500">{r.descripcion}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             {estado.error && (
               <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{estado.error}</p>
             )}
