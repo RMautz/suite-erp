@@ -99,7 +99,7 @@ Los caminos que no pasan por la app quedan cubiertos por `contabilizar_pendiente
 - **Asientos**: lista con filtros (rango, origen), detalle (líneas, link al documento origen, botón Revertir con glosa), **nuevo asiento manual** (líneas dinámicas, cuadratura viva Σdebe/Σhaber, solo cuentas hoja activas).
 - **Libro diario**: rango de fechas, export CSV (`filasACsv`). **Libro mayor**: selector de cuenta + rango, debe/haber/saldo acumulado, export CSV.
 - `/configuracion/modulos`: toggle Contabilidad (activar → RPC 1 + RPC 2, resumen "N asientos creados"; desactivar solo apaga el flag y esconde la UI — los asientos quedan).
-- Detalles de venta/compra/pago: línea "Asiento N°X" (link) si existe.
+- Detalle de venta y lista de pagos: línea/columna "Asiento N°X" (link) si existe. Compra: SIN traza en v1 — no existe página de detalle de `documentos_compra` (solo la lista `/por-pagar/facturas`; `/compras/[id]` es órdenes de compra, otra tabla). La traza de compra se agrega cuando exista ese detalle (desviación documentada; mismo patrón batch por origen+referencia).
 - Español; queries `.eq('empresa_id', activa.id)`; export con guard de módulo Y rol (paridad página/route — lección P12).
 
 ## §7 Seed demo
