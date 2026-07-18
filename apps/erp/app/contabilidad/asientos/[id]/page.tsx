@@ -32,7 +32,9 @@ export default async function DetalleAsiento({ params }: { params: Promise<{ id:
   const totalHaber = lineas.reduce((s: number, l: { haber: number }) => s + l.haber, 0)
   const href = rutaOrigen(asiento.origen, asiento.referencia_id)
   const esReversa = asiento.origen === 'reversa'
-  const revertible = !esReversa && !reversa
+  // El asiento de cierre no se revierte desde aquí: la única vía es reabrir el
+  // ejercicio en /contabilidad/revision (el RPC igual lo bloquea — candado 0024).
+  const revertible = !esReversa && asiento.origen !== 'cierre' && !reversa
 
   return (
     <div>

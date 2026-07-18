@@ -6,10 +6,22 @@ import { exigirContabilidad } from '../../lib/contabilidad-acceso'
 import { BotonContabilizar } from '../../componentes/boton-contabilizar'
 import { ETIQUETA_ORIGEN } from './origenes'
 import { contabilizarPendientes } from './acciones'
+import type { RevisionPeriodo } from './revision/reglas'
+import { ETIQUETA_ESTADO, TONO_ESTADO } from './revision/semaforo'
 
 export default async function PaginaContabilidad() {
   const activa = await exigirContabilidad()
   const supabase = await crearClienteServidor()
+
+  // Semáforo del mes actual: misma RPC que /contabilidad/revision.
+  const hoy = new Date().toISOString().slice(0, 7)
+  const { data: revData } = await supabase.rpc('revision_periodo', {
+    p_empresa: activa.id,
+    p_anio: Number(hoy.slice(0, 4)),
+    p_mes: Number(hoy.slice(5, 7)),
+  })
+  const revision = (revData as unknown as RevisionPeriodo | null) ?? null
+
   const { data: asientos } = await supabase
     .from('asientos')
     .select('id, numero, fecha, glosa, origen, asientos_lineas (debe)')
@@ -28,6 +40,25 @@ export default async function PaginaContabilidad() {
           <Link href="/contabilidad/asientos/nuevo"><Boton>Nuevo asiento</Boton></Link>
         </div>
       </Encabezado>
+
+      <Tarjeta className="mb-4 max-w-3xl">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="grow">
+            <h2 className="mb-1 text-lg font-semibold text-slate-800">Revisión del mes</h2>
+            {revision ? (
+              <p className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                <Insignia tono={TONO_ESTADO[revision.estado]}>{ETIQUETA_ESTADO[revision.estado]}</Insignia>
+                {revision.observaciones.length === 0
+                  ? 'El Contador Auditor no encontró observaciones.'
+                  : `${revision.observaciones.length} observación${revision.observaciones.length === 1 ? '' : 'es'} este mes.`}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500">No se pudo obtener la revisión del mes.</p>
+            )}
+          </div>
+          <Link href="/contabilidad/revision"><Boton variante="secundario">Ver revisión</Boton></Link>
+        </div>
+      </Tarjeta>
 
       <Tarjeta className="mb-4 max-w-3xl">
         <h2 className="mb-1 text-lg font-semibold text-slate-800">Contabilizar pendientes</h2>
