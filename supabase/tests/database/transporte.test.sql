@@ -87,8 +87,13 @@ select crear_orden_entrega('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'cccccccc-000
   current_date, 'dddd0002-0000-0000-0000-aaaaaaaaaaaa', null, null,
   1, 100, 1.00, 30000, null, null, 'Carga voluminosa');
 
--- Setup: Ana apaga el módulo (el toggle bloquea crear_*; NO borra ni esconde datos).
+-- Setup: módulo off vía superuser (0023: modulo_transporte ya no es escribible
+-- por authenticated — deriva del rubro y solo lo mueve la plataforma). El
+-- toggle bloquea crear_*; NO borra ni esconde datos.
+reset role;
 update public.empresas set modulo_transporte = false where id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa';
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
 -- 1) Con el módulo apagado no se registran ODEs (crear_proforma comparte guard y mensaje).
 select throws_ok(
@@ -107,8 +112,11 @@ select results_eq(
   'kilo afecto server-side (max(175, 1.26×250)=315; max(787, 2.88×250)=787; 1.00×300=300), correlativo secuencial y RLS intacta con módulo off'
 );
 
--- Setup: módulo de vuelta.
+-- Setup: módulo de vuelta (vía superuser, mismo motivo 0023).
+reset role;
 update public.empresas set modulo_transporte = true where id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa';
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 
 -- ===== Matriz de roles: contador y bodeguero NO operan NINGUNA de las 7 RPCs =====
 set local request.jwt.claims to '{"sub": "66666666-6666-6666-6666-666666666666", "role": "authenticated"}';
