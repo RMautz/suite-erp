@@ -119,6 +119,112 @@ export type Database = {
           },
         ]
       }
+      asientos: {
+        Row: {
+          creado_en: string
+          creado_por: string | null
+          empresa_id: string
+          fecha: string
+          glosa: string
+          id: string
+          numero: number
+          origen: string
+          referencia_id: string | null
+          reversa_de: string | null
+        }
+        Insert: {
+          creado_en?: string
+          creado_por?: string | null
+          empresa_id: string
+          fecha: string
+          glosa: string
+          id?: string
+          numero: number
+          origen: string
+          referencia_id?: string | null
+          reversa_de?: string | null
+        }
+        Update: {
+          creado_en?: string
+          creado_por?: string | null
+          empresa_id?: string
+          fecha?: string
+          glosa?: string
+          id?: string
+          numero?: number
+          origen?: string
+          referencia_id?: string | null
+          reversa_de?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asientos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asientos_empresa_id_reversa_de_fkey"
+            columns: ["empresa_id", "reversa_de"]
+            isOneToOne: false
+            referencedRelation: "asientos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
+      asientos_lineas: {
+        Row: {
+          asiento_id: string
+          cuenta_id: string
+          debe: number
+          empresa_id: string
+          glosa: string | null
+          haber: number
+          id: string
+        }
+        Insert: {
+          asiento_id: string
+          cuenta_id: string
+          debe?: number
+          empresa_id: string
+          glosa?: string | null
+          haber?: number
+          id?: string
+        }
+        Update: {
+          asiento_id?: string
+          cuenta_id?: string
+          debe?: number
+          empresa_id?: string
+          glosa?: string | null
+          haber?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asientos_lineas_empresa_id_asiento_id_fkey"
+            columns: ["empresa_id", "asiento_id"]
+            isOneToOne: false
+            referencedRelation: "asientos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "asientos_lineas_empresa_id_cuenta_id_fkey"
+            columns: ["empresa_id", "cuenta_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_contables"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "asientos_lineas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bodegas: {
         Row: {
           activo: boolean
@@ -555,6 +661,50 @@ export type Database = {
           },
         ]
       }
+      cuentas_contables: {
+        Row: {
+          acepta_movimientos: boolean
+          activa: boolean
+          clave_sistema: string | null
+          codigo: string
+          creado_en: string
+          empresa_id: string
+          id: string
+          nombre: string
+          tipo: string
+        }
+        Insert: {
+          acepta_movimientos?: boolean
+          activa?: boolean
+          clave_sistema?: string | null
+          codigo: string
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          nombre: string
+          tipo: string
+        }
+        Update: {
+          acepta_movimientos?: boolean
+          activa?: boolean
+          clave_sistema?: string | null
+          codigo?: string
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          nombre?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuentas_contables_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       destinos: {
         Row: {
           activo: boolean
@@ -861,6 +1011,7 @@ export type Database = {
           giro: string | null
           giro_emisor: string | null
           id: string
+          modulo_contabilidad: boolean
           modulo_transporte: boolean
           mp_access_token_cifrado: string | null
           mp_webhook_secret_cifrado: string | null
@@ -883,6 +1034,7 @@ export type Database = {
           giro?: string | null
           giro_emisor?: string | null
           id?: string
+          modulo_contabilidad?: boolean
           modulo_transporte?: boolean
           mp_access_token_cifrado?: string | null
           mp_webhook_secret_cifrado?: string | null
@@ -905,6 +1057,7 @@ export type Database = {
           giro?: string | null
           giro_emisor?: string | null
           id?: string
+          modulo_contabilidad?: boolean
           modulo_transporte?: boolean
           mp_access_token_cifrado?: string | null
           mp_webhook_secret_cifrado?: string | null
@@ -1500,6 +1653,7 @@ export type Database = {
       }
       pagos: {
         Row: {
+          anticipo_id: string | null
           cliente_id: string
           creado_en: string
           empresa_id: string
@@ -1514,6 +1668,7 @@ export type Database = {
           referencia: string | null
         }
         Insert: {
+          anticipo_id?: string | null
           cliente_id: string
           creado_en?: string
           empresa_id: string
@@ -1528,6 +1683,7 @@ export type Database = {
           referencia?: string | null
         }
         Update: {
+          anticipo_id?: string | null
           cliente_id?: string
           creado_en?: string
           empresa_id?: string
@@ -1542,6 +1698,13 @@ export type Database = {
           referencia?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pagos_anticipo_fk"
+            columns: ["empresa_id", "anticipo_id"]
+            isOneToOne: false
+            referencedRelation: "anticipos"
+            referencedColumns: ["empresa_id", "id"]
+          },
           {
             foreignKeyName: "pagos_empresa_id_cliente_id_fkey"
             columns: ["empresa_id", "cliente_id"]
@@ -2454,6 +2617,7 @@ export type Database = {
     }
     Functions: {
       abortar_pago_suscripcion: { Args: { p_pago: string }; Returns: undefined }
+      activar_contabilidad: { Args: { p_empresa: string }; Returns: undefined }
       anular_documento_compra: {
         Args: { p_documento: string; p_empresa: string; p_motivo: string }
         Returns: undefined
@@ -2476,11 +2640,11 @@ export type Database = {
       }
       aplicar_anticipo: {
         Args: { p_documento: string; p_empresa: string }
-        Returns: undefined
+        Returns: string
       }
       aplicar_anticipo_manual: {
         Args: { p_anticipo: string; p_documento: string; p_empresa: string }
-        Returns: undefined
+        Returns: string
       }
       asignar_despacho: {
         Args: {
@@ -2514,8 +2678,22 @@ export type Database = {
         Args: { p_monto: number; p_pago: string; p_referencia: string }
         Returns: string
       }
+      contabilizar_documento: {
+        Args: { p_empresa: string; p_origen: string; p_referencia: string }
+        Returns: string
+      }
+      contabilizar_pendientes: { Args: { p_empresa: string }; Returns: Json }
       convertir_cotizacion: {
         Args: { p_cotizacion: string; p_empresa: string }
+        Returns: string
+      }
+      crear_asiento: {
+        Args: {
+          p_empresa: string
+          p_fecha: string
+          p_glosa: string
+          p_lineas: Json
+        }
         Returns: string
       }
       crear_cotizacion: {
@@ -2589,8 +2767,24 @@ export type Database = {
         }
         Returns: string
       }
+      desactivar_contabilidad: {
+        Args: { p_empresa: string }
+        Returns: undefined
+      }
       facturar_proforma: {
         Args: { p_empresa: string; p_proforma: string }
+        Returns: string
+      }
+      guardar_cuenta: {
+        Args: {
+          p_acepta_movimientos: boolean
+          p_activa: boolean
+          p_codigo: string
+          p_empresa: string
+          p_id: string
+          p_nombre: string
+          p_tipo: string
+        }
         Returns: string
       }
       registrar_ajuste: {
@@ -2694,6 +2888,10 @@ export type Database = {
           p_producto: string
         }
         Returns: undefined
+      }
+      revertir_asiento: {
+        Args: { p_asiento: string; p_empresa: string; p_glosa: string }
+        Returns: string
       }
       tomar_folio: {
         Args: { p_empresa: string; p_tipo: string }
