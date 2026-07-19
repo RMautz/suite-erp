@@ -6,6 +6,7 @@ import { BotonCerrarSesion } from '../componentes/boton-cerrar-sesion'
 import { SelectorEmpresa } from '../componentes/selector-empresa'
 import { obtenerEmpresaActiva } from '../lib/empresa-activa'
 import { puedeVerContabilidad } from '../lib/contabilidad-acceso'
+import { puedeVerRRHH } from '../lib/rrhh-acceso'
 
 export const metadata = { title: 'Suite ERP' }
 
@@ -40,6 +41,16 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
     { href: '/productos', etiqueta: 'Productos' },
     { href: '/clientes', etiqueta: 'Clientes' },
     { href: '/importar', etiqueta: 'Importar' },
+    // Personas solo para dueno/admin/contador (spec §6). Es UX, no seguridad:
+    // por URL directa la RLS igual manda (tabla vacía o 404).
+    ...(puedeVerRRHH(activa)
+      ? [
+          { seccion: 'Personas' },
+          { href: '/trabajadores', etiqueta: 'Trabajadores' },
+          { href: '/liquidaciones', etiqueta: 'Liquidaciones' },
+          { href: '/libro-remuneraciones', etiqueta: 'Libro de remuneraciones' },
+        ]
+      : []),
     { seccion: 'Análisis' },
     { href: '/reportes', etiqueta: 'Reportes' },
     ...(puedeVerContabilidad(activa) ? [{ href: '/contabilidad', etiqueta: 'Contabilidad' }] : []),
