@@ -519,6 +519,72 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          afp: string
+          cargo: string
+          creado_en: string
+          empresa_id: string
+          fecha_inicio: string
+          fecha_termino: string | null
+          gratificacion_legal: boolean
+          id: string
+          plan_isapre_uf: number | null
+          salud: string
+          sueldo_base: number
+          tipo: string
+          trabajador_id: string
+          vigente: boolean
+        }
+        Insert: {
+          afp: string
+          cargo: string
+          creado_en?: string
+          empresa_id: string
+          fecha_inicio: string
+          fecha_termino?: string | null
+          gratificacion_legal?: boolean
+          id?: string
+          plan_isapre_uf?: number | null
+          salud: string
+          sueldo_base: number
+          tipo: string
+          trabajador_id: string
+          vigente?: boolean
+        }
+        Update: {
+          afp?: string
+          cargo?: string
+          creado_en?: string
+          empresa_id?: string
+          fecha_inicio?: string
+          fecha_termino?: string | null
+          gratificacion_legal?: boolean
+          id?: string
+          plan_isapre_uf?: number | null
+          salud?: string
+          sueldo_base?: number
+          tipo?: string
+          trabajador_id?: string
+          vigente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_empresa_id_trabajador_id_fkey"
+            columns: ["empresa_id", "trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["empresa_id", "id"]
+          },
+        ]
+      }
       correos_enviados: {
         Row: {
           asunto: string
@@ -1226,6 +1292,42 @@ export type Database = {
           },
         ]
       }
+      indicadores_previsionales: {
+        Row: {
+          actualizado_en: string
+          ingreso_minimo: number
+          periodo: string
+          tasas_afp: Json
+          tope_cesantia_uf: number
+          tope_imponible_uf: number
+          tramos_impuesto: Json
+          uf: number
+          utm: number
+        }
+        Insert: {
+          actualizado_en?: string
+          ingreso_minimo: number
+          periodo: string
+          tasas_afp: Json
+          tope_cesantia_uf: number
+          tope_imponible_uf: number
+          tramos_impuesto: Json
+          uf: number
+          utm: number
+        }
+        Update: {
+          actualizado_en?: string
+          ingreso_minimo?: number
+          periodo?: string
+          tasas_afp?: Json
+          tope_cesantia_uf?: number
+          tope_imponible_uf?: number
+          tramos_impuesto?: Json
+          uf?: number
+          utm?: number
+        }
+        Relationships: []
+      }
       links_pago: {
         Row: {
           cliente_id: string
@@ -1280,6 +1382,127 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      liquidaciones: {
+        Row: {
+          afp: string
+          afp_monto: number
+          anulada_en: string | null
+          cesantia_monto: number
+          contrato_id: string
+          creado_en: string
+          dias_trabajados: number
+          emitida_en: string | null
+          empresa_id: string
+          estado: string
+          extras_imponibles: number
+          gratificacion: number
+          id: string
+          impuesto_unico: number
+          liquido: number
+          motivo_anulacion: string | null
+          no_imponibles: number
+          pagada_en: string | null
+          periodo: string
+          plan_isapre_uf: number | null
+          salud: string
+          salud_monto: number
+          sueldo_base: number
+          sueldo_proporcional: number
+          tasa_afp: number
+          total_descuentos: number
+          total_imponible: number
+          trabajador_id: string
+          uf: number
+          utm: number
+        }
+        Insert: {
+          afp: string
+          afp_monto: number
+          anulada_en?: string | null
+          cesantia_monto: number
+          contrato_id: string
+          creado_en?: string
+          dias_trabajados?: number
+          emitida_en?: string | null
+          empresa_id: string
+          estado?: string
+          extras_imponibles?: number
+          gratificacion: number
+          id?: string
+          impuesto_unico: number
+          liquido: number
+          motivo_anulacion?: string | null
+          no_imponibles?: number
+          pagada_en?: string | null
+          periodo: string
+          plan_isapre_uf?: number | null
+          salud: string
+          salud_monto: number
+          sueldo_base: number
+          sueldo_proporcional: number
+          tasa_afp: number
+          total_descuentos: number
+          total_imponible: number
+          trabajador_id: string
+          uf: number
+          utm: number
+        }
+        Update: {
+          afp?: string
+          afp_monto?: number
+          anulada_en?: string | null
+          cesantia_monto?: number
+          contrato_id?: string
+          creado_en?: string
+          dias_trabajados?: number
+          emitida_en?: string | null
+          empresa_id?: string
+          estado?: string
+          extras_imponibles?: number
+          gratificacion?: number
+          id?: string
+          impuesto_unico?: number
+          liquido?: number
+          motivo_anulacion?: string | null
+          no_imponibles?: number
+          pagada_en?: string | null
+          periodo?: string
+          plan_isapre_uf?: number | null
+          salud?: string
+          salud_monto?: number
+          sueldo_base?: number
+          sueldo_proporcional?: number
+          tasa_afp?: number
+          total_descuentos?: number
+          total_imponible?: number
+          trabajador_id?: string
+          uf?: number
+          utm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidaciones_empresa_id_contrato_id_fkey"
+            columns: ["empresa_id", "contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_empresa_id_trabajador_id_fkey"
+            columns: ["empresa_id", "trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -2399,6 +2622,53 @@ export type Database = {
           },
         ]
       }
+      trabajadores: {
+        Row: {
+          activo: boolean
+          creado_en: string
+          direccion: string | null
+          email: string | null
+          empresa_id: string
+          fecha_nacimiento: string | null
+          id: string
+          nombre: string
+          rut: string
+          telefono: string | null
+        }
+        Insert: {
+          activo?: boolean
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id: string
+          fecha_nacimiento?: string | null
+          id?: string
+          nombre: string
+          rut: string
+          telefono?: string | null
+        }
+        Update: {
+          activo?: boolean
+          creado_en?: string
+          direccion?: string | null
+          email?: string | null
+          empresa_id?: string
+          fecha_nacimiento?: string | null
+          id?: string
+          nombre?: string
+          rut?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trabajadores_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehiculos: {
         Row: {
           activo: boolean
@@ -2683,6 +2953,10 @@ export type Database = {
         Args: { p_documento: string; p_empresa: string }
         Returns: undefined
       }
+      anular_liquidacion: {
+        Args: { p_empresa: string; p_liquidacion: string; p_motivo: string }
+        Returns: undefined
+      }
       anular_orden_entrega: {
         Args: { p_empresa: string; p_motivo: string; p_orden: string }
         Returns: undefined
@@ -2836,6 +3110,17 @@ export type Database = {
         Args: { p_empresa: string }
         Returns: undefined
       }
+      emitir_liquidacion: {
+        Args: {
+          p_dias: number
+          p_empresa: string
+          p_extras: number
+          p_no_imponibles: number
+          p_periodo: string
+          p_trabajador: string
+        }
+        Returns: string
+      }
       facturar_proforma: {
         Args: { p_empresa: string; p_proforma: string }
         Returns: string
@@ -2851,6 +3136,10 @@ export type Database = {
           p_tipo: string
         }
         Returns: string
+      }
+      pagar_liquidacion: {
+        Args: { p_empresa: string; p_liquidacion: string }
+        Returns: undefined
       }
       reabrir_ejercicio: {
         Args: { p_anio: number; p_empresa: string }
