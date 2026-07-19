@@ -8,6 +8,7 @@ export const ETIQUETA_ORIGEN: Record<string, string> = {
   pago: 'Pago de cliente',
   pago_proveedor: 'Pago a proveedor',
   anticipo: 'Anticipo',
+  remuneracion: 'Remuneración',
   reversa: 'Reversa',
   cierre: 'Cierre de ejercicio',
 }
@@ -18,5 +19,6 @@ export const ETIQUETA_ORIGEN: Record<string, string> = {
 export function rutaOrigen(origen: string, referenciaId: string | null): string | null {
   if (!referenciaId) return null
   if (origen === 'venta' || origen === 'nota_credito') return `/ventas/${referenciaId}`
+  if (origen === 'remuneracion') return `/liquidaciones/${referenciaId}`
   return null
 }
