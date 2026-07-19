@@ -519,10 +519,12 @@ for (const [nombre, trabajadorId, noImp] of [['Amanda', amanda, 50000], ['Bruno'
   liqIds[nombre] = liqId
 }
 // Canario del golden G1 (tabla contractual del plan): si la RPC divergiera del
-// golden, el seed muere aquí antes de contabilizar.
-const { data: liqAmanda, error: eG1 } = await userCli.from('liquidaciones').select('total_imponible, total_descuentos, liquido').eq('id', liqIds.Amanda).single()
+// golden, el seed muere aquí antes de contabilizar. P19: cubre también los aportes
+// del empleador (sis 1,53% / cesantía indefinido 2,4% / mutual 0,90% de la empresa).
+const { data: liqAmanda, error: eG1 } = await userCli.from('liquidaciones').select('total_imponible, total_descuentos, liquido, sis_monto, cesantia_empleador_monto, mutual_monto, total_aportes').eq('id', liqIds.Amanda).single()
 if (eG1 || !liqAmanda) die('lectura liquidación Amanda (golden G1)', eG1)
 if (liqAmanda.total_imponible !== 1000000 || liqAmanda.total_descuentos !== 188700 || liqAmanda.liquido !== 861300) die('golden G1 del seed no calza: ' + JSON.stringify(liqAmanda) + ' ≠ imponible 1000000 / descuentos 188700 / líquido 861300', null)
+if (liqAmanda.sis_monto !== 15300 || liqAmanda.cesantia_empleador_monto !== 24000 || liqAmanda.mutual_monto !== 9000 || liqAmanda.total_aportes !== 48300) die('aportes G1 del seed no calzan: ' + JSON.stringify(liqAmanda) + ' ≠ sis 15300 / cesantía empleador 24000 / mutual 9000 / total 48300', null)
 const { error: ePagLiq } = await userCli.rpc('pagar_liquidacion', { p_empresa: empresaId, p_liquidacion: liqIds.Carla })
 if (ePagLiq) die('pagar_liquidacion Carla', ePagLiq)
 const { data: pendRem, error: ePendRem } = await userCli.rpc('contabilizar_pendientes', { p_empresa: empresaId })
