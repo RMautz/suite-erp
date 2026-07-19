@@ -13,11 +13,11 @@ export default async function PaginaGenerar() {
   const activa = await exigirRRHH()
   const supabase = await crearClienteServidor()
 
-  const [indicadoresRes, contratosRes] = await Promise.all([
+  const [indicadoresRes, contratosRes, empresaRes] = await Promise.all([
     // Períodos con indicadores existentes (RLS: SELECT authenticated — tabla de plataforma).
     supabase
       .from('indicadores_previsionales')
-      .select('periodo, uf, utm, ingreso_minimo, tope_imponible_uf, tope_cesantia_uf, tasas_afp, tramos_impuesto')
+      .select('periodo, uf, utm, ingreso_minimo, tope_imponible_uf, tope_cesantia_uf, tasa_sis, tasas_afp, tramos_impuesto')
       .order('periodo', { ascending: false })
       .limit(12),
     // Trabajadores con contrato vigente (unique parcial: a lo más uno por trabajador).
@@ -26,6 +26,9 @@ export default async function PaginaGenerar() {
       .select('tipo, sueldo_base, gratificacion_legal, afp, salud, plan_isapre_uf, cargo, trabajador_id, trabajadores (nombre, rut, activo)')
       .eq('empresa_id', activa.id)
       .eq('vigente', true),
+    // Tasa mutual de la EMPRESA activa (spec P19 §2): EmpresaResumen no la trae —
+    // consulta puntual a empresas, patrón factor_volumetrico de entregas/nueva.
+    supabase.from('empresas').select('tasa_mutual').eq('id', activa.id).single(),
   ])
 
   // jsonb llega tipado como Json del codegen: cast SOLO de tipo al espejo del §3.
@@ -39,10 +42,15 @@ export default async function PaginaGenerar() {
       ingreso_minimo: i.ingreso_minimo,
       tope_imponible_uf: Number(i.tope_imponible_uf),
       tope_cesantia_uf: Number(i.tope_cesantia_uf),
+      tasa_sis: Number(i.tasa_sis),
       tasas_afp: i.tasas_afp as Record<string, number>,
       tramos_impuesto: i.tramos_impuesto as unknown as IndicadoresPeriodo['tramos_impuesto'],
     },
   }))
+
+  // Espejo del default de la BD (0026): si la fila no llegara, la vista previa
+  // usa el 0,90% base — el servidor snapshotea la tasa REAL al emitir.
+  const tasaMutual = Number(empresaRes.data?.tasa_mutual ?? 0.9)
 
   const trabajadores: TrabajadorGenerar[] = (contratosRes.data ?? [])
     .filter((c) => c.trabajadores?.activo)
@@ -95,7 +103,7 @@ export default async function PaginaGenerar() {
   return (
     <div>
       <Encabezado titulo="Generar liquidación" />
-      <FormularioLiquidacion trabajadores={trabajadores} indicadores={indicadores} />
+      <FormularioLiquidacion trabajadores={trabajadores} indicadores={indicadores} tasaMutual={tasaMutual} />
     </div>
   )
 }

@@ -50,6 +50,11 @@ export default async function DetalleLiquidacion({ params }: { params: Promise<{
       ? 'Salud Fonasa (7%)'
       : `Salud Isapre (plan ${Number(liq.plan_isapre_uf ?? 0).toLocaleString('es-CL')} UF)`
 
+  // Liquidaciones emitidas ANTES del P19 (spec §2, límite declarado): la 0026
+  // backfillea aportes en 0 y el snapshot tasa_sis en 0. total_aportes = 0 con
+  // tasa_sis > 0 sería un caso real (imponible minúsculo) — por eso el AND.
+  const esPreP19 = liq.total_aportes === 0 && Number(liq.tasa_sis) === 0
+
   return (
     <div>
       <div className="print:hidden">
@@ -117,11 +122,31 @@ export default async function DetalleLiquidacion({ params }: { params: Promise<{
         <span className="font-mono">{formatearCLP(liq.liquido)}</span>
       </div>
 
-      {/* Límite declarado de la v1 (spec §3): también sale en la impresión. */}
-      <p className="mt-3 max-w-3xl text-sm text-slate-500">
-        Esta liquidación no incluye los aportes del empleador (SIS y aporte patronal al seguro de
-        cesantía); se incorporan en una versión futura.
-      </p>
+      {/* Costo empresa (spec P19 §7): aportes del empleador desde el SNAPSHOT —
+          reemplaza la nota v1 "no incluye aportes del empleador" y también sale
+          en la impresión (sin print:hidden). Sin tasa en cesantía empleador:
+          liquidaciones no snapshotea el tipo de contrato (0025). */}
+      <Tarjeta className="mt-4 max-w-3xl">
+        <h3 className="mb-2 border-b border-slate-200 pb-1 text-sm font-semibold uppercase text-slate-600">Costo empresa</h3>
+        {esPreP19 ? (
+          <p className="text-sm text-slate-500">
+            Liquidación emitida antes de los aportes del empleador: no incluye SIS, cesantía del
+            empleador ni mutual.
+          </p>
+        ) : (
+          <>
+            <Linea concepto={`SIS (${Number(liq.tasa_sis).toLocaleString('es-CL')}%)`} monto={liq.sis_monto} />
+            <Linea concepto="Cesantía empleador" monto={liq.cesantia_empleador_monto} />
+            <Linea concepto={`Mutual ley 16.744 (${Number(liq.tasa_mutual).toLocaleString('es-CL')}%)`} monto={liq.mutual_monto} />
+            <Linea concepto="Total aportes del empleador" monto={liq.total_aportes} fuerte />
+            <Linea
+              concepto="Costo total empresa (imponible + no imponibles + aportes)"
+              monto={liq.total_imponible + liq.no_imponibles + liq.total_aportes}
+              fuerte
+            />
+          </>
+        )}
+      </Tarjeta>
 
       <div className="mt-6 max-w-3xl print:hidden">
         {asiento ? (

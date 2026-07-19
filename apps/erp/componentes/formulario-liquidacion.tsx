@@ -45,9 +45,11 @@ function Linea({ concepto, monto, fuerte }: { concepto: string; monto: number; f
 export function FormularioLiquidacion({
   trabajadores,
   indicadores,
+  tasaMutual,
 }: {
   trabajadores: TrabajadorGenerar[]
   indicadores: IndicadorGenerar[]
+  tasaMutual: number
 }) {
   // La página generar garantiza arrays NO vacíos (early returns): los ! son
   // seguros bajo noUncheckedIndexedAccess.
@@ -78,7 +80,8 @@ export function FormularioLiquidacion({
     aviso = `El período no tiene tasa para la AFP ${AFP_NOMBRE[trabajador.contrato.afp] ?? trabajador.contrato.afp}: pide al administrador de la plataforma completar los indicadores.`
   } else {
     try {
-      previa = calcularLiquidacion(trabajador.contrato, indicador.datos, entradas)
+      // Firma Task 3: tasa_mutual como 4º parámetro (tasa_sis viaja en indicador.datos).
+      previa = calcularLiquidacion(trabajador.contrato, indicador.datos, entradas, tasaMutual)
     } catch (e) {
       aviso = e instanceof Error ? e.message : 'No se pudo calcular la vista previa'
     }
@@ -158,6 +161,25 @@ export function FormularioLiquidacion({
             <div className="flex items-center justify-between rounded-md bg-slate-100 px-3 py-2 text-lg font-semibold sm:col-span-2">
               <span>Líquido a pagar</span>
               <span className="font-mono">{formatearCLP(previa.liquido)}</span>
+            </div>
+            {/* Costo empresa (spec P19 §7): los aportes NO restan del líquido —
+                son costo del empleador. La vista previa SÍ conoce contrato.tipo
+                y rotula la tasa de cesantía patronal (el detalle no: no hay
+                snapshot de tipo en liquidaciones). */}
+            <div className="sm:col-span-2">
+              <h3 className="mb-2 border-b border-slate-200 pb-1 text-sm font-semibold uppercase text-slate-600">Costo empresa</h3>
+              <Linea concepto={`SIS (${indicador.datos.tasa_sis.toLocaleString('es-CL')}%)`} monto={previa.sis_monto} />
+              <Linea
+                concepto={`Cesantía empleador (${trabajador.contrato.tipo === 'indefinido' ? '2,4' : '3,0'}%)`}
+                monto={previa.cesantia_empleador_monto}
+              />
+              <Linea concepto={`Mutual ley 16.744 (${tasaMutual.toLocaleString('es-CL')}%)`} monto={previa.mutual_monto} />
+              <Linea concepto="Total aportes del empleador" monto={previa.total_aportes} fuerte />
+              <Linea
+                concepto="Costo total empresa (imponible + no imponibles + aportes)"
+                monto={previa.total_imponible + entradas.no_imponibles + previa.total_aportes}
+                fuerte
+              />
             </div>
           </div>
         )}
