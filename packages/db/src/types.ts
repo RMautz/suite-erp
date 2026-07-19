@@ -1141,6 +1141,7 @@ export type Database = {
           resolucion_sii_numero: number | null
           rubro: string
           rut: string
+          tasa_mutual: number
         }
         Insert: {
           certificado_cifrado?: string | null
@@ -1165,6 +1166,7 @@ export type Database = {
           resolucion_sii_numero?: number | null
           rubro?: string
           rut: string
+          tasa_mutual?: number
         }
         Update: {
           certificado_cifrado?: string | null
@@ -1189,6 +1191,7 @@ export type Database = {
           resolucion_sii_numero?: number | null
           rubro?: string
           rut?: string
+          tasa_mutual?: number
         }
         Relationships: [
           {
@@ -1297,6 +1300,7 @@ export type Database = {
           actualizado_en: string
           ingreso_minimo: number
           periodo: string
+          tasa_sis: number
           tasas_afp: Json
           tope_cesantia_uf: number
           tope_imponible_uf: number
@@ -1308,6 +1312,7 @@ export type Database = {
           actualizado_en?: string
           ingreso_minimo: number
           periodo: string
+          tasa_sis?: number
           tasas_afp: Json
           tope_cesantia_uf: number
           tope_imponible_uf: number
@@ -1319,6 +1324,7 @@ export type Database = {
           actualizado_en?: string
           ingreso_minimo?: number
           periodo?: string
+          tasa_sis?: number
           tasas_afp?: Json
           tope_cesantia_uf?: number
           tope_imponible_uf?: number
@@ -1390,6 +1396,7 @@ export type Database = {
           afp: string
           afp_monto: number
           anulada_en: string | null
+          cesantia_empleador_monto: number
           cesantia_monto: number
           contrato_id: string
           creado_en: string
@@ -1403,15 +1410,20 @@ export type Database = {
           impuesto_unico: number
           liquido: number
           motivo_anulacion: string | null
+          mutual_monto: number
           no_imponibles: number
           pagada_en: string | null
           periodo: string
           plan_isapre_uf: number | null
           salud: string
           salud_monto: number
+          sis_monto: number
           sueldo_base: number
           sueldo_proporcional: number
           tasa_afp: number
+          tasa_mutual: number
+          tasa_sis: number
+          total_aportes: number
           total_descuentos: number
           total_imponible: number
           trabajador_id: string
@@ -1422,6 +1434,7 @@ export type Database = {
           afp: string
           afp_monto: number
           anulada_en?: string | null
+          cesantia_empleador_monto?: number
           cesantia_monto: number
           contrato_id: string
           creado_en?: string
@@ -1435,15 +1448,20 @@ export type Database = {
           impuesto_unico: number
           liquido: number
           motivo_anulacion?: string | null
+          mutual_monto?: number
           no_imponibles?: number
           pagada_en?: string | null
           periodo: string
           plan_isapre_uf?: number | null
           salud: string
           salud_monto: number
+          sis_monto?: number
           sueldo_base: number
           sueldo_proporcional: number
           tasa_afp: number
+          tasa_mutual?: number
+          tasa_sis?: number
+          total_aportes?: number
           total_descuentos: number
           total_imponible: number
           trabajador_id: string
@@ -1454,6 +1472,7 @@ export type Database = {
           afp?: string
           afp_monto?: number
           anulada_en?: string | null
+          cesantia_empleador_monto?: number
           cesantia_monto?: number
           contrato_id?: string
           creado_en?: string
@@ -1467,15 +1486,20 @@ export type Database = {
           impuesto_unico?: number
           liquido?: number
           motivo_anulacion?: string | null
+          mutual_monto?: number
           no_imponibles?: number
           pagada_en?: string | null
           periodo?: string
           plan_isapre_uf?: number | null
           salud?: string
           salud_monto?: number
+          sis_monto?: number
           sueldo_base?: number
           sueldo_proporcional?: number
           tasa_afp?: number
+          tasa_mutual?: number
+          tasa_sis?: number
+          total_aportes?: number
           total_descuentos?: number
           total_imponible?: number
           trabajador_id?: string

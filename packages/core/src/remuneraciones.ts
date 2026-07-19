@@ -1,7 +1,8 @@
-// Espejo TS del cálculo chileno de liquidaciones de sueldo (spec Plan 18 §3).
-// La autoridad es la RPC emitir_liquidacion (plpgsql, migración 0025): este
-// espejo existe SOLO para la vista previa en vivo del formulario. Ambos lados
-// se prueban con los mismos goldens (unit acá, pgTAP allá): divergencia = bug.
+// Espejo TS del cálculo chileno de liquidaciones de sueldo (specs Plan 18 §3
+// y Plan 19 §3 — aportes del empleador). La autoridad es la RPC
+// emitir_liquidacion (plpgsql, migraciones 0025/0026): este espejo existe SOLO
+// para la vista previa en vivo del formulario. Ambos lados se prueban con los
+// mismos goldens (unit acá, pgTAP allá): divergencia = bug.
 //
 // Redondeo: round() de plpgsql sobre numeric redondea mitades lejos del cero.
 // Math.round coincide para valores >= 0 (mitades hacia arriba) y solo difiere
@@ -12,6 +13,8 @@
 // Subconjunto estructural de contratos.Row (@suite/db): una fila de la BD se
 // pasa directo. tipo: 'indefinido' | 'plazo_fijo'; salud: 'fonasa' | 'isapre';
 // afp: clave de tasas_afp — los CHECK de la BD garantizan los valores.
+// La tasa mutual NO va acá: vive en empresas, no en contratos (P19 §2), y por
+// eso entra como 4º parámetro de calcularLiquidacion.
 export interface ContratoCalculo {
   tipo: string
   sueldo_base: number
@@ -36,6 +39,7 @@ export interface IndicadoresPeriodo {
   ingreso_minimo: number
   tope_imponible_uf: number
   tope_cesantia_uf: number
+  tasa_sis: number // % SIS a cargo del empleador (P19 §2: varía por licitación)
   tasas_afp: Record<string, number>
   tramos_impuesto: TramoImpuesto[]
 }
@@ -47,8 +51,9 @@ export interface InputsLiquidacion {
   no_imponibles: number
 }
 
-// Snapshot del cálculo (spec §2.4), todo integer CLP — las mismas columnas
-// que la RPC guarda en liquidaciones.
+// Snapshot del cálculo (specs P18 §2.4 + P19 §2), todo integer CLP — las
+// mismas columnas que la RPC guarda en liquidaciones. Los 4 campos de aportes
+// son costo empresa: NO participan de descuentos ni líquido.
 export interface ResultadoLiquidacion {
   sueldo_proporcional: number
   gratificacion: number
@@ -59,6 +64,10 @@ export interface ResultadoLiquidacion {
   impuesto_unico: number
   total_descuentos: number
   liquido: number
+  sis_monto: number
+  cesantia_empleador_monto: number
+  mutual_monto: number
+  total_aportes: number
 }
 
 // Catálogo compartido de AFP: slugs EXACTOS del CHECK de contratos.afp (0025,
@@ -74,12 +83,14 @@ export const AFPS = [
   { valor: 'uno', etiqueta: 'Uno' },
 ] as const
 
-// Reglas 1-8 del spec §3, en el MISMO orden y con los MISMOS redondeos
-// intermedios que la RPC emitir_liquidacion.
+// Reglas 1-12 de los specs P18 §3 y P19 §3, en el MISMO orden y con los
+// MISMOS redondeos intermedios que la RPC emitir_liquidacion. tasaMutual es
+// el % de empresas.tasa_mutual (ley 16.744; la empresa lo edita en Módulos).
 export function calcularLiquidacion(
   contrato: ContratoCalculo,
   indicadores: IndicadoresPeriodo,
   inputs: InputsLiquidacion,
+  tasaMutual: number,
 ): ResultadoLiquidacion {
   const tasaAfp = indicadores.tasas_afp[contrato.afp]
   if (tasaAfp === undefined) throw new Error(`AFP sin tasa en los indicadores: ${contrato.afp}`)
@@ -112,15 +123,14 @@ export function calcularLiquidacion(
       ? sietePorCiento
       : Math.max(sietePorCiento, Math.round((contrato.plan_isapre_uf ?? 0) * indicadores.uf))
 
-  // 6. Cesantía 0,6% solo indefinido (plazo fijo: el trabajador no cotiza),
-  //    con tope propio de 131,9 UF.
-  const cesantiaMonto =
-    contrato.tipo === 'indefinido'
-      ? Math.round(
-          Math.min(totalImponible, Math.round(indicadores.tope_cesantia_uf * indicadores.uf)) *
-            0.006,
-        )
-      : 0
+  // 6. Cesantía: base propia topada a 131,9 UF, COMPARTIDA con el aporte del
+  //    empleador (regla 10). El trabajador cotiza 0,6% solo en indefinido
+  //    (plazo fijo: no cotiza).
+  const baseCesantia = Math.min(
+    totalImponible,
+    Math.round(indicadores.tope_cesantia_uf * indicadores.uf),
+  )
+  const cesantiaMonto = contrato.tipo === 'indefinido' ? Math.round(baseCesantia * 0.006) : 0
 
   // 7. Impuesto único de segunda categoría: primer tramo (en UTM) que
   //    contiene la base tributable; en un borde exacto ambos tramos dan el
@@ -143,6 +153,23 @@ export function calcularLiquidacion(
   // La UI captura este throw y lo muestra como aviso en la vista previa.
   if (liquido < 0)
     throw new Error('El líquido no puede ser negativo: revisa los días trabajados y los descuentos')
+
+  // 9. SIS (P19): cargo del empleador sobre el mismo imponible topado.
+  const sisMonto = Math.round((totalImponible * indicadores.tasa_sis) / 100)
+
+  // 10. Cesantía del empleador (P19): la MISMA base topada de la regla 6; a
+  //     diferencia del trabajador, plazo fijo SÍ cotiza (3,0% vs 2,4%).
+  const cesantiaEmpleadorMonto = Math.round(
+    (baseCesantia * (contrato.tipo === 'indefinido' ? 2.4 : 3.0)) / 100,
+  )
+
+  // 11. Mutual ley 16.744 (P19): tasa de la EMPRESA (base 0,90 + adicional
+  //     por actividad), snapshoteada por la RPC.
+  const mutualMonto = Math.round((totalImponible * tasaMutual) / 100)
+
+  // 12. Total de aportes (P19): costo empresa — NO descuenta del líquido.
+  const totalAportes = sisMonto + cesantiaEmpleadorMonto + mutualMonto
+
   return {
     sueldo_proporcional: sueldoProporcional,
     gratificacion,
@@ -153,5 +180,9 @@ export function calcularLiquidacion(
     impuesto_unico: impuestoUnico,
     total_descuentos: totalDescuentos,
     liquido,
+    sis_monto: sisMonto,
+    cesantia_empleador_monto: cesantiaEmpleadorMonto,
+    mutual_monto: mutualMonto,
+    total_aportes: totalAportes,
   }
 }
