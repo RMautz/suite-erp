@@ -68,3 +68,36 @@ export async function alternarContabilidad(
     mensaje: `Contabilidad activada. ${creados} asiento${creados === 1 ? '' : 's'} creado${creados === 1 ? '' : 's'} del historial.`,
   }
 }
+
+export async function guardarTasaMutual(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const { activa } = await obtenerEmpresaActiva()
+  if (!activa) return { error: 'No tienes una empresa activa' }
+
+  // Coma decimal es-CL admitida; la columna es numeric(4,2), así que se redondea
+  // a 2 decimales ACÁ para que lo guardado sea exactamente lo que la UI muestra.
+  // Fail-closed: el vacío se rechaza ANTES de Number() — Number('') === 0 pasaría
+  // el rango en silencio con un POST directo (el required del input no protege eso).
+  const crudo = String(formData.get('tasa_mutual') ?? '').trim()
+  const tasa = crudo === '' ? NaN : Math.round(Number(crudo.replace(',', '.')) * 100) / 100
+  // Mismo rango que el check de la tabla (0026): rechazar aquí da mensaje claro
+  // en vez de un 23514 crudo. Math.round(NaN)/100 sigue siendo NaN → cae acá.
+  if (!Number.isFinite(tasa) || tasa < 0 || tasa > 10) {
+    return { error: 'La tasa mutual debe ser un número entre 0 y 10 (% sobre el imponible)' }
+  }
+
+  const supabase = await crearClienteServidor()
+  // Update por columna: el grant de tasa_mutual lo da la 0026 y la policy de fila
+  // limita a dueño/admin — 0 filas actualizadas = RLS bloqueó, no un error SQL.
+  const { data, error } = await supabase
+    .from('empresas')
+    .update({ tasa_mutual: tasa })
+    .eq('id', activa.id)
+    .select('id')
+  if (error) return { error: 'No se pudo guardar la tasa mutual' }
+  if ((data ?? []).length === 0) return { error: 'No se pudo guardar: solo el dueño o admin puede cambiar la tasa mutual' }
+
+  // La vista previa de /liquidaciones/generar lee tasa_mutual server-side:
+  // revalidar todo el árbol, igual que guardarModulos.
+  revalidatePath('/', 'layout')
+  return {}
+}

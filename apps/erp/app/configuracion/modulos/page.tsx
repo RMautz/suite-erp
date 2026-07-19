@@ -3,8 +3,9 @@ import { Encabezado } from '@suite/ui'
 import type { CodigoRubro } from '@suite/core'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { FormularioModulos } from '../../../componentes/formulario-modulos'
+import { FormularioRemuneraciones } from '../../../componentes/formulario-remuneraciones'
 import { PanelContabilidad } from '../../../componentes/panel-contabilidad'
-import { alternarContabilidad, guardarModulos } from './acciones'
+import { alternarContabilidad, guardarModulos, guardarTasaMutual } from './acciones'
 
 export default async function ConfigModulos() {
   const { activa } = await obtenerEmpresaActiva()
@@ -13,7 +14,7 @@ export default async function ConfigModulos() {
   const supabase = await crearClienteServidor()
   const { data: empresa } = await supabase
     .from('empresas')
-    .select('rubro, factor_volumetrico')
+    .select('rubro, factor_volumetrico, tasa_mutual')
     .eq('id', activa.id)
     .single()
 
@@ -26,6 +27,10 @@ export default async function ConfigModulos() {
           rubro: (empresa?.rubro ?? 'negocio') as CodigoRubro,
           factorVolumetrico: empresa?.factor_volumetrico ?? 250,
         }}
+      />
+      <FormularioRemuneraciones
+        accion={guardarTasaMutual}
+        inicial={{ tasaMutual: empresa?.tasa_mutual ?? 0.9 }}
       />
       <PanelContabilidad accion={alternarContabilidad} activo={activa.modulo_contabilidad} />
     </div>

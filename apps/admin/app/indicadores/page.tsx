@@ -13,6 +13,7 @@ type Periodo = {
   ingreso_minimo: number
   tope_imponible_uf: number
   tope_cesantia_uf: number
+  tasa_sis: number
   tasas_afp: Record<string, number>
   tramos_impuesto: Tramo[]
 }
@@ -56,13 +57,16 @@ function FormPeriodo({ base, nuevo }: { base: Periodo; nuevo: boolean }) {
         <Campo etiqueta="Tope cesantía (UF)">
           <Entrada name="tope_cesantia_uf" type="number" min={0.1} step={0.1} defaultValue={base.tope_cesantia_uf} required />
         </Campo>
+        <Campo etiqueta="Tasa SIS (% sobre imponible)">
+          <Entrada name="tasa_sis" type="number" min={0.01} max={100} step={0.01} defaultValue={base.tasa_sis} required />
+        </Campo>
       </div>
       <div>
         <p className="mb-2 text-sm font-medium text-slate-700">Tasas AFP (% total con comisión)</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {AFPS.map((a) => (
             <Campo key={a} etiqueta={NOMBRES_AFP[a] ?? a}>
-              <Entrada name={'tasa_' + a} type="number" min={0.01} step={0.01} defaultValue={base.tasas_afp[a]} required />
+              <Entrada name={'tasa_' + a} type="number" min={0.01} max={100} step={0.01} defaultValue={base.tasas_afp[a]} required />
             </Campo>
           ))}
         </div>
@@ -129,6 +133,7 @@ export default async function PaginaIndicadores() {
                 <Th>UTM</Th>
                 <Th>Ingreso mínimo</Th>
                 <Th>Topes imp./ces. (UF)</Th>
+                <Th>SIS</Th>
                 <Th>Tasas AFP</Th>
                 <Th>Impuesto único</Th>
               </Tr>
@@ -143,6 +148,7 @@ export default async function PaginaIndicadores() {
                   <Td className="tabular-nums">
                     {num(p.tope_imponible_uf)} / {num(p.tope_cesantia_uf)}
                   </Td>
+                  <Td className="tabular-nums">{num(p.tasa_sis)}%</Td>
                   <Td className="text-xs">{AFPS.map((a) => `${NOMBRES_AFP[a]} ${num(p.tasas_afp[a] ?? 0)}%`).join(' · ')}</Td>
                   <Td className="text-xs">
                     {p.tramos_impuesto.length} tramos · exento hasta {num(p.tramos_impuesto[0]?.hasta_utm ?? 0)} UTM
