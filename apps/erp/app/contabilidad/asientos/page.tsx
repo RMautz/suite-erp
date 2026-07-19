@@ -5,7 +5,7 @@ import { Boton, Campo, Encabezado, Entrada, Insignia, Selector, Tabla, Td, Th, T
 import { exigirContabilidad } from '../../../lib/contabilidad-acceso'
 import { ETIQUETA_ORIGEN } from '../origenes'
 
-const ORIGENES = ['manual', 'venta', 'nota_credito', 'compra', 'pago', 'pago_proveedor', 'anticipo', 'reversa', 'cierre']
+const ORIGENES = ['manual', 'venta', 'nota_credito', 'compra', 'pago', 'pago_proveedor', 'anticipo', 'reversa', 'cierre', 'remuneracion']
 
 export default async function PaginaAsientos({
   searchParams,
