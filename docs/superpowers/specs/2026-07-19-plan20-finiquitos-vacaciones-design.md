@@ -49,7 +49,7 @@ Decisiones del usuario (AskUserQuestion 2026-07-19): alcance RRHH completo (fini
 
 ## 5. Previred completo
 
-`FilaPrevired` cambia: `nombre` → `nombres, apellido_paterno, apellido_materno` (campos 2-4 del TXT poblados directo) e `isapre_codigo` (campo de institución de salud: el código del catálogo si el contrato es isapre con isapre seteada, 7 si fonasa, 0 si isapre sin catálogo). `generarPrevired` ajustada + tests; la route del TXT alimenta los campos nuevos desde los joins.
+`FilaPrevired` cambia: `nombre` → `nombres, apellido_paterno, apellido_materno` (campos 3-5 del TXT poblados directo — corrección del ensamblador: el formato de 105 campos lleva RUT en el 1 y DV en el 2, los apellidos/nombres van en 3-5) e `isapre_codigo` (campo de institución de salud: el código del catálogo si el contrato es isapre con isapre seteada, 7 si fonasa, 0 si isapre sin catálogo). `generarPrevired` ajustada + tests; la route del TXT alimenta los campos nuevos desde los joins.
 
 ## 6. UI
 
@@ -61,7 +61,7 @@ Decisiones del usuario (AskUserQuestion 2026-07-19): alcance RRHH completo (fini
 ## 7. Seed y tests
 
 - Seed: 1 registro de vacaciones para Amanda (5 días hábiles) — el saldo aparece en su ficha; SIN finiquitos sembrados (el flujo se vive en el E2E; la demo conserva sus 3 trabajadores activos).
-- **pgTAP** `finiquitos.test.sql` (archivo 20): goldens por causal calculados a mano (necesidades_empresa 3,5 años sin aviso → 4 años + aviso + feriado; renuncia → solo feriado; vencimiento_plazo → 0 indemnizaciones), tope 11 años, tope 90 UF, devengo de vacaciones (goldens), efectos emitir (contrato/trabajador), anular reactiva + valida otro-contrato-vigente, re-emitir tras anular, RLS por rol, asiento 2 líneas + noop, escritura directa denegada, mensajes byte-exactos. Backfill de apellidos verificado. El plan fija plan(N); suite = 399 + N en 20 archivos.
+- **pgTAP** `finiquitos.test.sql` (archivo 20): goldens por causal calculados a mano (necesidades_empresa 3,5 años sin aviso → 4 años + aviso + feriado; renuncia → solo feriado; vencimiento_plazo → 0 indemnizaciones), tope 11 años, tope 90 UF, devengo de vacaciones (goldens), efectos emitir (contrato/trabajador), anular reactiva + valida otro-contrato-vigente, re-emitir tras anular, RLS por rol, asiento 2 líneas + noop, escritura directa denegada, mensajes byte-exactos. Backfill de apellidos: pgTAP lo re-verifica en suite permanente (el UPDATE exacto de la 0027 sobre filas legacy, además del smoke no-comiteado de T1). El plan fija plan(N); suite = 399 + N en 20 archivos.
 - **Unit**: espejos finiquito y vacaciones con los mismos goldens + Previred con apellidos/isapre (tests de separarNombre eliminados con la función). El plan fija el total.
 - **Builds** 3 apps. **E2E** (~7 puntos): ficha con apellidos, registrar vacaciones → saldo, finiquito necesidades_empresa con preview = emisión, documento impreso, asiento visible, anular → contrato reactivado, TXT Previred con apellidos y código isapre.
 
