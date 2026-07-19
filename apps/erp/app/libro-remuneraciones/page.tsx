@@ -10,11 +10,16 @@ interface Fila {
   id: string
   dias_trabajados: number
   total_imponible: number
+  no_imponibles: number
   afp_monto: number
   salud_monto: number
   cesantia_monto: number
   impuesto_unico: number
   liquido: number
+  sis_monto: number
+  cesantia_empleador_monto: number
+  mutual_monto: number
+  total_aportes: number
   trabajadores: { rut: string; nombre: string } | null
 }
 
@@ -41,7 +46,7 @@ export default async function PaginaLibroRemuneraciones({
   const supabase = await crearClienteServidor()
   const { data, error } = await supabase
     .from('liquidaciones')
-    .select('id, dias_trabajados, total_imponible, afp_monto, salud_monto, cesantia_monto, impuesto_unico, liquido, trabajadores (rut, nombre)')
+    .select('id, dias_trabajados, total_imponible, no_imponibles, afp_monto, salud_monto, cesantia_monto, impuesto_unico, liquido, sis_monto, cesantia_empleador_monto, mutual_monto, total_aportes, trabajadores (rut, nombre)')
     .eq('empresa_id', activa.id)
     .eq('periodo', periodo)
     .neq('estado', 'anulada')
@@ -59,13 +64,20 @@ export default async function PaginaLibroRemuneraciones({
       cesantia: t.cesantia + f.cesantia_monto,
       impuesto: t.impuesto + f.impuesto_unico,
       liquido: t.liquido + f.liquido,
+      sis: t.sis + f.sis_monto,
+      cesEmpleador: t.cesEmpleador + f.cesantia_empleador_monto,
+      mutual: t.mutual + f.mutual_monto,
+      costo: t.costo + f.total_imponible + f.no_imponibles + f.total_aportes,
     }),
-    { imponible: 0, afp: 0, salud: 0, cesantia: 0, impuesto: 0, liquido: 0 }
+    { imponible: 0, afp: 0, salud: 0, cesantia: 0, impuesto: 0, liquido: 0, sis: 0, cesEmpleador: 0, mutual: 0, costo: 0 }
   )
 
   return (
     <div>
       <Encabezado titulo="Libro de remuneraciones">
+        <Link href={`/libro-remuneraciones/previred?periodo=${periodo}`}>
+          <Boton variante="secundario">Archivo Previred</Boton>
+        </Link>
         <Link href={`/libro-remuneraciones/export?periodo=${periodo}`}>
           <Boton variante="secundario">Exportar CSV</Boton>
         </Link>
@@ -89,6 +101,10 @@ export default async function PaginaLibroRemuneraciones({
             <Th className="text-right">Cesantía</Th>
             <Th className="text-right">Impuesto único</Th>
             <Th className="text-right">Líquido</Th>
+            <Th className="text-right">SIS</Th>
+            <Th className="text-right">Ces. empleador</Th>
+            <Th className="text-right">Mutual</Th>
+            <Th className="text-right">Costo empresa</Th>
           </tr>
         </thead>
         <tbody>
@@ -103,11 +119,15 @@ export default async function PaginaLibroRemuneraciones({
               <Td className="text-right font-mono">{formatearCLP(f.cesantia_monto)}</Td>
               <Td className="text-right font-mono">{formatearCLP(f.impuesto_unico)}</Td>
               <Td className="text-right font-mono">{formatearCLP(f.liquido)}</Td>
+              <Td className="text-right font-mono">{formatearCLP(f.sis_monto)}</Td>
+              <Td className="text-right font-mono">{formatearCLP(f.cesantia_empleador_monto)}</Td>
+              <Td className="text-right font-mono">{formatearCLP(f.mutual_monto)}</Td>
+              <Td className="text-right font-mono">{formatearCLP(f.total_imponible + f.no_imponibles + f.total_aportes)}</Td>
             </Tr>
           ))}
           {filas.length === 0 && (
             <Tr>
-              <Td colSpan={9} className="py-8 text-center text-slate-500">
+              <Td colSpan={13} className="py-8 text-center text-slate-500">
                 Sin liquidaciones en el período {periodo}.
               </Td>
             </Tr>
@@ -122,11 +142,16 @@ export default async function PaginaLibroRemuneraciones({
             <Td className="text-right font-mono">{formatearCLP(tot.cesantia)}</Td>
             <Td className="text-right font-mono">{formatearCLP(tot.impuesto)}</Td>
             <Td className="text-right font-mono">{formatearCLP(tot.liquido)}</Td>
+            <Td className="text-right font-mono">{formatearCLP(tot.sis)}</Td>
+            <Td className="text-right font-mono">{formatearCLP(tot.cesEmpleador)}</Td>
+            <Td className="text-right font-mono">{formatearCLP(tot.mutual)}</Td>
+            <Td className="text-right font-mono">{formatearCLP(tot.costo)}</Td>
           </tr>
         </tfoot>
       </Tabla>
       <p className="mt-2 text-sm text-slate-500">
         Solo liquidaciones emitidas o pagadas del período; las anuladas quedan fuera del libro.
+        Costo empresa = imponible + no imponibles + aportes del empleador.
       </p>
     </div>
   )

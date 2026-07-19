@@ -6,11 +6,16 @@ import { puedeVerRRHH } from '../../../lib/rrhh-acceso'
 interface Fila {
   dias_trabajados: number
   total_imponible: number
+  no_imponibles: number
   afp_monto: number
   salud_monto: number
   cesantia_monto: number
   impuesto_unico: number
   liquido: number
+  sis_monto: number
+  cesantia_empleador_monto: number
+  mutual_monto: number
+  total_aportes: number
   trabajadores: { rut: string; nombre: string } | null
 }
 
@@ -31,7 +36,7 @@ export async function GET(req: Request) {
   const supabase = await crearClienteServidor()
   const { data, error } = await supabase
     .from('liquidaciones')
-    .select('dias_trabajados, total_imponible, afp_monto, salud_monto, cesantia_monto, impuesto_unico, liquido, trabajadores (rut, nombre)')
+    .select('dias_trabajados, total_imponible, no_imponibles, afp_monto, salud_monto, cesantia_monto, impuesto_unico, liquido, sis_monto, cesantia_empleador_monto, mutual_monto, total_aportes, trabajadores (rut, nombre)')
     .eq('empresa_id', activa.id)
     .eq('periodo', periodo)
     .neq('estado', 'anulada')
@@ -47,8 +52,12 @@ export async function GET(req: Request) {
       cesantia: t.cesantia + f.cesantia_monto,
       impuesto: t.impuesto + f.impuesto_unico,
       liquido: t.liquido + f.liquido,
+      sis: t.sis + f.sis_monto,
+      cesEmpleador: t.cesEmpleador + f.cesantia_empleador_monto,
+      mutual: t.mutual + f.mutual_monto,
+      costo: t.costo + f.total_imponible + f.no_imponibles + f.total_aportes,
     }),
-    { imponible: 0, afp: 0, salud: 0, cesantia: 0, impuesto: 0, liquido: 0 }
+    { imponible: 0, afp: 0, salud: 0, cesantia: 0, impuesto: 0, liquido: 0, sis: 0, cesEmpleador: 0, mutual: 0, costo: 0 }
   )
 
   const cuerpo: (string | number | null)[][] = filas.map((f) => [
@@ -61,6 +70,10 @@ export async function GET(req: Request) {
     f.cesantia_monto,
     f.impuesto_unico,
     f.liquido,
+    f.sis_monto,
+    f.cesantia_empleador_monto,
+    f.mutual_monto,
+    f.total_imponible + f.no_imponibles + f.total_aportes,
   ])
   cuerpo.push([
     'Totales del período',
@@ -72,9 +85,13 @@ export async function GET(req: Request) {
     tot.cesantia,
     tot.impuesto,
     tot.liquido,
+    tot.sis,
+    tot.cesEmpleador,
+    tot.mutual,
+    tot.costo,
   ])
   const csv = filasACsv(
-    ['RUT', 'Nombre', 'Días', 'Imponible', 'AFP', 'Salud', 'Cesantía', 'Impuesto único', 'Líquido'],
+    ['RUT', 'Nombre', 'Días', 'Imponible', 'AFP', 'Salud', 'Cesantía', 'Impuesto único', 'Líquido', 'SIS', 'Cesantía empleador', 'Mutual', 'Costo empresa'],
     cuerpo
   )
   return new Response(csv, {
