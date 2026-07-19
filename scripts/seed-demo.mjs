@@ -483,6 +483,53 @@ for (const a of asientos2025) {
 }
 console.log('✓ 3 asientos manuales de 2025 (utilidad esperada $150.000) — cierre asistido de 2025 listo, ejercicio SIN cerrar')
 
+// 22) Remuneraciones (Plan 18): 3 trabajadores con contratos (perfiles = goldens G1-G3)
+//     + liquidaciones 2026-06 emitidas vía RPC (Carla además pagada) y CONTABILIZADAS
+//     con contabilizar_pendientes (patrón sección 20: vía userCli — el hook de la app
+//     no corre en el seed; el catch-up es el camino real). COSTURA: los indicadores
+//     2026-05/06/07 los siembra la MIGRACIÓN 0025 (spec §2.3) — aquí solo se VERIFICA
+//     que existan, jamás se insertan. La 2ª org queda SIN RRHH (muestra los vacíos).
+//     RUTs mod-11 válidos sin colisión con seed/tests (grep del Step 1 de la task).
+//     Inserts vía userCli (RLS por rol: INSERT dueno/admin; el CHECK de rut usa app.validar_rut).
+const { data: indJun, error: eInd } = await admin.from('indicadores_previsionales').select('uf').eq('periodo', '2026-06').maybeSingle()
+if (eInd || !indJun) die('indicadores 2026-06 ausentes (los siembra la migración 0025 — ¿corriste supabase db reset?)', eInd)
+const { data: trabs, error: eTrab } = await userCli.from('trabajadores').insert([
+  { empresa_id: empresaId, rut: '153312044', nombre: 'Amanda Rojas Fuentes', email: 'amanda.rojas@demotransportes.cl', telefono: '+56 9 5544 3322' },
+  { empresa_id: empresaId, rut: '174065926', nombre: 'Bruno Castillo Mena', email: 'bruno.castillo@demotransportes.cl' },
+  { empresa_id: empresaId, rut: '128834753', nombre: 'Carla Núñez Paredes', email: 'carla.nunez@demotransportes.cl' },
+]).select('id, rut')
+if (eTrab) die('trabajadores', eTrab)
+const porRutTrab = Object.fromEntries(trabs.map((t) => [t.rut, t.id]))
+const amanda = porRutTrab['153312044'], bruno = porRutTrab['174065926'], carla = porRutTrab['128834753']
+const { error: eContr } = await userCli.from('contratos').insert([
+  // G1: Fonasa indefinido habitat 800.000 (simple, bajo tope)
+  { empresa_id: empresaId, trabajador_id: amanda, tipo: 'indefinido', fecha_inicio: '2025-03-01', cargo: 'Asistente de operaciones', sueldo_base: 800000, gratificacion_legal: true, afp: 'habitat', salud: 'fonasa' },
+  // G2: Isapre plazo fijo capital 1.200.000 plan 5,0 UF (plan > 7%; sin cesantía del trabajador)
+  { empresa_id: empresaId, trabajador_id: bruno, tipo: 'plazo_fijo', fecha_inicio: '2026-01-01', fecha_termino: '2026-12-31', cargo: 'Coordinador logístico', sueldo_base: 1200000, gratificacion_legal: true, afp: 'capital', salud: 'isapre', plan_isapre_uf: 5.0 },
+  // G3: Fonasa indefinido modelo 4.000.000 (sobre tope imponible; impuesto en tramo 2+)
+  { empresa_id: empresaId, trabajador_id: carla, tipo: 'indefinido', fecha_inicio: '2024-08-01', cargo: 'Gerente general', sueldo_base: 4000000, gratificacion_legal: true, afp: 'modelo', salud: 'fonasa' },
+])
+if (eContr) die('contratos', eContr)
+// Liquidaciones de 2026-06 con los MISMOS inputs de los goldens G1-G3 (tabla
+// contractual del plan): Amanda = G1 con 50.000 no imponibles; Bruno/Carla = 30/0/0.
+const liqIds = {}
+for (const [nombre, trabajadorId, noImp] of [['Amanda', amanda, 50000], ['Bruno', bruno, 0], ['Carla', carla, 0]]) {
+  const { data: liqId, error: eLiq } = await userCli.rpc('emitir_liquidacion', { p_empresa: empresaId, p_trabajador: trabajadorId, p_periodo: '2026-06', p_dias: 30, p_extras: 0, p_no_imponibles: noImp })
+  if (eLiq) die('emitir_liquidacion ' + nombre, eLiq)
+  liqIds[nombre] = liqId
+}
+// Canario del golden G1 (tabla contractual del plan): si la RPC divergiera del
+// golden, el seed muere aquí antes de contabilizar.
+const { data: liqAmanda, error: eG1 } = await userCli.from('liquidaciones').select('total_imponible, total_descuentos, liquido').eq('id', liqIds.Amanda).single()
+if (eG1 || !liqAmanda) die('lectura liquidación Amanda (golden G1)', eG1)
+if (liqAmanda.total_imponible !== 1000000 || liqAmanda.total_descuentos !== 188700 || liqAmanda.liquido !== 861300) die('golden G1 del seed no calza: ' + JSON.stringify(liqAmanda) + ' ≠ imponible 1000000 / descuentos 188700 / líquido 861300', null)
+const { error: ePagLiq } = await userCli.rpc('pagar_liquidacion', { p_empresa: empresaId, p_liquidacion: liqIds.Carla })
+if (ePagLiq) die('pagar_liquidacion Carla', ePagLiq)
+const { data: pendRem, error: ePendRem } = await userCli.rpc('contabilizar_pendientes', { p_empresa: empresaId })
+if (ePendRem) die('contabilizar_pendientes (remuneraciones)', ePendRem)
+if ((pendRem?.creados ?? 0) !== 3) die('se esperaban exactamente 3 asientos de remuneración nuevos, llegaron ' + (pendRem?.creados ?? 0), null)
+console.log('✓ remuneraciones: 3 trabajadores + contratos (G1-G3), 3 liquidaciones 2026-06 emitidas (Carla pagada) + 3 asientos')
+
 // ----- Resumen de conteos -----
 const cuenta = async (tabla, filtros = {}) => {
   let q = admin.from(tabla).select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
@@ -507,6 +554,8 @@ console.log('proformas:            ', await cuenta('proformas'))
 console.log('anticipos:            ', await cuenta('anticipos'))
 console.log('correos enviados:     ', await cuenta('correos_enviados'))
 console.log('asientos contables:   ', await cuenta('asientos'))
+console.log('trabajadores:         ', await cuenta('trabajadores'))
+console.log('liquidaciones:        ', await cuenta('liquidaciones'))
 console.log('pagos suscripción pag:', susPagados ?? 0)
 console.log('organizaciones:       ', orgsCount ?? 0)
 
