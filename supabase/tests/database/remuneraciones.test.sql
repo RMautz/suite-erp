@@ -52,7 +52,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 select activar_contabilidad('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa');
 
--- 1) La 0025 extendió el catálogo: 14 claves y las 3 anclas de remuneraciones son hojas.
+-- 1) La 0026 extendió el catálogo: 16 claves y las 3 anclas P18 de remuneraciones siguen siendo hojas.
 select is(
   (select count(*) from cuentas_contables
    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and clave_sistema is not null)::text
@@ -61,8 +61,8 @@ select is(
    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
      and clave_sistema in ('gasto_remuneraciones', 'remuneraciones_por_pagar', 'retenciones_por_pagar')
      and acepta_movimientos)::text,
-  '14/3',
-  'activar siembra 14 claves de sistema; las 3 anclas de remuneraciones son hojas'
+  '16/3',
+  'activar siembra 16 claves de sistema; las 3 anclas P18 de remuneraciones son hojas'
 );
 
 -- ===== Trabajadores: escritura directa de la dueña (camino real, RLS por rol) =====
@@ -427,9 +427,10 @@ select contabilizar_documento('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', 'remunerac
      and trabajador_id = (select id from trabajadores where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and rut = '157890123')
      and periodo = '2026-06' and estado = 'emitida'));
 
--- 27) GOLDEN líneas: Gasto (imponible 1000000 + no imponibles 50000 = 1050000 al debe),
---     Remuneraciones por pagar (líquido 861300 al haber) y Retenciones por pagar
---     (descuentos 188700 al haber). Cuadra por construcción: 861300+188700 = 1050000.
+-- 27) GOLDEN líneas (P19: 5 líneas): Gasto remuneraciones (1050000) + Gasto leyes
+--     sociales (aportes G1 = 15300+24000+9000 = 48300) al debe; Remuneraciones por
+--     pagar (861300), Retenciones (188700) y Leyes sociales por pagar (48300) al
+--     haber. Cuadra por construcción: 1050000+48300 = 861300+188700+48300 = 1098300.
 select is(
   (select string_agg(c.clave_sistema || ':' || l.debe || ':' || l.haber, '|' order by c.clave_sistema)
    from asientos_lineas l
@@ -441,8 +442,8 @@ select is(
                                                 where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa'
                                                   and trabajador_id = (select id from trabajadores where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and rut = '157890123')
                                                   and periodo = '2026-06' and estado = 'emitida'))),
-  'gasto_remuneraciones:1050000:0|remuneraciones_por_pagar:0:861300|retenciones_por_pagar:0:188700',
-  'el asiento de remuneración lleva las 3 anclas con los montos del spec §5 y cuadra'
+  'gasto_leyes_sociales:48300:0|gasto_remuneraciones:1050000:0|leyes_sociales_por_pagar:0:48300|remuneraciones_por_pagar:0:861300|retenciones_por_pagar:0:188700',
+  'el asiento de remuneración lleva las 5 líneas con los aportes del empleador y cuadra'
 );
 
 -- 28) La fecha es el ÚLTIMO día del mes del período (sin cierres: intacta) y el origen nuevo.
