@@ -136,6 +136,7 @@ export async function guardarContrato(_prev: EstadoForm, formData: FormData): Pr
       .eq('id', contratoVigenteId)
       .eq('empresa_id', activa.id)
       .eq('vigente', true)
+      .eq('trabajador_id', trabajadorId)
       .select('id')
     if (error) {
       if (error.code === '42501') return { error: 'Tu rol no permite gestionar contratos' }
