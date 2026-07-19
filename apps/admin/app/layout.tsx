@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import './globals.css'
 
@@ -21,6 +22,14 @@ export default function LayoutRaiz({ children }: { children: ReactNode }) {
               </p>
               <p className="text-xs text-slate-500">Panel de plataforma</p>
             </div>
+            <nav className="ml-auto flex gap-5 text-sm font-medium text-slate-600">
+              <Link href="/" className="hover:text-marca-700">
+                Panel
+              </Link>
+              <Link href="/indicadores" className="hover:text-marca-700">
+                Indicadores
+              </Link>
+            </nav>
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
