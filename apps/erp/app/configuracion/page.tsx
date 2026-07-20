@@ -30,6 +30,12 @@ export default function PaginaConfiguracion() {
             <p className="text-sm text-slate-600">Estado de tu plan y pago mensual con MercadoPago o Webpay.</p>
           </Tarjeta>
         </Link>
+        <Link href="/configuracion/whatsapp" className="block">
+          <Tarjeta className="h-full transition hover:border-marca-500">
+            <h2 className="mb-1 text-lg font-semibold text-slate-800">WhatsApp</h2>
+            <p className="text-sm text-slate-600">Vincula tu teléfono para hablar con el ERP y cobrar por WhatsApp.</p>
+          </Tarjeta>
+        </Link>
       </div>
     </div>
   )
