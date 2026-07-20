@@ -494,9 +494,9 @@ console.log('✓ 3 asientos manuales de 2025 (utilidad esperada $150.000) — ci
 const { data: indJun, error: eInd } = await admin.from('indicadores_previsionales').select('uf').eq('periodo', '2026-06').maybeSingle()
 if (eInd || !indJun) die('indicadores 2026-06 ausentes (los siembra la migración 0025 — ¿corriste supabase db reset?)', eInd)
 const { data: trabs, error: eTrab } = await userCli.from('trabajadores').insert([
-  { empresa_id: empresaId, rut: '153312044', nombre: 'Amanda Rojas Fuentes', email: 'amanda.rojas@demotransportes.cl', telefono: '+56 9 5544 3322' },
-  { empresa_id: empresaId, rut: '174065926', nombre: 'Bruno Castillo Mena', email: 'bruno.castillo@demotransportes.cl' },
-  { empresa_id: empresaId, rut: '128834753', nombre: 'Carla Núñez Paredes', email: 'carla.nunez@demotransportes.cl' },
+  { empresa_id: empresaId, rut: '153312044', nombre: 'Amanda Rojas Fuentes', nombres: 'Amanda', apellido_paterno: 'Rojas', apellido_materno: 'Fuentes', email: 'amanda.rojas@demotransportes.cl', telefono: '+56 9 5544 3322' },
+  { empresa_id: empresaId, rut: '174065926', nombre: 'Bruno Castillo Mena', nombres: 'Bruno', apellido_paterno: 'Castillo', apellido_materno: 'Mena', email: 'bruno.castillo@demotransportes.cl' },
+  { empresa_id: empresaId, rut: '128834753', nombre: 'Carla Núñez Paredes', nombres: 'Carla', apellido_paterno: 'Núñez', apellido_materno: 'Paredes', email: 'carla.nunez@demotransportes.cl' },
 ]).select('id, rut')
 if (eTrab) die('trabajadores', eTrab)
 const porRutTrab = Object.fromEntries(trabs.map((t) => [t.rut, t.id]))
@@ -505,7 +505,7 @@ const { error: eContr } = await userCli.from('contratos').insert([
   // G1: Fonasa indefinido habitat 800.000 (simple, bajo tope)
   { empresa_id: empresaId, trabajador_id: amanda, tipo: 'indefinido', fecha_inicio: '2025-03-01', cargo: 'Asistente de operaciones', sueldo_base: 800000, gratificacion_legal: true, afp: 'habitat', salud: 'fonasa' },
   // G2: Isapre plazo fijo capital 1.200.000 plan 5,0 UF (plan > 7%; sin cesantía del trabajador)
-  { empresa_id: empresaId, trabajador_id: bruno, tipo: 'plazo_fijo', fecha_inicio: '2026-01-01', fecha_termino: '2026-12-31', cargo: 'Coordinador logístico', sueldo_base: 1200000, gratificacion_legal: true, afp: 'capital', salud: 'isapre', plan_isapre_uf: 5.0 },
+  { empresa_id: empresaId, trabajador_id: bruno, tipo: 'plazo_fijo', fecha_inicio: '2026-01-01', fecha_termino: '2026-12-31', cargo: 'Coordinador logístico', sueldo_base: 1200000, gratificacion_legal: true, afp: 'capital', salud: 'isapre', plan_isapre_uf: 5.0, isapre: 'colmena' },
   // G3: Fonasa indefinido modelo 4.000.000 (sobre tope imponible; impuesto en tramo 2+)
   { empresa_id: empresaId, trabajador_id: carla, tipo: 'indefinido', fecha_inicio: '2024-08-01', cargo: 'Gerente general', sueldo_base: 4000000, gratificacion_legal: true, afp: 'modelo', salud: 'fonasa' },
 ])
@@ -531,6 +531,18 @@ const { data: pendRem, error: ePendRem } = await userCli.rpc('contabilizar_pendi
 if (ePendRem) die('contabilizar_pendientes (remuneraciones)', ePendRem)
 if ((pendRem?.creados ?? 0) !== 3) die('se esperaban exactamente 3 asientos de remuneración nuevos, llegaron ' + (pendRem?.creados ?? 0), null)
 console.log('✓ remuneraciones: 3 trabajadores + contratos (G1-G3), 3 liquidaciones 2026-06 emitidas (Carla pagada) + 3 asientos')
+
+// 23) Vacaciones (Plan 20): 1 toma de 5 días hábiles para Amanda (2026-06-08 →
+//     2026-06-12: junio 2026 parte lunes; lunes a viernes = 5 hábiles) VÍA
+//     userCli (RLS INSERT dueno/admin). SIN finiquitos sembrados: el flujo
+//     emitir → pagar/anular se vive en el E2E y la demo conserva sus 3
+//     trabajadores activos (spec §7). El saldo de Amanda queda 20,00 − 5 = 15,00
+//     durante julio 2026 (golden del E2E).
+const { error: eVac } = await userCli.from('vacaciones_tomadas').insert({
+  empresa_id: empresaId, trabajador_id: amanda, desde: '2026-06-08', hasta: '2026-06-12', dias_habiles: 5, comentario: 'Vacaciones de invierno',
+})
+if (eVac) die('vacaciones_tomadas Amanda', eVac)
+console.log('✓ vacaciones: 1 toma de Amanda (5 días hábiles, 2026-06)')
 
 // ----- Resumen de conteos -----
 const cuenta = async (tabla, filtros = {}) => {
@@ -558,6 +570,7 @@ console.log('correos enviados:     ', await cuenta('correos_enviados'))
 console.log('asientos contables:   ', await cuenta('asientos'))
 console.log('trabajadores:         ', await cuenta('trabajadores'))
 console.log('liquidaciones:        ', await cuenta('liquidaciones'))
+console.log('vacaciones tomadas:   ', await cuenta('vacaciones_tomadas'))
 console.log('pagos suscripción pag:', susPagados ?? 0)
 console.log('organizaciones:       ', orgsCount ?? 0)
 
