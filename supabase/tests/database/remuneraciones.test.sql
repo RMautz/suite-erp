@@ -52,7 +52,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 select activar_contabilidad('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa');
 
--- 1) La 0026 extendió el catálogo: 16 claves y las 5 anclas de remuneraciones
+-- 1) La 0027 extendió el catálogo: 18 claves y las 5 anclas de remuneraciones
 --    (3 del P18 + gasto_leyes_sociales y leyes_sociales_por_pagar) son hojas.
 select is(
   (select count(*) from cuentas_contables
@@ -63,19 +63,19 @@ select is(
      and clave_sistema in ('gasto_remuneraciones', 'remuneraciones_por_pagar', 'retenciones_por_pagar',
                            'gasto_leyes_sociales', 'leyes_sociales_por_pagar')
      and acepta_movimientos)::text,
-  '16/5',
-  'activar siembra 16 claves de sistema; las 5 anclas de remuneraciones son hojas'
+  '18/5',
+  'activar siembra 18 claves de sistema; las 5 anclas de remuneraciones son hojas'
 );
 
 -- ===== Trabajadores: escritura directa de la dueña (camino real, RLS por rol) =====
 -- RUT de trabajadores nuevos, únicos GLOBALES (módulo 11, cálculo en el plan):
 -- 157890123 / 165432096 / 178901230 / 189012349 — grep = 0 en tests, seed y E2E.
-insert into public.trabajadores (empresa_id, rut, nombre)
+insert into public.trabajadores (empresa_id, rut, nombre, nombres, apellido_paterno, apellido_materno)
 values
-  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '157890123', 'Tomás Fonasa Habitat'),
-  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '165432096', 'Inés Isapre Capital'),
-  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '178901230', 'Mario Tope Modelo'),
-  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '189012349', 'Paula Tramo Habitat');
+  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '157890123', 'Tomás Fonasa Habitat', 'Tomás', 'Fonasa', 'Habitat'),
+  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '165432096', 'Inés Isapre Capital', 'Inés', 'Isapre', 'Capital'),
+  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '178901230', 'Mario Tope Modelo', 'Mario', 'Tope', 'Modelo'),
+  ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '189012349', 'Paula Tramo Habitat', 'Paula', 'Tramo', 'Habitat');
 
 -- 2) La dueña inserta y ve sus 4 trabajadores (escritura dueno/admin del spec §2.1).
 select is(
@@ -86,8 +86,8 @@ select is(
 
 -- 3) RUT con DV malo: el CHECK (app.validar_rut) lo rechaza (convención maestros).
 select throws_ok(
-  $$insert into trabajadores (empresa_id, rut, nombre)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '157890124', 'DV Malo')$$,
+  $$insert into trabajadores (empresa_id, rut, nombre, nombres, apellido_paterno)
+    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '157890124', 'DV Malo', 'DV', 'Malo')$$,
   '23514',
   null,
   'un RUT de trabajador con DV incorrecto viola el check'
@@ -96,8 +96,8 @@ select throws_ok(
 -- 4) El CONTADOR (Ces) lee pero NO escribe trabajadores (INSERT solo dueno/admin).
 set local request.jwt.claims to '{"sub": "55555555-5555-5555-5555-555555555555", "role": "authenticated"}';
 select throws_ok(
-  $$insert into trabajadores (empresa_id, rut, nombre)
-    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '191234561', 'Colado Contador')$$,
+  $$insert into trabajadores (empresa_id, rut, nombre, nombres, apellido_paterno)
+    values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '191234561', 'Colado Contador', 'Colado', 'Contador')$$,
   '42501', 'new row violates row-level security policy for table "trabajadores"',
   'el contador no inserta trabajadores (escritura solo dueno/admin)'
 );
@@ -192,8 +192,8 @@ select throws_ok(
 -- SETUP: Ana crea a Rosa con contrato vigente y la desactiva — al emitir, la
 -- ÚNICA condición que falla es el candado nuevo. RUT nuevo, único GLOBAL
 -- (módulo 11, cálculo en el plan): 198765430 — grep = 0 en tests, seed y E2E.
-insert into public.trabajadores (empresa_id, rut, nombre)
-values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '198765430', 'Rosa Desactivada');
+insert into public.trabajadores (empresa_id, rut, nombre, nombres, apellido_paterno)
+values ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa', '198765430', 'Rosa Desactivada', 'Rosa', 'Desactivada');
 insert into public.contratos (empresa_id, trabajador_id, tipo, fecha_inicio, cargo, sueldo_base, afp, salud)
 values
   ('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa',

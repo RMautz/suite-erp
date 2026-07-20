@@ -57,15 +57,15 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 select activar_contabilidad('eeeeeeee-0000-0000-0000-aaaaaaaaaaaa');
 
--- 1) La 0026 volvió a extender el catálogo: 16 claves y utilidad_ejercicio es hoja de patrimonio.
+-- 1) La 0027 volvió a extender el catálogo: 18 claves y utilidad_ejercicio es hoja de patrimonio.
 select is(
   (select count(*) from cuentas_contables
    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and clave_sistema is not null)::text
   || '/' ||
   (select tipo || ':' || acepta_movimientos from cuentas_contables
    where empresa_id = 'eeeeeeee-0000-0000-0000-aaaaaaaaaaaa' and clave_sistema = 'utilidad_ejercicio'),
-  '16/patrimonio:true',
-  'activar siembra 16 claves de sistema; utilidad_ejercicio es hoja de patrimonio'
+  '18/patrimonio:true',
+  'activar siembra 18 claves de sistema; utilidad_ejercicio es hoja de patrimonio'
 );
 
 -- ===== Fixtures de movimientos (Ces, contador): 2024 y 2025 =====
