@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
 import { calcularVacaciones, formatearCLP, formatearRut } from '@suite/core'
-import { Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
+import { Boton, Encabezado, Insignia, Tabla, Tarjeta, Td, Th, Tr } from '@suite/ui'
 import { BotonEliminarCosto } from '../../../componentes/boton-eliminar-costo'
 import { FormularioContrato } from '../../../componentes/formulario-contrato'
 import { FormularioTrabajador } from '../../../componentes/formulario-trabajador'
@@ -78,17 +79,46 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
   const primerContrato = contratos.length
     ? contratos.reduce((min, c) => (c.fecha_inicio < min.fecha_inicio ? c : min))
     : undefined
+  // Finiquito no-anulado más RECIENTE (el unique parcial es POR CONTRATO:
+  // recontratar tras finiquitar deja más de uno por trabajador — jamás
+  // maybeSingle, que con 2 filas daría PGRST116): manda la insignia, el botón
+  // del encabezado y el corte del devengo (spec §2.4).
+  const { data: finsData } = await supabase
+    .from('finiquitos')
+    .select('id, estado, fecha_termino, contrato_id')
+    .eq('empresa_id', activa.id)
+    .eq('trabajador_id', id)
+    .neq('estado', 'anulado')
+    .order('emitido_en', { ascending: false })
+    .limit(1)
+  const fin = (finsData ?? [])[0]
+
   const hoy = new Date().toISOString().slice(0, 10)
-  // Costura Task 6: con finiquito no-anulado el devengo corta en su
-  // fecha_termino; mientras la emisión no exista (Task 6) se devenga a hoy.
+  // Con finiquito no-anulado el devengo corta en su fecha de término (spec §2.4).
+  const corte = fin?.fecha_termino ?? hoy
   const vac = primerContrato
-    ? calcularVacaciones(primerContrato.fecha_inicio, hoy, totalTomados)
+    ? calcularVacaciones(primerContrato.fecha_inicio, corte, totalTomados)
     : null
 
   return (
     <div>
       <Encabezado titulo={trabajador.nombre}>
         {!trabajador.activo && <Insignia tono="gris">Inactivo</Insignia>}
+        {fin && <Insignia tono="rojo">Finiquitado</Insignia>}
+        {/* MISMA decisión por CONTRATO que la página del finiquito: contrato
+            vigente sin finiquito propio → Emitir (cubre al recontratado, cuyo
+            finiquito viejo es solo historia); si no y hay finiquito → Ver. */}
+        {vigente && fin?.contrato_id !== vigente.id ? (
+          <Link href={`/trabajadores/${trabajador.id}/finiquito`}>
+            <Boton variante="secundario">Emitir finiquito</Boton>
+          </Link>
+        ) : (
+          fin && (
+            <Link href={`/trabajadores/${trabajador.id}/finiquito`}>
+              <Boton variante="secundario">Ver finiquito</Boton>
+            </Link>
+          )
+        )}
       </Encabezado>
 
       {escribe ? (

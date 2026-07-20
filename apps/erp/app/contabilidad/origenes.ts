@@ -9,13 +9,16 @@ export const ETIQUETA_ORIGEN: Record<string, string> = {
   pago_proveedor: 'Pago a proveedor',
   anticipo: 'Anticipo',
   remuneracion: 'Remuneración',
+  finiquito: 'Finiquito',
   reversa: 'Reversa',
   cierre: 'Cierre de ejercicio',
 }
 
 // Ruta del documento de origen SOLO cuando existe una pantalla de detalle para él:
 // ventas/NC tienen página propia; compra/pago/anticipo viven en listas -> sin link
-// (se muestra solo la etiqueta). La usa el detalle de asiento (Task 7).
+// (se muestra solo la etiqueta). finiquito tampoco: su detalle vive bajo
+// /trabajadores/[trabajador]/finiquito y referencia_id es el id del finiquito
+// (no derivable desde el asiento). La usa el detalle de asiento (Task 7).
 export function rutaOrigen(origen: string, referenciaId: string | null): string | null {
   if (!referenciaId) return null
   if (origen === 'venta' || origen === 'nota_credito') return `/ventas/${referenciaId}`

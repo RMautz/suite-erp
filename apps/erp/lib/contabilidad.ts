@@ -16,7 +16,7 @@ import { clienteAdmin } from '@suite/auth/admin'
 // console.error y sigue.
 export async function contabilizarAsiento(
   empresaId: string,
-  origen: 'venta' | 'nota_credito' | 'compra' | 'pago' | 'pago_proveedor' | 'anticipo' | 'remuneracion',
+  origen: 'venta' | 'nota_credito' | 'compra' | 'pago' | 'pago_proveedor' | 'anticipo' | 'remuneracion' | 'finiquito',
   referenciaId: string,
 ): Promise<void> {
   try {
