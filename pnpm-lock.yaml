@@ -252,6 +252,19 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/whatsapp:
+    dependencies:
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
+
 packages:
 
   '@alloc/quick-lru@5.2.0':
