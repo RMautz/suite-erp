@@ -64,6 +64,7 @@ export async function POST(req: Request) {
 
   let proveedor: ProveedorWhatsApp
   let motor: MotorBot
+  let admin: ReturnType<typeof clienteAdmin>
   try {
     proveedor = whatsappPorAmbiente(
       perilla,
@@ -73,12 +74,11 @@ export async function POST(req: Request) {
       process.env.WHATSAPP_APP_SECRET,
     )
     motor = motorPorAmbiente(process.env.MOTOR_BOT, process.env.ANTHROPIC_API_KEY, process.env.MOTOR_BOT_MODELO)
+    admin = clienteAdmin()
   } catch (e) {
     console.error('webhook whatsapp:', e instanceof Error ? e.message : 'selector no configurado')
     return new Response(null, { status: 200 })
   }
-
-  const admin = clienteAdmin()
 
   // El vinculo verificado y activo es la UNICA llave de entrada a datos.
   const { data: vinculo, error: eVinculo } = await admin
@@ -101,22 +101,41 @@ export async function POST(req: Request) {
     return new Response(null, { status: 200 })
   }
 
-  const { data: empresa } = await admin
+  const { data: empresa, error: eEmpresa } = await admin
     .from('empresas')
     .select('razon_social, rut, organizacion_id')
     .eq('id', vinculo.empresa_id)
     .maybeSingle()
+  if (eEmpresa) {
+    console.error('webhook whatsapp: error de BD al resolver la empresa:', eEmpresa.message)
+    return new Response(null, { status: 500 })
+  }
   if (!empresa) {
     console.error('webhook whatsapp: vínculo sin empresa:', vinculo.empresa_id)
     return new Response(null, { status: 200 })
   }
-  const { data: miembro } = await admin
+  const { data: miembro, error: eMiembro } = await admin
     .from('miembros')
     .select('rol')
     .eq('organizacion_id', empresa.organizacion_id)
     .eq('usuario_id', vinculo.usuario_id)
     .eq('estado', 'activo')
     .maybeSingle()
+  if (eMiembro) {
+    console.error('webhook whatsapp: error de BD al resolver el miembro:', eMiembro.message)
+    return new Response(null, { status: 500 })
+  }
+
+  // El vinculo muere con la membresia (hallazgo review T5): sin miembro activo
+  // dueno/admin, el telefono queda como no vinculado — CERO datos, fail-closed.
+  if (!miembro || (miembro.rol !== 'dueno' && miembro.rol !== 'admin')) {
+    try {
+      await proveedor.enviarTexto(entrante.telefono, SIN_VINCULO)
+    } catch {
+      // nunca-lanza
+    }
+    return new Response(null, { status: 200 })
+  }
 
   // Historial: ultimos 10 mensajes del telefono, en orden cronologico para el motor.
   const { data: previos } = await admin
@@ -147,7 +166,7 @@ export async function POST(req: Request) {
     respuesta = await motor.responder(
       {
         nombreEmpresa: empresa.razon_social,
-        rol: miembro?.rol ?? 'dueno',
+        rol: miembro.rol,
         historial,
         herramientas: herramientasBot(
           admin,
