@@ -7,7 +7,9 @@ import type { EstadoForm } from '../app/tipos'
 export interface TrabajadorEditable {
   id?: string
   rut: string
-  nombre: string
+  nombres: string
+  apellido_paterno: string
+  apellido_materno: string
   email: string
   telefono: string
   direccion: string
@@ -16,7 +18,9 @@ export interface TrabajadorEditable {
 
 const VACIO: TrabajadorEditable = {
   rut: '',
-  nombre: '',
+  nombres: '',
+  apellido_paterno: '',
+  apellido_materno: '',
   email: '',
   telefono: '',
   direccion: '',
@@ -38,8 +42,14 @@ export function FormularioTrabajador({
         <Campo etiqueta="RUT *">
           <Entrada name="rut" defaultValue={inicial.rut} placeholder="12.345.678-5" required />
         </Campo>
-        <Campo etiqueta="Nombre completo *">
-          <Entrada name="nombre" defaultValue={inicial.nombre} required />
+        <Campo etiqueta="Nombres *">
+          <Entrada name="nombres" defaultValue={inicial.nombres} required />
+        </Campo>
+        <Campo etiqueta="Apellido paterno *">
+          <Entrada name="apellido_paterno" defaultValue={inicial.apellido_paterno} required />
+        </Campo>
+        <Campo etiqueta="Apellido materno">
+          <Entrada name="apellido_materno" defaultValue={inicial.apellido_materno} />
         </Campo>
         <Campo etiqueta="Correo">
           <Entrada name="email" type="email" defaultValue={inicial.email} />

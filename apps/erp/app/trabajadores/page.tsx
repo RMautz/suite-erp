@@ -50,6 +50,19 @@ export default async function PaginaTrabajadores({
   const totalPaginas = Math.max(1, Math.ceil((count ?? 0) / POR_PAGINA))
   const hrefBase = `/trabajadores?q=${encodeURIComponent(q)}${inactivos === '1' ? '&inactivos=1' : ''}`
 
+  // Insignia "Finiquitado" (spec §6): un query liviano de ids por empresa
+  // (finiquitos no-anulados) → Set en memoria. El sort ESTABLE deja a los
+  // finiquitados al final conservando el orden por nombre dentro de cada
+  // grupo. Límite v1 declarado: el orden es por página — la paginación SQL
+  // sigue siendo por nombre.
+  const { data: finiquitosData } = await supabase
+    .from('finiquitos')
+    .select('trabajador_id')
+    .eq('empresa_id', activa.id)
+    .neq('estado', 'anulado')
+  const finiquitados = new Set((finiquitosData ?? []).map((f) => f.trabajador_id as string))
+  trabajadores.sort((a, b) => Number(finiquitados.has(a.id)) - Number(finiquitados.has(b.id)))
+
   return (
     <div>
       <Encabezado titulo="Trabajadores">
@@ -91,7 +104,10 @@ export default async function PaginaTrabajadores({
                 </Link>
               </Td>
               <Td>{t.contratos[0]?.cargo ?? <span className="text-slate-400">Sin contrato</span>}</Td>
-              <Td>{t.activo ? <Insignia tono="verde">Activo</Insignia> : <Insignia tono="gris">Inactivo</Insignia>}</Td>
+              <Td className="space-x-1">
+                {t.activo ? <Insignia tono="verde">Activo</Insignia> : <Insignia tono="gris">Inactivo</Insignia>}
+                {finiquitados.has(t.id) && <Insignia tono="rojo">Finiquitado</Insignia>}
+              </Td>
               <Td>
                 {escribe && (
                   <form action={alternarActivoTrabajador}>

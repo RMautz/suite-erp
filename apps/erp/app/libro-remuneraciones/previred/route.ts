@@ -1,5 +1,5 @@
 import { crearClienteServidor } from '@suite/auth/server'
-import { generarPrevired, periodoAnterior, rangoDeMes, type FilaPrevired } from '@suite/core'
+import { generarPrevired, periodoAnterior, rangoDeMes, ISAPRES, type FilaPrevired } from '@suite/core'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
 import { puedeVerRRHH } from '../../../lib/rrhh-acceso'
 
@@ -14,7 +14,10 @@ interface Fila {
   salud: string
   salud_monto: number
   mutual_monto: number
-  trabajadores: { rut: string; nombre: string } | null
+  // nombre se conserva SOLO para el orden del archivo; los campos 3-5 del TXT
+  // salen de las columnas reales (0027 — la heurística separarNombre murió).
+  trabajadores: { rut: string; nombre: string; nombres: string; apellido_paterno: string; apellido_materno: string | null } | null
+  contratos: { isapre: string | null } | null
 }
 
 export async function GET(req: Request) {
@@ -32,34 +35,48 @@ export async function GET(req: Request) {
     qPeriodo && rangoDeMes(qPeriodo) ? qPeriodo : periodoAnterior(new Date().toISOString().slice(0, 7))!
 
   const supabase = await crearClienteServidor()
-  // MISMA base que el libro y el CSV (empresa + período, sin anuladas): solo
-  // cambian las columnas — las del snapshot que consume FilaPrevired (Task 3).
+  // MISMA base que el libro y el CSV (empresa + período, sin anuladas). El join
+  // a contratos usa la FK compuesta de liquidaciones.contrato_id: trae la
+  // isapre del contrato de ESA liquidación (snapshot del vínculo, no del vigente).
   const { data, error } = await supabase
     .from('liquidaciones')
-    .select('dias_trabajados, afp, total_imponible, afp_monto, sis_monto, cesantia_monto, cesantia_empleador_monto, salud, salud_monto, mutual_monto, trabajadores (rut, nombre)')
+    .select('dias_trabajados, afp, total_imponible, afp_monto, sis_monto, cesantia_monto, cesantia_empleador_monto, salud, salud_monto, mutual_monto, trabajadores (rut, nombre, nombres, apellido_paterno, apellido_materno), contratos (isapre)')
     .eq('empresa_id', activa.id)
     .eq('periodo', periodo)
     .neq('estado', 'anulada')
   if (error) return new Response('No se pudo generar el archivo Previred', { status: 500 })
   const filas: FilaPrevired[] = ((data ?? []) as Fila[])
     .sort((a, b) => (a.trabajadores?.nombre ?? '').localeCompare(b.trabajadores?.nombre ?? '', 'es'))
-    .map((f) => ({
-      rut: f.trabajadores?.rut ?? '',
-      nombre: f.trabajadores?.nombre ?? '',
-      // 'AAAA-MM' para los campos 9/10 del TXT (MMAAAA): todas las filas son
-      // del período consultado (.eq de la query) — se puebla desde la variable.
-      periodo,
-      dias_trabajados: f.dias_trabajados,
-      afp: f.afp,
-      total_imponible: f.total_imponible,
-      afp_monto: f.afp_monto,
-      sis_monto: f.sis_monto,
-      cesantia_monto: f.cesantia_monto,
-      cesantia_empleador_monto: f.cesantia_empleador_monto,
-      salud: f.salud,
-      salud_monto: f.salud_monto,
-      mutual_monto: f.mutual_monto,
-    }))
+    .map((f) => {
+      const isapreContrato = f.contratos?.isapre ?? null
+      // Código del catálogo SOLO si el contrato es isapre con isapre seteada;
+      // null → lineaPrevired emite 7 (fonasa) o 0 (isapre legada sin catálogo,
+      // límite declarado del spec §2.2).
+      const isapreCodigo =
+        f.salud === 'isapre' && isapreContrato
+          ? (ISAPRES.find((i) => i.valor === isapreContrato)?.codigo_previred ?? null)
+          : null
+      return {
+        rut: f.trabajadores?.rut ?? '',
+        nombres: f.trabajadores?.nombres ?? '',
+        apellido_paterno: f.trabajadores?.apellido_paterno ?? '',
+        apellido_materno: f.trabajadores?.apellido_materno ?? null,
+        // 'AAAA-MM' para los campos 9/10 del TXT (MMAAAA): todas las filas son
+        // del período consultado (.eq de la query) — se puebla desde la variable.
+        periodo,
+        dias_trabajados: f.dias_trabajados,
+        afp: f.afp,
+        total_imponible: f.total_imponible,
+        afp_monto: f.afp_monto,
+        sis_monto: f.sis_monto,
+        cesantia_monto: f.cesantia_monto,
+        cesantia_empleador_monto: f.cesantia_empleador_monto,
+        salud: f.salud,
+        isapre_codigo: isapreCodigo,
+        salud_monto: f.salud_monto,
+        mutual_monto: f.mutual_monto,
+      }
+    })
 
   // generarPrevired ya emite CRLF SIN BOM (spec §5): el string va tal cual —
   // jamás pasar por filasACsv (ese helper antepone BOM para Excel).

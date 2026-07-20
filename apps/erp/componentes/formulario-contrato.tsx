@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react'
 import { Boton, Campo, Entrada, Selector, Tarjeta } from '@suite/ui'
 import type { EstadoForm } from '../app/tipos'
-import { AFPS } from '../app/trabajadores/catalogos'
+import { AFPS, ISAPRES } from '../app/trabajadores/catalogos'
 
 export function FormularioContrato({
   accion,
@@ -79,9 +79,24 @@ export function FormularioContrato({
           </div>
         </fieldset>
         {salud === 'isapre' && (
-          <Campo etiqueta="Plan Isapre (UF) *">
-            <Entrada name="plan_isapre_uf" inputMode="decimal" placeholder="3,5" required />
-          </Campo>
+          <>
+            <Campo etiqueta="Isapre *">
+              {/* Sin selección por defecto: la action igual valida contra el catálogo (fail-closed §2.2). */}
+              <Selector name="isapre" defaultValue="" required>
+                <option value="" disabled>
+                  Selecciona una Isapre…
+                </option>
+                {ISAPRES.map((i) => (
+                  <option key={i.valor} value={i.valor}>
+                    {i.etiqueta}
+                  </option>
+                ))}
+              </Selector>
+            </Campo>
+            <Campo etiqueta="Plan Isapre (UF) *">
+              <Entrada name="plan_isapre_uf" inputMode="decimal" placeholder="3,5" required />
+            </Campo>
+          </>
         )}
         <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
           <input type="checkbox" name="gratificacion_legal" defaultChecked />
