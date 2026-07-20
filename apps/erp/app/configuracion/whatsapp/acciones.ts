@@ -44,13 +44,16 @@ export async function solicitarVinculo(_prev: EstadoWhatsApp, formData: FormData
   } catch {
     return { error: 'No se pudo enviar el WhatsApp. Intenta de nuevo.' }
   }
-  await supabase.from('whatsapp_mensajes').insert({
+  // El log guarda el codigo ENMASCARADO (lo leen roles que no gestionan WhatsApp,
+  // p.ej. contador); el texto real solo viaja al telefono / bandeja mock.
+  const { error: eLog } = await supabase.from('whatsapp_mensajes').insert({
     empresa_id: activa.id,
     telefono,
     direccion: 'saliente',
     origen: 'vinculacion',
-    contenido: texto,
+    contenido: `Tu código para vincular este WhatsApp con ${activa.razon_social} es ******. Vence en 10 minutos.`,
   })
+  if (eLog) return { error: 'El WhatsApp se envió pero no se pudo registrar el envío.' }
   revalidatePath('/configuracion/whatsapp')
   return { ok: true, vinculoId, telefono }
 }

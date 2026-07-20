@@ -75,7 +75,12 @@ export class ClaudeMotor implements MotorBot {
 
   async responder(ctx: ContextoBot, mensaje: string): Promise<string> {
     try {
-      const mensajes: unknown[] = ctx.historial.map((t) => ({
+      // La Messages API rechaza un PRIMER turno assistant (400): tras vincular, el
+      // primer mensaje del log es el codigo (saliente). Se descartan los turnos
+      // previos al primer entrante — hallazgo review final P21.
+      const desde = ctx.historial.findIndex((t) => t.direccion === 'entrante')
+      const turnos = desde < 0 ? [] : ctx.historial.slice(desde)
+      const mensajes: unknown[] = turnos.map((t) => ({
         role: t.direccion === 'entrante' ? 'user' : 'assistant',
         content: t.contenido,
       }))

@@ -84,4 +84,30 @@ describe('ClaudeMotor.responder', () => {
     expect(loggeado).not.toContain('KEY-SECRETA')
     errSpy.mockRestore()
   })
+
+  it('descarta los turnos anteriores al primer entrante (el log abre con el código saliente)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(respuesta({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] }))
+    const contexto = ctx(herramientasFake())
+    contexto.historial = [
+      { direccion: 'saliente', contenido: 'Tu código para vincular es 123456.' },
+      { direccion: 'entrante', contenido: 'hola' },
+      { direccion: 'saliente', contenido: 'Hola!' },
+    ]
+    await new ClaudeMotor('KEY', 'claude-sonnet-5', fetchMock as unknown as typeof fetch).responder(contexto, 'ventas?')
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, { body: string }])[1].body)
+    expect(body.messages).toHaveLength(3)
+    expect(body.messages[0]).toEqual({ role: 'user', content: 'hola' })
+  })
+
+  it('5 rondas de tool_use sin respuesta final devuelven la disculpa', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      respuesta({ stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'tu-x', name: 'ventas_hoy', input: {} }] }),
+    )
+    const salida = await new ClaudeMotor('KEY', 'claude-sonnet-5', fetchMock as unknown as typeof fetch).responder(
+      ctx(herramientasFake()),
+      'hola',
+    )
+    expect(salida).toBe(DISCULPA_BOT)
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+  })
 })

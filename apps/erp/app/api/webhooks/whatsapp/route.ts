@@ -47,6 +47,13 @@ export async function POST(req: Request) {
   const crudo = await req.text().catch(() => '')
   const perilla = process.env.PROVEEDOR_WHATSAPP
 
+  // El bypass de firma del modo mock es SOLO para desarrollo local: en un deploy
+  // publico aceptaria POSTs sin firmar (hallazgo review final P21).
+  if (perilla === 'mock' && process.env.NODE_ENV === 'production') {
+    console.error('webhook whatsapp: modo mock vetado en producción')
+    return new Response(null, { status: 200 })
+  }
+
   // Firma obligatoria en cloud (invalida -> 200 silencioso); bypass SOLO en mock (el
   // simulador postea sin firmar); sin perilla valida no se procesa nada (fail-closed).
   if (perilla === 'cloud') {
