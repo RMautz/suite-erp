@@ -14,6 +14,7 @@
 
 - **Baselines verdes que TODA task debe mantener:** pgTAP **435 asserts / 20 archivos** (`npx supabase test db`), unit **229** (`pnpm test`), **3 builds** (`pnpm build --concurrency=1`).
 - **Conteos contractuales finales:** pgTAP **435 + 23 = 458 asserts en 21 archivos** (`whatsapp.test.sql` con `plan(23)`); unit **229 + 28 = 257** (14 en `@suite/whatsapp`, 14 en `@suite/bot`); 3 builds verdes.
+- **Endurecimiento del código de vinculación (hallazgo de security review 2026-07-20):** el código de 6 dígitos se genera con `extensions.gen_random_bytes` (pgcrypto, CSPRNG) — NO `random()`. Lockout de intentos: analizado y diferido a propósito (comentario en la migración): solo un dueño/admin de la MISMA empresa pasa el guard de rol de `confirmar_vinculo_whatsapp`, y ese principal ya tiene acceso total a los datos que el bot expone; además un contador de fallos no persiste bajo PostgREST (el `raise` revierte la transacción completa, incremento incluido). Si el día de mañana el bot expusiera acciones de escritura sensibles, el upgrade path es rediseñar la RPC a retorno-de-estado (sin raise en el camino contado).
 - **Env nuevas (todas fail-closed):** `PROVEEDOR_WHATSAPP=mock|cloud` (cloud exige `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`); `MOTOR_BOT=mock|claude` (claude exige `ANTHROPIC_API_KEY`; modelo por `MOTOR_BOT_MODELO`, default `claude-sonnet-5`). PROHIBIDO `?? 'mock'`.
 - **Mensajes byte-exactos NUEVOS de este plan** (es-CL, con tildes):
   - RPCs: `Tu rol no permite gestionar WhatsApp` · `Teléfono no válido: usa formato internacional +56...` · `Código incorrecto o expirado` · `Ese teléfono ya está vinculado a otra cuenta` · `El vínculo no existe` (semaforo_whatsapp reusa `Tu rol no permite ver la revisión` de revision_periodo).
@@ -1187,7 +1188,11 @@ create policy "duenos registran mensajes whatsapp" on public.whatsapp_mensajes
   with check (app.tiene_rol_en_empresa(empresa_id, array['dueno', 'admin']));
 
 -- ---------- Grants Data API (leccion 0001: sin esto todo da 42501) ----------
-grant select on public.whatsapp_vinculos to authenticated;
+-- Grant POR COLUMNAS (hallazgo review T3): codigo y codigo_expira NO son legibles por
+-- authenticated — si lo fueran, un dueno/admin podria leer el OTP via PostgREST y
+-- confirmar un telefono que no posee. La action lee el codigo con el admin client.
+grant select (id, empresa_id, usuario_id, telefono, verificado_en, activo, creado_en)
+  on public.whatsapp_vinculos to authenticated;
 grant select, insert on public.whatsapp_mensajes to authenticated;
 grant select, insert, update, delete on public.whatsapp_vinculos, public.whatsapp_mensajes to service_role;
 
@@ -1208,7 +1213,11 @@ begin
     raise exception 'Teléfono no válido: usa formato internacional +56...';
   end if;
 
-  v_codigo := lpad((floor(random() * 1000000))::int::text, 6, '0');
+  -- CSPRNG (security review 2026-07-20): pgcrypto, no random(). Lockout de intentos
+  -- diferido a proposito: solo dueno/admin de la MISMA empresa pasa el guard (ya ve
+  -- todos los datos), y un contador de fallos no persiste bajo PostgREST (el raise
+  -- revierte la transaccion completa). Upgrade path: RPC retorno-de-estado sin raise.
+  v_codigo := lpad(((('x' || encode(extensions.gen_random_bytes(4), 'hex'))::bit(32)::bigint & 2147483647) % 1000000)::text, 6, '0');
 
   -- Reintento sobre el mismo telefono pendiente (misma empresa, no verificado,
   -- activo): regenera codigo y expiracion sobre la MISMA fila (spec 4.1).
@@ -1639,6 +1648,8 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ### Task 5: Núcleo compartido de recordatorio + `bot-herramientas` + webhook
 
 Baseline: pgTAP 458/21, unit 257, 3 builds.
+
+> **Enmienda post-review (commit `dc71f57`):** el webhook quedó más duro que el código de abajo en tres puntos: (1) membresía revocada corta el bot — si el usuario del vínculo ya no es miembro activo dueno/admin, responde SIN_VINCULO ANTES de loguear nada y el `ContextoBot` usa `miembro.rol` sin fallback (el `?? 'dueno'` de abajo fallaba hacia el privilegio máximo); (2) `clienteAdmin()` se construye dentro del try/catch de los selectores (misconfig → 200 logueado, no throw); (3) los errores de BD de las queries de `empresas`/`miembros` se destructuran y devuelven 500 (Meta reintenta), igual que la query del vínculo. Además `apps/erp` ganó `@supabase/supabase-js` como dependencia directa (aislamiento estricto de pnpm para el import del tipo `SupabaseClient`).
 
 **Files:**
 - Create: `apps/erp/lib/recordatorio.ts`
@@ -2303,6 +2314,7 @@ export function proveedorWhatsAppConfigurado(): ProveedorWhatsApp | null {
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { clienteAdmin } from '@suite/auth/admin'
 import { crearClienteServidor } from '@suite/auth/server'
 import { esTelefonoE164 } from '@suite/whatsapp'
 import { obtenerEmpresaActiva } from '../../../lib/empresa-activa'
@@ -2313,8 +2325,9 @@ export type EstadoWhatsApp = { error?: string; ok?: boolean; vinculoId?: string;
 
 // Solicitar: la RPC valida rol/formato y genera el codigo; el ENVIO del codigo lo
 // hace esta action via el proveedor (la RPC no habla con el mundo, spec 4.1). El
-// codigo se lee por RLS (SELECT dueno/admin de su empresa) y el envio se loguea con
-// origen 'vinculacion' (visible en /mock-whatsapp).
+// codigo NO es legible por authenticated (grant por columnas, hallazgo review T3):
+// se lee con el admin client DESPUES de que la RPC ya valido el rol del caller. El
+// envio se loguea con origen 'vinculacion' (visible en /mock-whatsapp).
 export async function solicitarVinculo(_prev: EstadoWhatsApp, formData: FormData): Promise<EstadoWhatsApp> {
   const telefono = String(formData.get('telefono') ?? '').trim()
   const { activa } = await obtenerEmpresaActiva()
@@ -2330,7 +2343,7 @@ export async function solicitarVinculo(_prev: EstadoWhatsApp, formData: FormData
   })
   if (error || !vinculoId) return { error: error?.message ?? 'No se pudo solicitar el vínculo' }
 
-  const { data: fila } = await supabase
+  const { data: fila } = await clienteAdmin()
     .from('whatsapp_vinculos')
     .select('codigo')
     .eq('id', vinculoId)
