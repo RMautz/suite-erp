@@ -83,6 +83,21 @@ export const AFPS = [
   { valor: 'uno', etiqueta: 'Uno' },
 ] as const
 
+// Catálogo compartido de Isapres (P20 §2.2, patrón AFPS): slugs EXACTOS del
+// CHECK de contratos.isapre (0027) + nombre comercial + código Previred del
+// campo 75 del TXT. Códigos v1 representativos (misma lógica que
+// CODIGO_AFP_PREVIRED: se validan contra Previred al tener cuenta). Única
+// fuente de la lista en las 3 apps.
+export const ISAPRES = [
+  { valor: 'cruzblanca', etiqueta: 'Cruz Blanca', codigo_previred: 1 },
+  { valor: 'banmedica', etiqueta: 'Banmédica', codigo_previred: 3 },
+  { valor: 'colmena', etiqueta: 'Colmena Golden Cross', codigo_previred: 4 },
+  { valor: 'consalud', etiqueta: 'Consalud', codigo_previred: 9 },
+  { valor: 'vidatres', etiqueta: 'Vida Tres', codigo_previred: 12 },
+  { valor: 'nuevamasvida', etiqueta: 'Nueva Masvida', codigo_previred: 43 },
+  { valor: 'esencial', etiqueta: 'Esencial', codigo_previred: 44 },
+] as const
+
 // Reglas 1-12 de los specs P18 §3 y P19 §3, en el MISMO orden y con los
 // MISMOS redondeos intermedios que la RPC emitir_liquidacion. tasaMutual es
 // el % de empresas.tasa_mutual (ley 16.744; la empresa lo edita en Módulos).

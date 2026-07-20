@@ -1,20 +1,27 @@
-// Archivo PREVIRED (Plan 19 §5): TXT plano de carga masiva, 105 campos por
-// línea separados por ';', líneas terminadas en CRLF, SIN BOM (lo lee
-// Previred, no Excel — a diferencia de filasACsv). Formato público "Archivo
-// de carga masiva" de previred.com. v1 puebla los campos del spec §5 y deja
-// el resto ''/0 según el estándar; el usuario puede ajustar el TXT antes de
+// Archivo PREVIRED (Plan 19 §5 + Plan 20 §5): TXT plano de carga masiva, 105
+// campos por línea separados por ';', líneas terminadas en CRLF, SIN BOM (lo
+// lee Previred, no Excel — a diferencia de filasACsv). Formato público
+// "Archivo de carga masiva" de previred.com. v2 (P20): apellidos desde las
+// columnas propias de trabajadores (la heurística separarNombre murió con
+// ellas) y código de institución de salud desde el catálogo ISAPRES; el resto
+// queda ''/0 según el estándar — el usuario puede ajustar el TXT antes de
 // subirlo y la validación final la hace Previred al cargarlo.
 import { limpiarRut } from './rut'
 
 // Una liquidación no-anulada del período, ya unida a su trabajador/contrato.
-// Los montos vienen del snapshot de liquidaciones (specs P18 §2.4 + P19 §2).
+// Los montos vienen del snapshot de liquidaciones (specs P18 §2.4 + P19 §2);
+// nombres/apellidos, de las columnas de trabajadores (P20 §2.1); isapre_codigo
+// lo resuelve la route con el catálogo ISAPRES desde contratos.isapre.
 export interface FilaPrevired {
   rut: string // como en la BD: cuerpo+DV sin puntos ni guión ('123456785')
-  nombre: string // trabajadores.nombre completo; separarNombre lo divide
+  nombres: string // trabajadores.nombres
+  apellido_paterno: string // trabajadores.apellido_paterno
+  apellido_materno: string | null // trabajadores.apellido_materno ('' en el TXT si null)
   periodo: string // 'AAAA-MM' de la liquidación
   dias_trabajados: number
   afp: string // slug del CHECK de contratos.afp
   salud: string // 'fonasa' | 'isapre'
+  isapre_codigo: number | null // codigo_previred de ISAPRES; null = fonasa o isapre sin catálogo
   total_imponible: number
   afp_monto: number
   sis_monto: number
@@ -24,8 +31,8 @@ export interface FilaPrevired {
   mutual_monto: number
 }
 
-// Tabla FIJA de códigos Previred por slug de AFP (spec §5). Cambia solo si
-// entra una AFP nueva al catálogo AFPS de remuneraciones.ts.
+// Tabla FIJA de códigos Previred por slug de AFP (spec P19 §5). Cambia solo
+// si entra una AFP nueva al catálogo AFPS de remuneraciones.ts.
 export const CODIGO_AFP_PREVIRED: Record<string, string> = {
   capital: '33',
   cuprum: '3',
@@ -36,41 +43,23 @@ export const CODIGO_AFP_PREVIRED: Record<string, string> = {
   uno: '35',
 }
 
-// Heurística del spec §5 sobre trabajadores.nombre (no hay columnas de
-// apellidos — Plan 20+): las últimas 2 palabras son apellidos paterno/materno,
-// el resto son nombres; con 2 palabras: nombre + paterno; con 1: solo nombres.
-export function separarNombre(nombre: string): {
-  nombres: string
-  paterno: string
-  materno: string
-} {
-  const partes = nombre.trim().split(/\s+/).filter((p) => p !== '')
-  if (partes.length <= 1) return { nombres: partes[0] ?? '', paterno: '', materno: '' }
-  if (partes.length === 2) return { nombres: partes[0]!, paterno: partes[1]!, materno: '' }
-  return {
-    nombres: partes.slice(0, -2).join(' '),
-    paterno: partes[partes.length - 2]!,
-    materno: partes[partes.length - 1]!,
-  }
-}
-
 // Los 105 campos del formato público, 1-based en los comentarios. Poblados
-// v1 (spec §5): RUT/DV, nombres, movimiento 0, días, AFP + montos, cesantía
-// trabajador/empleador, salud (Fonasa 7 / Isapre 0 genérica), mutual. El
-// resto queda '' (texto/fecha/código) o 0 (montos/contadores).
+// v2 (specs P19 §5 + P20 §5): RUT/DV, apellidos y nombres de columnas, días,
+// AFP + montos, cesantía trabajador/empleador, salud (7 Fonasa / código del
+// catálogo / 0 isapre sin catálogo), mutual. El resto queda '' (texto/fecha/
+// código) o 0 (montos/contadores).
 function lineaPrevired(f: FilaPrevired): string {
   const codigoAfp = CODIGO_AFP_PREVIRED[f.afp]
   if (codigoAfp === undefined) throw new Error(`AFP sin código Previred: ${f.afp}`)
   const rut = limpiarRut(f.rut)
-  const { nombres, paterno, materno } = separarNombre(f.nombre)
   const mmaaaa = f.periodo.slice(5, 7) + f.periodo.slice(0, 4)
   const fonasa = f.salud === 'fonasa'
   const campos: (string | number)[] = [
     rut.slice(0, -1), // 1 RUT trabajador (sin DV)
     rut.slice(-1), // 2 DV
-    paterno, // 3 apellido paterno
-    materno, // 4 apellido materno
-    nombres, // 5 nombres
+    f.apellido_paterno, // 3 apellido paterno (columna propia desde P20)
+    f.apellido_materno ?? '', // 4 apellido materno ('' si null en BD)
+    f.nombres, // 5 nombres
     '', // 6 sexo (no almacenado)
     0, // 7 nacionalidad (0 = chileno)
     '01', // 8 tipo de pago (01 = remuneraciones)
@@ -83,7 +72,7 @@ function lineaPrevired(f: FilaPrevired): string {
     0, // 15 código movimiento de personal (0 = sin novedades)
     '', // 16 fecha desde (solo con movimiento)
     '', // 17 fecha hasta (solo con movimiento)
-    '', // 18 tramo asignación familiar (no gestionada — Plan 20+)
+    '', // 18 tramo asignación familiar (no gestionada)
     0, // 19 n° cargas simples
     0, // 20 n° cargas maternales
     0, // 21 n° cargas inválidas
@@ -140,7 +129,7 @@ function lineaPrevired(f: FilaPrevired): string {
     0, // 72 bonificación ley 15.386
     0, // 73 descuento cargas familiares IPS
     0, // 74 bonos gobierno
-    fonasa ? '7' : '0', // 75 código institución de salud (7 Fonasa; 0 Isapre genérica, límite v1)
+    fonasa ? '7' : String(f.isapre_codigo ?? 0), // 75 código institución de salud (7 Fonasa; catálogo ISAPRES; 0 isapre sin catálogo — límite v1)
     '', // 76 número del FUN
     fonasa ? 0 : f.total_imponible, // 77 renta imponible Isapre
     fonasa ? '' : '1', // 78 moneda del plan Isapre (1 = pesos: guardamos CLP)

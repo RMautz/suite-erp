@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { CODIGO_AFP_PREVIRED, generarPrevired, separarNombre, type FilaPrevired } from './previred'
-import { AFPS } from './remuneraciones'
+import { CODIGO_AFP_PREVIRED, generarPrevired, type FilaPrevired } from './previred'
+import { AFPS, ISAPRES } from './remuneraciones'
 
 // Fila del golden G1 (aportes P19): imponible 1.000.000, indefinido, habitat,
-// Fonasa, tasas canónicas 1,53 / 0,90. RUT y nombre de fixture (mod-11 válido,
-// formato de BD: cuerpo+DV sin puntos ni guión, como trabajadores.rut).
+// Fonasa, tasas canónicas 1,53 / 0,90. RUT de fixture (mod-11 válido, formato
+// de BD: cuerpo+DV sin puntos ni guión). P20 §2.1: los apellidos ya vienen de
+// columnas propias — la línea dorada queda BYTE-IDÉNTICA a la de P19: cambió
+// la fuente de los campos 3/4/5, no el TXT.
 const FILA_G1: FilaPrevired = {
   rut: '123456785',
-  nombre: 'María José Pérez Soto',
+  nombres: 'María José',
+  apellido_paterno: 'Pérez',
+  apellido_materno: 'Soto',
   periodo: '2026-06',
   dias_trabajados: 30,
   afp: 'habitat',
   salud: 'fonasa',
+  isapre_codigo: null,
   total_imponible: 1000000,
   afp_monto: 112700,
   sis_monto: 15300,
@@ -21,14 +26,19 @@ const FILA_G1: FilaPrevired = {
   mutual_monto: 9000,
 }
 
-// Fila del golden G2: plazo fijo capital Isapre (monto pactado 196.000 = 5 UF).
+// Fila del golden G2: plazo fijo capital, Isapre Vida Tres (código Previred
+// 12, del catálogo ISAPRES; monto pactado 196.000 = 5 UF); sin apellido
+// materno (columna null en BD → campo 4 vacío).
 const FILA_G2: FilaPrevired = {
   rut: '876543214',
-  nombre: 'Ana Díaz',
+  nombres: 'Ana',
+  apellido_paterno: 'Díaz',
+  apellido_materno: null,
   periodo: '2026-06',
   dias_trabajados: 30,
   afp: 'capital',
   salud: 'isapre',
+  isapre_codigo: 12,
   total_imponible: 1409396,
   afp_monto: 161235,
   sis_monto: 21564,
@@ -38,39 +48,15 @@ const FILA_G2: FilaPrevired = {
   mutual_monto: 12685,
 }
 
-describe('separarNombre — heurística del spec §5', () => {
-  it('tres o más palabras: las últimas 2 son apellidos paterno/materno', () => {
-    expect(separarNombre('María José Pérez Soto')).toEqual({
-      nombres: 'María José',
-      paterno: 'Pérez',
-      materno: 'Soto',
-    })
-    expect(separarNombre('Amanda Rojas Fuentes')).toEqual({
-      nombres: 'Amanda',
-      paterno: 'Rojas',
-      materno: 'Fuentes',
-    })
-  })
-
-  it('dos palabras: nombre + apellido paterno, sin materno', () => {
-    expect(separarNombre('Ana Díaz')).toEqual({ nombres: 'Ana', paterno: 'Díaz', materno: '' })
-  })
-
-  it('una palabra o vacío: solo nombres (espacios extra se ignoran)', () => {
-    expect(separarNombre('Cher')).toEqual({ nombres: 'Cher', paterno: '', materno: '' })
-    expect(separarNombre('   ')).toEqual({ nombres: '', paterno: '', materno: '' })
-  })
-})
-
-describe('generarPrevired — TXT de carga masiva (spec §5)', () => {
+describe('generarPrevired — TXT de carga masiva (specs P19 §5 + P20 §5)', () => {
   it('G1: línea dorada completa de 105 campos', () => {
     const linea = generarPrevired([FILA_G1]).split('\r\n')[0]!
     expect(linea.split(';')).toEqual([
       '12345678', // 1 RUT trabajador (sin DV)
       '5', // 2 DV
-      'Pérez', // 3 apellido paterno
-      'Soto', // 4 apellido materno
-      'María José', // 5 nombres
+      'Pérez', // 3 apellido paterno (trabajadores.apellido_paterno, P20)
+      'Soto', // 4 apellido materno (trabajadores.apellido_materno, P20)
+      'María José', // 5 nombres (trabajadores.nombres, P20)
       '', // 6 sexo (no almacenado)
       '0', // 7 nacionalidad (0 = chileno)
       '01', // 8 tipo de pago (01 = remuneraciones)
@@ -83,7 +69,7 @@ describe('generarPrevired — TXT de carga masiva (spec §5)', () => {
       '0', // 15 código movimiento de personal (0 = sin novedades)
       '', // 16 fecha desde (solo con movimiento)
       '', // 17 fecha hasta (solo con movimiento)
-      '', // 18 tramo asignación familiar (no gestionada — Plan 20+)
+      '', // 18 tramo asignación familiar (no gestionada)
       '0', // 19 n° cargas simples
       '0', // 20 n° cargas maternales
       '0', // 21 n° cargas inválidas
@@ -174,16 +160,39 @@ describe('generarPrevired — TXT de carga masiva (spec §5)', () => {
     ])
   })
 
-  it('Isapre: código 0 genérico con monto pactado; campos Fonasa en cero', () => {
+  it('Isapre con catálogo: código Previred real y materno null → campo 4 vacío', () => {
     const campos = generarPrevired([FILA_G2]).split('\r\n')[0]!.split(';')
+    expect(campos[2]).toBe('Díaz') // 3: apellido paterno
+    expect(campos[3]).toBe('') // 4: apellido materno null en BD → vacío
+    expect(campos[4]).toBe('Ana') // 5: nombres
     expect(campos[69]).toBe('0') // 70: cotización Fonasa vacía en Isapre
-    expect(campos[74]).toBe('0') // 75: código 0 = Isapre genérica (catálogo → Plan 20)
+    expect(campos[74]).toBe('12') // 75: código Vida Tres del catálogo ISAPRES (P20)
     expect(campos[76]).toBe('1409396') // 77: renta imponible Isapre
     expect(campos[77]).toBe('1') // 78: moneda del plan en pesos (guardamos CLP)
     expect(campos[78]).toBe('196000') // 79: cotización pactada = salud_monto
     expect(campos[25]).toBe('33') // 26: AFP capital
     expect(campos[100]).toBe('0') // 101: cesantía del trabajador (plazo fijo no cotiza)
     expect(campos[101]).toBe('42282') // 102: cesantía del empleador al 3,0%
+  })
+
+  it('Isapre sin catálogo (contratos pre-P20): código 0 — límite v1 declarado', () => {
+    const campos = generarPrevired([{ ...FILA_G2, isapre_codigo: null }])
+      .split('\r\n')[0]!
+      .split(';')
+    expect(campos[74]).toBe('0') // 75: isapre sin slug en contratos.isapre
+    expect(campos[78]).toBe('196000') // 79: el monto pactado igual viaja
+  })
+
+  it('catálogo ISAPRES: los 7 slugs del CHECK de contratos.isapre con su código', () => {
+    expect(ISAPRES).toEqual([
+      { valor: 'cruzblanca', etiqueta: 'Cruz Blanca', codigo_previred: 1 },
+      { valor: 'banmedica', etiqueta: 'Banmédica', codigo_previred: 3 },
+      { valor: 'colmena', etiqueta: 'Colmena Golden Cross', codigo_previred: 4 },
+      { valor: 'consalud', etiqueta: 'Consalud', codigo_previred: 9 },
+      { valor: 'vidatres', etiqueta: 'Vida Tres', codigo_previred: 12 },
+      { valor: 'nuevamasvida', etiqueta: 'Nueva Masvida', codigo_previred: 43 },
+      { valor: 'esencial', etiqueta: 'Esencial', codigo_previred: 44 },
+    ])
   })
 
   it('códigos AFP Previred: tabla fija que cubre los 7 slugs del catálogo', () => {

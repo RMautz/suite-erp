@@ -529,6 +529,7 @@ export type Database = {
           fecha_termino: string | null
           gratificacion_legal: boolean
           id: string
+          isapre: string | null
           plan_isapre_uf: number | null
           salud: string
           sueldo_base: number
@@ -545,6 +546,7 @@ export type Database = {
           fecha_termino?: string | null
           gratificacion_legal?: boolean
           id?: string
+          isapre?: string | null
           plan_isapre_uf?: number | null
           salud: string
           sueldo_base: number
@@ -561,6 +563,7 @@ export type Database = {
           fecha_termino?: string | null
           gratificacion_legal?: boolean
           id?: string
+          isapre?: string | null
           plan_isapre_uf?: number | null
           salud?: string
           sueldo_base?: number
@@ -1200,6 +1203,109 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizaciones"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      finiquitos: {
+        Row: {
+          anos_servicio: number
+          anulado_en: string | null
+          aviso_dado: boolean
+          causal: string
+          comentario: string | null
+          contrato_id: string
+          creado_en: string
+          emitido_en: string | null
+          empresa_id: string
+          estado: string
+          fecha_termino: string
+          feriado_dias: number
+          feriado_monto: number
+          id: string
+          indemnizacion_anos: number
+          indemnizacion_aviso: number
+          motivo_anulacion: string | null
+          otros_descuentos: number
+          otros_haberes: number
+          pagado_en: string | null
+          sueldo_base: number
+          total: number
+          trabajador_id: string
+          uf: number
+        }
+        Insert: {
+          anos_servicio: number
+          anulado_en?: string | null
+          aviso_dado?: boolean
+          causal: string
+          comentario?: string | null
+          contrato_id: string
+          creado_en?: string
+          emitido_en?: string | null
+          empresa_id: string
+          estado?: string
+          fecha_termino: string
+          feriado_dias: number
+          feriado_monto: number
+          id?: string
+          indemnizacion_anos: number
+          indemnizacion_aviso: number
+          motivo_anulacion?: string | null
+          otros_descuentos?: number
+          otros_haberes?: number
+          pagado_en?: string | null
+          sueldo_base: number
+          total: number
+          trabajador_id: string
+          uf: number
+        }
+        Update: {
+          anos_servicio?: number
+          anulado_en?: string | null
+          aviso_dado?: boolean
+          causal?: string
+          comentario?: string | null
+          contrato_id?: string
+          creado_en?: string
+          emitido_en?: string | null
+          empresa_id?: string
+          estado?: string
+          fecha_termino?: string
+          feriado_dias?: number
+          feriado_monto?: number
+          id?: string
+          indemnizacion_anos?: number
+          indemnizacion_aviso?: number
+          motivo_anulacion?: string | null
+          otros_descuentos?: number
+          otros_haberes?: number
+          pagado_en?: string | null
+          sueldo_base?: number
+          total?: number
+          trabajador_id?: string
+          uf?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finiquitos_empresa_id_contrato_id_fkey"
+            columns: ["empresa_id", "contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["empresa_id", "id"]
+          },
+          {
+            foreignKeyName: "finiquitos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finiquitos_empresa_id_trabajador_id_fkey"
+            columns: ["empresa_id", "trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -2649,6 +2755,8 @@ export type Database = {
       trabajadores: {
         Row: {
           activo: boolean
+          apellido_materno: string | null
+          apellido_paterno: string
           creado_en: string
           direccion: string | null
           email: string | null
@@ -2656,11 +2764,14 @@ export type Database = {
           fecha_nacimiento: string | null
           id: string
           nombre: string
+          nombres: string
           rut: string
           telefono: string | null
         }
         Insert: {
           activo?: boolean
+          apellido_materno?: string | null
+          apellido_paterno: string
           creado_en?: string
           direccion?: string | null
           email?: string | null
@@ -2668,11 +2779,14 @@ export type Database = {
           fecha_nacimiento?: string | null
           id?: string
           nombre: string
+          nombres: string
           rut: string
           telefono?: string | null
         }
         Update: {
           activo?: boolean
+          apellido_materno?: string | null
+          apellido_paterno?: string
           creado_en?: string
           direccion?: string | null
           email?: string | null
@@ -2680,6 +2794,7 @@ export type Database = {
           fecha_nacimiento?: string | null
           id?: string
           nombre?: string
+          nombres?: string
           rut?: string
           telefono?: string | null
         }
@@ -2690,6 +2805,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacaciones_tomadas: {
+        Row: {
+          comentario: string | null
+          creado_en: string
+          desde: string
+          dias_habiles: number
+          empresa_id: string
+          hasta: string
+          id: string
+          trabajador_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          creado_en?: string
+          desde: string
+          dias_habiles: number
+          empresa_id: string
+          hasta: string
+          id?: string
+          trabajador_id: string
+        }
+        Update: {
+          comentario?: string | null
+          creado_en?: string
+          desde?: string
+          dias_habiles?: number
+          empresa_id?: string
+          hasta?: string
+          id?: string
+          trabajador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_tomadas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_tomadas_empresa_id_trabajador_id_fkey"
+            columns: ["empresa_id", "trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores"
+            referencedColumns: ["empresa_id", "id"]
           },
         ]
       }
@@ -2977,6 +3140,10 @@ export type Database = {
         Args: { p_documento: string; p_empresa: string }
         Returns: undefined
       }
+      anular_finiquito: {
+        Args: { p_empresa: string; p_finiquito: string; p_motivo: string }
+        Returns: undefined
+      }
       anular_liquidacion: {
         Args: { p_empresa: string; p_liquidacion: string; p_motivo: string }
         Returns: undefined
@@ -3134,6 +3301,19 @@ export type Database = {
         Args: { p_empresa: string }
         Returns: undefined
       }
+      emitir_finiquito: {
+        Args: {
+          p_aviso_dado: boolean
+          p_causal: string
+          p_comentario: string
+          p_empresa: string
+          p_fecha_termino: string
+          p_otros_descuentos: number
+          p_otros_haberes: number
+          p_trabajador: string
+        }
+        Returns: string
+      }
       emitir_liquidacion: {
         Args: {
           p_dias: number
@@ -3160,6 +3340,10 @@ export type Database = {
           p_tipo: string
         }
         Returns: string
+      }
+      pagar_finiquito: {
+        Args: { p_empresa: string; p_finiquito: string }
+        Returns: undefined
       }
       pagar_liquidacion: {
         Args: { p_empresa: string; p_liquidacion: string }
