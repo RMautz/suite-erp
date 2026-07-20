@@ -1,6 +1,6 @@
 # Credenciales y APIs pendientes (todas gated en el usuario — el sistema funciona 100% con mocks mientras tanto)
 
-Última actualización: 2026-07-18. Ninguna es urgente: cada una activa un adaptador ya construido y probado.
+Última actualización: 2026-07-20. Ninguna es urgente: cada una activa un adaptador ya construido y probado.
 
 ## Para facturar de verdad (SII)
 1. **SimpleAPI** (proveedor DTE elegido, Task 13) — cuenta en simpleapi.cl + API key.
@@ -24,6 +24,7 @@
 11. **Dominio propio** — requisito para: SSO por cookie de dominio entre apps, acceso a erp/admin en prod (hoy inaccesibles en *.vercel.app), y el dominio de Resend.
 
 ## Futuras (cuando toque)
-12. **Anthropic API key** — capa IA del Contador Auditor (informes narrados, chat contable). Plan futuro ya diseñado como enchufe.
+12. **Anthropic API key** — enciende el motor IA del chatbot de WhatsApp (Plan 21: `MOTOR_BOT=claude`; el ClaudeMotor ya está construido y probado con fetch inyectado) y, a futuro, la capa IA del Contador Auditor (informes narrados, chat contable).
 13. **Copec TCT Web Service** — requiere convenio/ser cliente TCT (contacto tct@copec.cl). Sin apuro: el import CSV de reportes TCT ya funciona.
 14. **Indicadores previsionales para RRHH** (UF/UTM/topes/tasas AFP) — mindicador.cl es gratis y sin key para UF/UTM; las tasas AFP/topes se mantienen como tabla editable (sin API oficial). Se decide en el diseño de la Fase 3.
+15. **Meta WhatsApp Business Cloud API** — cuenta WhatsApp Business + número + credenciales de la app (Plan 21): `PROVEEDOR_WHATSAPP=cloud` con `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_ID` / `WHATSAPP_VERIFY_TOKEN` / `WHATSAPP_APP_SECRET`, más plantillas HSM aprobadas para el saliente business-initiated. Adaptador, firma y webhook ya construidos; el simulador /mock-whatsapp cubre todo el flujo mientras tanto.

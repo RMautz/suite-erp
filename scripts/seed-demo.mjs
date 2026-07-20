@@ -544,6 +544,47 @@ const { error: eVac } = await userCli.from('vacaciones_tomadas').insert({
 if (eVac) die('vacaciones_tomadas Amanda', eVac)
 console.log('✓ vacaciones: 1 toma de Amanda (5 días hábiles, 2026-06)')
 
+// 24) WhatsApp (Plan 21): vínculo VERIFICADO del dueño demo + conversación de ejemplo
+//     (goldens del MockMotor: menú y ventas) — el simulador nace con historia. El
+//     vínculo va por admin (whatsapp_vinculos no tiene INSERT para authenticated).
+const { data: { user: usuarioDemo } } = await userCli.auth.getUser()
+if (!usuarioDemo) die('auth.getUser dueño demo', null)
+const TEL_DEMO = '+56912345678'
+const { error: eWa } = await admin.from('whatsapp_vinculos').insert({
+  empresa_id: empresaId, usuario_id: usuarioDemo.id, telefono: TEL_DEMO, verificado_en: new Date().toISOString(),
+})
+if (eWa) die('whatsapp_vinculos', eWa)
+const MENU_WA = [
+  'Hola! Soy el asistente de tu ERP. Escríbeme un número o una palabra:',
+  '1. Ventas de hoy',
+  '2. Ventas del mes',
+  '3. Cobranza vencida',
+  '4. Stock crítico',
+  '5. Semáforo del auditor',
+  '6. Saldo de un cliente (escribe: saldo <nombre>)',
+  '7. Recordar una factura (escribe: recordar <folio>)',
+].join('\n')
+const conversacionWa = [
+  { direccion: 'entrante', contenido: 'hola' },
+  { direccion: 'saliente', contenido: MENU_WA },
+  { direccion: 'entrante', contenido: '1' },
+  { direccion: 'saliente', contenido: 'Ventas de hoy: $0 en 0 documento(s).' },
+]
+for (const m of conversacionWa) {
+  const { error: eMsg } = await admin.from('whatsapp_mensajes').insert({
+    empresa_id: empresaId, telefono: TEL_DEMO, direccion: m.direccion, origen: 'bot', contenido: m.contenido,
+  })
+  if (eMsg) die('whatsapp_mensajes', eMsg)
+}
+// Teléfonos E.164 para el botón WhatsApp de /cobranza (clientes con facturas vencidas).
+const { error: eTel1 } = await userCli.from('clientes').update({ telefono: '+56987654321' })
+  .eq('empresa_id', empresaId).eq('rut', '772506309')
+if (eTel1) die('telefono Comercial del Sur', eTel1)
+const { error: eTel2 } = await userCli.from('clientes').update({ telefono: '+56976543210' })
+  .eq('empresa_id', empresaId).eq('rut', '762222221')
+if (eTel2) die('telefono Transportes Cliente', eTel2)
+console.log('✓ whatsapp: vínculo del dueño (' + TEL_DEMO + ') + 4 mensajes + teléfonos E.164 de 2 clientes')
+
 // ----- Resumen de conteos -----
 const cuenta = async (tabla, filtros = {}) => {
   let q = admin.from(tabla).select('*', { count: 'exact', head: true }).eq('empresa_id', empresaId)
