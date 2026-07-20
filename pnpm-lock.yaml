@@ -69,6 +69,9 @@ importers:
       '@suite/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@suite/bot':
+        specifier: workspace:*
+        version: link:../../packages/bot
       '@suite/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -87,6 +90,12 @@ importers:
       '@suite/ui':
         specifier: workspace:^
         version: link:../../packages/ui
+      '@suite/whatsapp':
+        specifier: workspace:*
+        version: link:../../packages/whatsapp
+      '@supabase/supabase-js':
+        specifier: ^2.47.0
+        version: 2.110.1
       '@tailwindcss/postcss':
         specifier: ^4.3.2
         version: 4.3.2

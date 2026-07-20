@@ -3,15 +3,19 @@
 import { revalidatePath } from 'next/cache'
 import { crearClienteServidor } from '@suite/auth/server'
 import {
-  correoPorAmbiente,
   plantillaCotizacion,
   plantillaDocumento,
   plantillaProforma,
   plantillaRecordatorio,
-  type Mensaje,
   type ProveedorCorreo,
 } from '@suite/correo'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
+import {
+  enviarRecordatorioDocumento,
+  enviarYRegistrar,
+  hace3Dias,
+  proveedorCorreoConfigurado,
+} from '../../lib/recordatorio'
 
 // Estados type-only (permitidos en un archivo 'use server': se borran al compilar).
 export type EstadoCorreo = { error?: string; ok?: boolean }
@@ -21,20 +25,6 @@ type Supa = Awaited<ReturnType<typeof crearClienteServidor>>
 
 const NO_CONFIGURADO = 'El correo no está configurado'
 const SIN_EMAIL = 'El cliente no tiene correo registrado'
-const ANTISPAM = 'Ya se envió un recordatorio hace menos de 3 días'
-
-// Fail-closed (spec §4): solo 'mock' | 'resend'. El throw del selector (resend sin
-// apiKey/remitente, u otro valor) se traga aquí y se vuelve el mensaje contractual —
-// jamás llega un detalle del proveedor al usuario. PROHIBIDO el `?? 'mock'` de pagos.
-function proveedorConfigurado(): ProveedorCorreo | null {
-  const perilla = process.env.PROVEEDOR_CORREO
-  if (perilla !== 'mock' && perilla !== 'resend') return null
-  try {
-    return correoPorAmbiente(perilla, process.env.RESEND_API_KEY, process.env.CORREO_REMITENTE)
-  } catch {
-    return null
-  }
-}
 
 // Prefijo común del ORDEN ESTRICTO: env fail-closed → rol EXPLÍCITO dueno/admin/vendedor
 // (patrón guard de combustible/importar.ts: getUser + query miembros; el RLS del insert es
@@ -44,7 +34,7 @@ async function guardCorreo(
   supabase: Supa,
   organizacionId: string,
 ): Promise<{ error: string } | { proveedor: ProveedorCorreo }> {
-  const proveedor = proveedorConfigurado()
+  const proveedor = proveedorCorreoConfigurado()
   if (!proveedor) return { error: NO_CONFIGURADO }
   const {
     data: { user },
@@ -62,41 +52,6 @@ async function guardCorreo(
     return { error: 'Tu rol no permite enviar correos' }
   }
   return { proveedor }
-}
-
-// enviar() + registro DRY (spec §5): SOLO éxitos se registran — si enviar() lanza, NO hay
-// fila y la action devuelve error. El insert directo replica el patrón documentos_compra; el
-// rol ya está verificado, así que su fallo es excepcional (no un envío silencioso sin log).
-async function enviarYRegistrar(
-  supabase: Supa,
-  proveedor: ProveedorCorreo,
-  empresaId: string,
-  tipo: 'cotizacion' | 'proforma' | 'documento' | 'recordatorio',
-  referenciaId: string,
-  mensaje: Mensaje,
-): Promise<{ error: string } | { ok: true }> {
-  let proveedorId: string
-  try {
-    proveedorId = (await proveedor.enviar(mensaje)).id
-  } catch {
-    return { error: 'No se pudo enviar el correo. Intenta de nuevo.' }
-  }
-  const { error } = await supabase.from('correos_enviados').insert({
-    empresa_id: empresaId,
-    tipo,
-    referencia_id: referenciaId,
-    para: mensaje.para,
-    asunto: mensaje.asunto,
-    proveedor_id: proveedorId,
-    html: mensaje.html,
-  })
-  if (error) return { error: 'El correo se envió pero no se pudo registrar el envío.' }
-  return { ok: true }
-}
-
-// Ventana anti-spam de recordatorios (spec §2): now() - 3 días como ISO.
-function hace3Dias(): string {
-  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
 }
 
 // ---------- 1) Cotización ----------
@@ -253,51 +208,15 @@ export async function enviarRecordatorio(_prev: EstadoCorreo, formData: FormData
   const guard = await guardCorreo(supabase, activa.organizacion_id)
   if ('error' in guard) return guard
 
-  const { data: fila } = await supabase
-    .from('saldos_documentos')
-    .select('documento_id, tipo, folio, total, saldo, fecha_vencimiento, cliente_id, cliente_razon_social')
-    .eq('empresa_id', activa.id)
-    .eq('documento_id', documentoId)
-    .maybeSingle()
-  if (!fila || !fila.documento_id) return { error: 'La factura no existe o no tiene saldo' }
-  const hoy = new Date().toISOString().slice(0, 10)
-  if ((fila.saldo ?? 0) <= 0 || !fila.fecha_vencimiento || fila.fecha_vencimiento >= hoy) {
-    return { error: 'La factura no está vencida con saldo pendiente' }
-  }
-
-  // Anti-spam (spec §2): un recordatorio del mismo documento en < 3 días bloquea.
-  const { data: reciente } = await supabase
-    .from('correos_enviados')
-    .select('id')
-    .eq('empresa_id', activa.id)
-    .eq('tipo', 'recordatorio')
-    .eq('referencia_id', documentoId)
-    .gte('creado_en', hace3Dias())
-    .limit(1)
-    .maybeSingle()
-  if (reciente) return { error: ANTISPAM }
-
-  if (!fila.cliente_id) return { error: SIN_EMAIL }
-  const { data: cliente } = await supabase
-    .from('clientes')
-    .select('email')
-    .eq('empresa_id', activa.id)
-    .eq('id', fila.cliente_id)
-    .maybeSingle()
-  const email = cliente?.email
-  if (!email) return { error: SIN_EMAIL }
-
-  const { asunto, html } = plantillaRecordatorio({
-    empresa: { razonSocial: activa.razon_social, rut: activa.rut },
-    clienteRazonSocial: fila.cliente_razon_social ?? '',
-    tipo: fila.tipo === 'boleta' ? 'boleta' : 'factura',
-    folio: fila.folio ?? 0,
-    total: fila.total ?? 0,
-    saldo: fila.saldo ?? 0,
-    fechaVencimiento: new Date(fila.fecha_vencimiento).toLocaleDateString('es-CL'),
-  })
-  const resultado = await enviarYRegistrar(supabase, guard.proveedor, activa.id, 'recordatorio', documentoId, { para: email, asunto, html })
-  if ('error' in resultado) return resultado
+  // Nucleo compartido con la herramienta recordarFactura del bot (P21): vencida,
+  // anti-spam 3 dias, plantilla, envio+log. Aqui solo guard de rol y revalidate.
+  const resultado = await enviarRecordatorioDocumento(
+    supabase,
+    guard.proveedor,
+    { id: activa.id, razonSocial: activa.razon_social, rut: activa.rut },
+    documentoId,
+  )
+  if ('error' in resultado) return { error: resultado.error }
   revalidatePath('/cobranza')
   return { ok: true }
 }
