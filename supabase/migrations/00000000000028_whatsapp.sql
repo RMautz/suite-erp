@@ -69,7 +69,7 @@ create policy "duenos registran mensajes whatsapp" on public.whatsapp_mensajes
 
 -- ---------- Grants Data API (leccion 0001: sin esto todo da 42501) ----------
 -- Grant POR COLUMNAS (hallazgo review T3): codigo y codigo_expira NO son legibles por
--- authenticated — si lo fueran, un dueno/admin podria leer el OTP via PostgREST y
+-- authenticated - si lo fueran, un dueno/admin podria leer el OTP via PostgREST y
 -- confirmar un telefono que no posee. La action lee el codigo con el admin client.
 grant select (id, empresa_id, usuario_id, telefono, verificado_en, activo, creado_en)
   on public.whatsapp_vinculos to authenticated;
