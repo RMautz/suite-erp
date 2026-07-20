@@ -799,3 +799,226 @@ revoke execute on function public.revision_periodo(uuid, integer, integer) from 
 grant execute on function public.revision_periodo(uuid, integer, integer) to authenticated;
 
 -- ===== RPCs de finiquitos (Task 2) =====
+-- ================== Finiquitos: RPCs (Task 2) ==================
+-- security definer + set search_path = public. emitir NO crea asientos y
+-- anular NO revierte asientos (hooks nunca-lanza de la Server Action, patron
+-- P18) => ninguna toma el advisory lock del correlativo. La carrera de doble
+-- emision la cierra el unique parcial de finiquitos (backstop 23505 ->
+-- mensaje contractual); la de reactivacion, contratos_vigente_idx.
+
+-- ---------- Emitir finiquito (calculo AUTORITATIVO, spec SS3) ----------
+-- Orden de validacion (spec SS3.7 + guard de los lentes): rol -> contrato
+-- vigente -> indicadores -> duplicado -> termino anterior al primer contrato.
+-- p_fecha_termino null => periodo null => 0 filas de indicadores =>
+-- mismo mensaje (fail-closed). Una causal fuera del catalogo la rechaza el
+-- CHECK de la tabla (backstop; el select de la UI no la produce).
+-- La formula de vacaciones VIVE aqui (spec SS2.4): primer contrato via
+-- min(fecha_inicio) sobre TODOS los contratos del trabajador (continuidad
+-- laboral) y suma de vacaciones_tomadas. El feriado usa el sueldo_base VIGENTE
+-- SIN tope 90 UF; las indemnizaciones usan la base topada.
+create or replace function public.emitir_finiquito(
+  p_empresa uuid, p_trabajador uuid, p_causal text, p_fecha_termino date,
+  p_aviso_dado boolean, p_otros_haberes integer, p_otros_descuentos integer,
+  p_comentario text
+)
+returns uuid
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_con record;
+  v_ind record;
+  v_periodo text;
+  v_aviso boolean := coalesce(p_aviso_dado, false);
+  v_haberes integer := coalesce(p_otros_haberes, 0);
+  v_descuentos integer := coalesce(p_otros_descuentos, 0);
+  v_comentario text := nullif(trim(coalesce(p_comentario, '')), '');
+  v_inicio date;
+  v_edad interval;
+  v_anos integer;
+  v_base integer;
+  v_indem_anos integer;
+  v_indem_aviso integer;
+  v_meses integer;
+  v_devengados numeric(6, 2);
+  v_tomados numeric;
+  v_feriado_dias numeric(6, 2);
+  v_feriado_monto integer;
+  v_total integer;
+  v_id uuid;
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite emitir finiquitos';
+  end if;
+
+  -- Contrato vigente (a lo mas uno: contratos_vigente_idx). Mensaje P18.
+  select * into v_con
+  from contratos
+  where empresa_id = p_empresa and trabajador_id = p_trabajador and vigente;
+  if not found then
+    raise exception 'El trabajador no tiene contrato vigente';
+  end if;
+
+  -- Indicadores del periodo de TERMINO (la UF del tope 90 UF sale de aqui).
+  v_periodo := to_char(p_fecha_termino, 'YYYY-MM');
+  select * into v_ind from indicadores_previsionales where periodo = v_periodo;
+  if not found then
+    raise exception 'No hay indicadores previsionales para el período';
+  end if;
+
+  -- Chequeo amable ANTES de calcular; el unique parcial es el backstop atomico.
+  if exists (
+    select 1 from finiquitos
+    where empresa_id = p_empresa and contrato_id = v_con.id and estado <> 'anulado'
+  ) then
+    raise exception 'Ya existe un finiquito para este contrato';
+  end if;
+
+  -- SS3.1: anos de servicio desde el PRIMER contrato (continuidad laboral);
+  -- fraccion > 6 meses (m > 6, o m = 6 con dias sobrantes) suma 1; tope 11.
+  select min(fecha_inicio) into v_inicio
+  from contratos
+  where empresa_id = p_empresa and trabajador_id = p_trabajador;
+  -- Guard de fechas (lentes): un termino anterior al primer contrato daria
+  -- age() negativo -> anos negativos en el snapshot o aviso pagado sin devengo.
+  if p_fecha_termino < v_inicio then
+    raise exception 'La fecha de término no puede ser anterior al inicio del primer contrato';
+  end if;
+  v_edad := age(p_fecha_termino, v_inicio);
+  v_anos := extract(year from v_edad)::integer;
+  if extract(month from v_edad)::integer > 6
+     or (extract(month from v_edad)::integer = 6 and extract(day from v_edad)::integer > 0) then
+    v_anos := v_anos + 1;
+  end if;
+  v_anos := least(v_anos, 11);
+
+  -- SS3.2: base topada en 90 UF del periodo de termino.
+  v_base := least(v_con.sueldo_base, round(90 * v_ind.uf)::integer);
+
+  -- SS3.3-3.4: indemnizaciones solo por necesidades de la empresa; el aviso
+  -- omitido agrega un mes de la base topada.
+  if p_causal = 'necesidades_empresa' then
+    v_indem_anos := v_base * v_anos;
+    v_indem_aviso := case when v_aviso then 0 else v_base end;
+  else
+    v_indem_anos := 0;
+    v_indem_aviso := 0;
+  end if;
+
+  -- SS2.4 + SS3.5: feriado proporcional. meses COMPLETOS (los dias sobrantes
+  -- no cuentan) x 1.25, menos los dias tomados; nunca negativo. El monto usa
+  -- el sueldo_base VIGENTE sin tope (simplificacion v1 declarada en el spec:
+  -- sin conversion habiles->corridos ni cotizaciones sobre el feriado).
+  v_meses := extract(year from v_edad)::integer * 12 + extract(month from v_edad)::integer;
+  v_devengados := round(v_meses * 1.25, 2);
+  select coalesce(sum(dias_habiles), 0) into v_tomados
+  from vacaciones_tomadas
+  where empresa_id = p_empresa and trabajador_id = p_trabajador;
+  v_feriado_dias := greatest(v_devengados - v_tomados, 0);
+  v_feriado_monto := round(v_con.sueldo_base::numeric * v_feriado_dias / 30)::integer;
+
+  -- SS3.6: total + guard fail-closed.
+  v_total := v_indem_anos + v_indem_aviso + v_feriado_monto + v_haberes - v_descuentos;
+  if v_total < 0 then
+    raise exception 'El total del finiquito no puede ser negativo: revisa los descuentos';
+  end if;
+
+  -- SS3.7: efectos atomicos + snapshot completo. Un raise posterior (backstop
+  -- 23505) revierte tambien estos updates: la RPC es una sola sentencia.
+  update contratos set vigente = false
+  where empresa_id = p_empresa and id = v_con.id;
+  update trabajadores set activo = false
+  where empresa_id = p_empresa and id = p_trabajador;
+
+  begin
+    insert into finiquitos (
+      empresa_id, trabajador_id, contrato_id, causal, fecha_termino, aviso_dado,
+      estado, otros_haberes, otros_descuentos, comentario,
+      sueldo_base, anos_servicio, indemnizacion_anos, indemnizacion_aviso,
+      feriado_dias, feriado_monto, total, uf, emitido_en)
+    values (
+      p_empresa, p_trabajador, v_con.id, p_causal, p_fecha_termino, v_aviso,
+      'emitido', v_haberes, v_descuentos, v_comentario,
+      v_con.sueldo_base, v_anos, v_indem_anos, v_indem_aviso,
+      v_feriado_dias, v_feriado_monto, v_total, v_ind.uf, now())
+    returning id into v_id;
+  exception when unique_violation then
+    raise exception 'Ya existe un finiquito para este contrato';
+  end;
+  return v_id;
+end $$;
+revoke execute on function public.emitir_finiquito(uuid, uuid, text, date, boolean, integer, integer, text) from anon, public;
+grant execute on function public.emitir_finiquito(uuid, uuid, text, date, boolean, integer, integer, text) to authenticated;
+
+-- ---------- Pagar finiquito (mismos roles; emitido -> pagado) ----------
+-- El update re-evalua el estado bajo el row lock: dos pagos concurrentes dejan
+-- al segundo con 0 filas -> mensaje contractual (patron 0025).
+create or replace function public.pagar_finiquito(p_empresa uuid, p_finiquito uuid)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite emitir finiquitos';
+  end if;
+  update finiquitos
+  set estado = 'pagado', pagado_en = now()
+  where id = p_finiquito and empresa_id = p_empresa and estado = 'emitido';
+  if not found then
+    raise exception 'Solo se puede pagar un finiquito emitido';
+  end if;
+end $$;
+revoke execute on function public.pagar_finiquito(uuid, uuid) from anon, public;
+grant execute on function public.pagar_finiquito(uuid, uuid) to authenticated;
+
+-- ---------- Anular finiquito (emitido O pagado -> anulado; REACTIVA) ----------
+-- Reactiva contrato (vigente = true) y trabajador (activo = true) validando
+-- ANTES que el puesto siga libre; contratos_vigente_idx es el backstop atomico
+-- de la carrera contrato-nuevo-vs-anulacion (23505). La reversa contable NO va
+-- aqui (hook nunca-lanza, patron 0025). Tras anular, el unique parcial libera
+-- el contrato y se puede volver a emitir.
+create or replace function public.anular_finiquito(
+  p_empresa uuid, p_finiquito uuid, p_motivo text
+)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_motivo text;
+  v_fin record;
+begin
+  if not app.tiene_rol_en_empresa(p_empresa, array['dueno', 'admin', 'contador']) then
+    raise exception 'Tu rol no permite emitir finiquitos';
+  end if;
+  v_motivo := nullif(trim(coalesce(p_motivo, '')), '');
+  if v_motivo is null then
+    raise exception 'Indica el motivo de la anulación';
+  end if;
+  -- Row lock: dos anulaciones concurrentes dejan a la segunda leyendo
+  -- 'anulado' bajo el lock -> mensaje contractual.
+  select * into v_fin
+  from finiquitos
+  where id = p_finiquito and empresa_id = p_empresa
+  for update;
+  if not found or v_fin.estado not in ('emitido', 'pagado') then
+    raise exception 'Solo se puede anular un finiquito emitido o pagado';
+  end if;
+  if exists (
+    select 1 from contratos
+    where empresa_id = p_empresa and trabajador_id = v_fin.trabajador_id
+      and vigente and id <> v_fin.contrato_id
+  ) then
+    raise exception 'El trabajador ya tiene otro contrato vigente';
+  end if;
+  update finiquitos
+  set estado = 'anulado', anulado_en = now(), motivo_anulacion = v_motivo
+  where id = p_finiquito and empresa_id = p_empresa;
+  update contratos set vigente = true
+  where empresa_id = p_empresa and id = v_fin.contrato_id;
+  update trabajadores set activo = true
+  where empresa_id = p_empresa and id = v_fin.trabajador_id;
+end $$;
+revoke execute on function public.anular_finiquito(uuid, uuid, text) from anon, public;
+grant execute on function public.anular_finiquito(uuid, uuid, text) to authenticated;
