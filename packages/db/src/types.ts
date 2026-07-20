@@ -2894,6 +2894,91 @@ export type Database = {
           },
         ]
       }
+      whatsapp_mensajes: {
+        Row: {
+          contenido: string
+          creado_en: string
+          direccion: string
+          empresa_id: string
+          id: string
+          origen: string
+          referencia_id: string | null
+          telefono: string
+        }
+        Insert: {
+          contenido: string
+          creado_en?: string
+          direccion: string
+          empresa_id: string
+          id?: string
+          origen: string
+          referencia_id?: string | null
+          telefono: string
+        }
+        Update: {
+          contenido?: string
+          creado_en?: string
+          direccion?: string
+          empresa_id?: string
+          id?: string
+          origen?: string
+          referencia_id?: string | null
+          telefono?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_mensajes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_vinculos: {
+        Row: {
+          activo: boolean
+          codigo: string | null
+          codigo_expira: string | null
+          creado_en: string
+          empresa_id: string
+          id: string
+          telefono: string
+          usuario_id: string
+          verificado_en: string | null
+        }
+        Insert: {
+          activo?: boolean
+          codigo?: string | null
+          codigo_expira?: string | null
+          creado_en?: string
+          empresa_id: string
+          id?: string
+          telefono: string
+          usuario_id: string
+          verificado_en?: string | null
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string | null
+          codigo_expira?: string | null
+          creado_en?: string
+          empresa_id?: string
+          id?: string
+          telefono?: string
+          usuario_id?: string
+          verificado_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_vinculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       libro_compras: {
@@ -3208,6 +3293,10 @@ export type Database = {
         Args: { p_monto: number; p_pago: string; p_referencia: string }
         Returns: string
       }
+      confirmar_vinculo_whatsapp: {
+        Args: { p_codigo: string; p_empresa: string; p_vinculo: string }
+        Returns: undefined
+      }
       contabilizar_documento: {
         Args: { p_empresa: string; p_origen: string; p_referencia: string }
         Returns: string
@@ -3299,6 +3388,10 @@ export type Database = {
       }
       desactivar_contabilidad: {
         Args: { p_empresa: string }
+        Returns: undefined
+      }
+      desvincular_whatsapp: {
+        Args: { p_empresa: string; p_vinculo: string }
         Returns: undefined
       }
       emitir_finiquito: {
@@ -3462,6 +3555,19 @@ export type Database = {
       revision_periodo: {
         Args: { p_anio: number; p_empresa: string; p_mes: number }
         Returns: Json
+      }
+      semaforo_whatsapp: {
+        Args: {
+          p_anio: number
+          p_empresa: string
+          p_mes: number
+          p_usuario: string
+        }
+        Returns: Json
+      }
+      solicitar_vinculo_whatsapp: {
+        Args: { p_empresa: string; p_telefono: string }
+        Returns: string
       }
       tomar_folio: {
         Args: { p_empresa: string; p_tipo: string }
