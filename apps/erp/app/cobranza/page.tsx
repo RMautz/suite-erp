@@ -3,10 +3,12 @@ import { crearClienteServidor } from '@suite/auth/server'
 import { estaVencido, formatearCLP, formatearNumeroProforma } from '@suite/core'
 import { Boton, Encabezado, Insignia, Selector, Tabla, Td, Th, Tr } from '@suite/ui'
 import { BotonRecordar, BotonRecordarTodas } from '../../componentes/boton-enviar-correo'
+import { BotonWhatsApp } from '../../componentes/boton-whatsapp'
 import { FormularioAplicarAnticipo } from '../../componentes/formulario-aplicar-anticipo'
 import { obtenerEmpresaActiva } from '../../lib/empresa-activa'
 import { aplicarAnticipoManual } from './acciones'
 import { enviarRecordatorio, enviarRecordatorios } from '../correo/acciones'
+import { recordarPorWhatsApp } from './acciones-whatsapp'
 
 const HOY = () => new Date().toISOString().slice(0, 10)
 
@@ -20,7 +22,7 @@ export default async function PaginaCobranza({
   if (!activa) return <Encabezado titulo="Sin empresa activa" />
   const supabase = await crearClienteServidor()
   const [{ data: clientes }, consultaSaldos] = await Promise.all([
-    supabase.from('clientes').select('id, razon_social').eq('empresa_id', activa.id).eq('activo', true).order('razon_social'),
+    supabase.from('clientes').select('id, razon_social, telefono').eq('empresa_id', activa.id).eq('activo', true).order('razon_social'),
     (() => {
       let q = supabase
         .from('saldos_documentos')
@@ -35,6 +37,7 @@ export default async function PaginaCobranza({
   ])
   const hoy = HOY()
   let filas = consultaSaldos.data ?? []
+  const telefonoPorCliente = new Map((clientes ?? []).map((c) => [c.id, c.telefono]))
   if (vencidas === '1') filas = filas.filter((f) => estaVencido(f.fecha_vencimiento, hoy, f.saldo ?? 0))
   const porCobrar = filas.reduce((s, f) => s + Math.max(0, f.saldo ?? 0), 0)
   const vencido = filas.filter((f) => estaVencido(f.fecha_vencimiento, hoy, f.saldo ?? 0)).reduce((s, f) => s + (f.saldo ?? 0), 0)
@@ -65,20 +68,49 @@ export default async function PaginaCobranza({
   // ---- Recordatorios enviados: el último por factura (para el "Recordado el X" junto al
   // botón) y los 20 más recientes para la sección de auditoría. Ordenado desc: la primera
   // aparición de cada documento en el Map es la más reciente.
-  const { data: recordatorios } = await supabase
-    .from('correos_enviados')
-    .select('id, referencia_id, para, asunto, creado_en')
-    .eq('empresa_id', activa.id)
-    .eq('tipo', 'recordatorio')
-    .order('creado_en', { ascending: false })
-    .limit(200)
+  const [{ data: recordatorios }, { data: recordatoriosWa }] = await Promise.all([
+    supabase
+      .from('correos_enviados')
+      .select('id, referencia_id, para, asunto, creado_en')
+      .eq('empresa_id', activa.id)
+      .eq('tipo', 'recordatorio')
+      .order('creado_en', { ascending: false })
+      .limit(200),
+    supabase
+      .from('whatsapp_mensajes')
+      .select('id, referencia_id, telefono, contenido, creado_en')
+      .eq('empresa_id', activa.id)
+      .eq('origen', 'cobranza')
+      .order('creado_en', { ascending: false })
+      .limit(200),
+  ])
   const listaRecordatorios = recordatorios ?? []
   const ultimoRecordatorio = new Map<string, string>()
   for (const r of listaRecordatorios) {
     if (!ultimoRecordatorio.has(r.referencia_id)) ultimoRecordatorio.set(r.referencia_id, r.creado_en)
   }
-  const recientes = listaRecordatorios.slice(0, 20)
-  const idsRecordados = [...new Set(recientes.map((r) => r.referencia_id))]
+  // Ambos canales en una sola lista con etiqueta (spec §6); 20 mas recientes.
+  const recientes = [
+    ...listaRecordatorios.map((r) => ({
+      id: r.id,
+      canal: 'correo' as const,
+      referencia_id: r.referencia_id,
+      destinatario: r.para,
+      resumen: r.asunto,
+      creado_en: r.creado_en,
+    })),
+    ...(recordatoriosWa ?? []).map((r) => ({
+      id: r.id,
+      canal: 'whatsapp' as const,
+      referencia_id: r.referencia_id ?? '',
+      destinatario: r.telefono,
+      resumen: r.contenido,
+      creado_en: r.creado_en,
+    })),
+  ]
+    .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))
+    .slice(0, 20)
+  const idsRecordados = [...new Set(recientes.map((r) => r.referencia_id).filter(Boolean))]
   const { data: docsRecordados } = await supabase
     .from('documentos_venta')
     .select('id, tipo, folio')
@@ -152,6 +184,9 @@ export default async function PaginaCobranza({
                     {venc && f.documento_id && (
                       <BotonRecordar accion={enviarRecordatorio} documentoId={f.documento_id} />
                     )}
+                    {venc && f.documento_id && f.cliente_id && telefonoPorCliente.get(f.cliente_id) && (
+                      <BotonWhatsApp accion={recordarPorWhatsApp} documentoId={f.documento_id} />
+                    )}
                   </div>
                 </Td>
               </Tr>
@@ -192,18 +227,23 @@ export default async function PaginaCobranza({
       <section className="mt-10">
         <h2 className="mb-3 text-lg font-semibold text-slate-800">Recordatorios enviados</h2>
         <Tabla>
-          <thead><tr><Th>Fecha</Th><Th>Documento</Th><Th>Destinatario</Th><Th>Asunto</Th><Th /></tr></thead>
+          <thead><tr><Th>Fecha</Th><Th>Canal</Th><Th>Documento</Th><Th>Destinatario</Th><Th>Mensaje</Th><Th /></tr></thead>
           <tbody>
             {recientes.map((r) => (
-              <Tr key={r.id}>
+              <Tr key={`${r.canal}-${r.id}`}>
                 <Td>{new Date(r.creado_en).toLocaleDateString('es-CL')}</Td>
-                <Td>{mapaDocRecordado.get(r.referencia_id) ?? '—'}</Td>
-                <Td>{r.para}</Td>
-                <Td className="max-w-md truncate">{r.asunto}</Td>
-                <Td className="text-right"><Link className="text-sm text-marca-700 hover:underline" href={`/correo/${r.id}`}>Ver</Link></Td>
+                <Td>{r.canal === 'correo' ? 'Correo' : 'WhatsApp'}</Td>
+                <Td>{r.referencia_id ? (mapaDocRecordado.get(r.referencia_id) ?? '—') : '—'}</Td>
+                <Td>{r.destinatario}</Td>
+                <Td className="max-w-md truncate">{r.resumen}</Td>
+                <Td className="text-right">
+                  {r.canal === 'correo' && (
+                    <Link className="text-sm text-marca-700 hover:underline" href={`/correo/${r.id}`}>Ver</Link>
+                  )}
+                </Td>
               </Tr>
             ))}
-            {recientes.length === 0 && <Tr><Td colSpan={5} className="py-8 text-center text-slate-500">Aún no se envían recordatorios.</Td></Tr>}
+            {recientes.length === 0 && <Tr><Td colSpan={6} className="py-8 text-center text-slate-500">Aún no se envían recordatorios.</Td></Tr>}
           </tbody>
         </Tabla>
       </section>
