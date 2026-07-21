@@ -21,6 +21,11 @@ export async function solicitarRecuperacion(_prev: EstadoRecuperar, formData: Fo
   const proto = h.get('x-forwarded-proto') ?? 'http'
 
   const supabase = await crearClienteServidor()
+  // Purga preventiva de sesion rancia (bug cazado en E2E): con un refresh token muerto
+  // en cookies, el purge automatico del cliente ssr puede llevarse el code-verifier
+  // recien emitido si corre despues del reset. getUser() fuerza ese purge AHORA; una
+  // sesion valida queda intacta.
+  await supabase.auth.getUser()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${proto}://${host}/auth/confirm`,
   })
