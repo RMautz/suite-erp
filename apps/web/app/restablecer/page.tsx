@@ -92,7 +92,12 @@ export default function PaginaRestablecer() {
         <div className="text-center" style={{ animation: 'exito-pop .45s ease-out' }}>
           <BadgeIcono icono="check" tono="verde" />
           <h1 className="mt-4 text-xl font-semibold text-slate-900">Contraseña actualizada</h1>
-          <p className="mt-2 text-sm text-slate-600">Entrando a tu ERP…</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Entrando a tu ERP…{' '}
+            <a href={process.env.NEXT_PUBLIC_URL_ERP} className="font-semibold text-marca-700 hover:underline">
+              o entra aquí
+            </a>
+          </p>
         </div>
       </MarcoRecuperacion>
     )
