@@ -64,6 +64,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
           <div className="print:hidden">
             <BarraLateral
               titulo="Suite ERP"
+              tituloHref={process.env.NEXT_PUBLIC_URL_WEB ?? '/'}
               items={nav}
               pie={
                 <div className="grid gap-2">
