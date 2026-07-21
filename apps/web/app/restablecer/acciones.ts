@@ -1,8 +1,9 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { crearClienteServidor } from '@suite/auth/server'
-import type { EstadoForm } from '../tipos'
+
+// Estado type-only (permitido en 'use server': se borra al compilar).
+export type EstadoRestablecer = { error?: string; ok?: boolean }
 
 // La sesión de recuperación la dejó /auth/confirm; sin ella (enlace viejo, cookie
 // borrada) el cambio se rechaza. Misma regla de largo y mensaje que el registro.
@@ -11,7 +12,7 @@ import type { EstadoForm } from '../tipos'
 // off) y el vector exige una máquina desbloqueada con sesión activa, donde el atacante
 // ya ve todos los datos. Upgrade path si se endurece: secure_password_change=true en
 // GoTrue, o exigir factor 'recovery' en el AMR del JWT antes de updateUser.
-export async function cambiarPassword(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
+export async function cambiarPassword(_prev: EstadoRestablecer, formData: FormData): Promise<EstadoRestablecer> {
   const password = String(formData.get('password') ?? '')
   const confirmar = String(formData.get('confirmar') ?? '')
   if (password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres' }
@@ -29,5 +30,6 @@ export async function cambiarPassword(_prev: EstadoForm, formData: FormData): Pr
     console.error('cambiarPassword:', error.message)
     return { error: 'No se pudo cambiar la contraseña. Inténtalo de nuevo.' }
   }
-  redirect(process.env.NEXT_PUBLIC_URL_ERP!)
+  // El exito lo celebra el cliente (check animado) y navega al ERP (spec §3).
+  return { ok: true }
 }
