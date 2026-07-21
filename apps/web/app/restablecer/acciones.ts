@@ -6,6 +6,11 @@ import type { EstadoForm } from '../tipos'
 
 // La sesión de recuperación la dejó /auth/confirm; sin ella (enlace viejo, cookie
 // borrada) el cambio se rechaza. Misma regla de largo y mensaje que el registro.
+// Decisión explícita (review 2026-07-20): CUALQUIER sesión viva puede cambiar la
+// contraseña aquí sin la anterior — es el default de Supabase (secure_password_change
+// off) y el vector exige una máquina desbloqueada con sesión activa, donde el atacante
+// ya ve todos los datos. Upgrade path si se endurece: secure_password_change=true en
+// GoTrue, o exigir factor 'recovery' en el AMR del JWT antes de updateUser.
 export async function cambiarPassword(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
   const password = String(formData.get('password') ?? '')
   const confirmar = String(formData.get('confirmar') ?? '')

@@ -73,6 +73,11 @@ O simplemente abre una terminal nueva.
 2. Esperar a que el proyecto termine de aprovisionar (unos minutos).
 3. Anotar el **project ref** (visible en la URL del dashboard,
    `https://supabase.com/dashboard/project/<ref>`, y en Settings → General).
+4. **Recuperación de contraseña** (Authentication → URL Configuration): agregar
+   `https://<dominio-web>/auth/confirm` a **Redirect URLs** (la lista es exacta).
+   Si falta, GoTrue descarta el `redirectTo` y el correo de recuperación sale
+   apuntando al Site URL sin `/auth/confirm` — el flujo falla en silencio (el
+   usuario ve el éxito genérico pero el enlace no restablece).
 
 ### 2.2 Vincular y aplicar migraciones
 
