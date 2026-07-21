@@ -20,7 +20,9 @@ export function BarraLateral({
   const ruta = usePathname()
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-marca-950 text-white">
-      <div className="px-4 py-5 text-lg font-semibold">{titulo}</div>
+      <Link href="/" className="block px-4 py-5 text-lg font-semibold transition-colors hover:text-marca-200">
+        {titulo}
+      </Link>
       <nav className="nav-scroll flex-1 space-y-1 overflow-y-auto px-2 pb-4">
         {items.map((item) => {
           if ('seccion' in item) {
