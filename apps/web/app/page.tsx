@@ -1,9 +1,27 @@
 import Link from 'next/link'
+import { crearClienteServidor } from '@suite/auth/server'
 import { Hero } from '../componentes/landing/hero'
 import { Modulos } from '../componentes/landing/modulos'
 import { Precios } from '../componentes/landing/precios'
+import { urlMiCuenta } from '../lib/plataforma'
 
-export default function Inicio() {
+// Con sesion viva la landing ofrece la vuelta a la plataforma ("Mi cuenta"). Leer
+// cookies vuelve la pagina dinamica: correcto, el saludo es por visitante. Cualquier
+// fallo de auth (token vencido, cookies rancias) degrada a la vista sin sesion.
+async function emailConSesion(): Promise<string | null> {
+  try {
+    const supabase = await crearClienteServidor()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    return user?.email ?? null
+  } catch {
+    return null
+  }
+}
+
+export default async function Inicio() {
+  const email = await emailConSesion()
   return (
     <main className="mx-auto max-w-6xl">
       <header className="flex items-center justify-between border-b border-slate-100 px-6 py-4 sm:px-10">
@@ -18,15 +36,29 @@ export default function Inicio() {
           <a href="#precios">Precios</a>
         </nav>
         <div className="flex items-center gap-3 text-sm">
-          <Link href="/login" className="font-semibold text-marca-700">
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/registro"
-            className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
-          >
-            Prueba gratis
-          </Link>
+          {email ? (
+            <>
+              <span className="hidden text-slate-500 sm:inline">{email}</span>
+              <a
+                href={urlMiCuenta(email)}
+                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
+              >
+                Mi cuenta →
+              </a>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="font-semibold text-marca-700">
+                Iniciar sesión
+              </Link>
+              <Link
+                href="/registro"
+                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
+              >
+                Prueba gratis
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
