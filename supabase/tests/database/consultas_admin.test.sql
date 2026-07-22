@@ -1,14 +1,15 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(12);
 
 -- ===== Fixtures (superuser, patron whatsapp.test.sql) =====
--- Ana duena de la org A; Beto dueno de la org B; Caro usuaria SIN organizacion.
+-- Ana duena y Vero vendedora de la org A; Beto dueno de la org B; Caro sin organizacion.
 insert into auth.users (instance_id, id, aud, role, email)
 values
   ('00000000-0000-0000-0000-000000000000', 'a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1', 'authenticated', 'authenticated', 'ana@consultas.cl'),
   ('00000000-0000-0000-0000-000000000000', 'b2b2b2b2-c0c0-c0c0-c0c0-b2b2b2b2b2b2', 'authenticated', 'authenticated', 'beto@consultas.cl'),
-  ('00000000-0000-0000-0000-000000000000', 'c3c3c3c3-c0c0-c0c0-c0c0-c3c3c3c3c3c3', 'authenticated', 'authenticated', 'caro@consultas.cl');
+  ('00000000-0000-0000-0000-000000000000', 'c3c3c3c3-c0c0-c0c0-c0c0-c3c3c3c3c3c3', 'authenticated', 'authenticated', 'caro@consultas.cl'),
+  ('00000000-0000-0000-0000-000000000000', 'd4d4d4d4-c0c0-c0c0-c0c0-d4d4d4d4d4d4', 'authenticated', 'authenticated', 'vero@consultas.cl');
 
 insert into public.organizaciones (id, rut, razon_social)
 values
@@ -18,7 +19,8 @@ values
 insert into public.miembros (usuario_id, organizacion_id, rol)
 values
   ('a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1', 'aaaaaaaa-c0c0-c0c0-c0c0-aaaaaaaaaaaa', 'dueno'),
-  ('b2b2b2b2-c0c0-c0c0-c0c0-b2b2b2b2b2b2', 'bbbbbbbb-c0c0-c0c0-c0c0-bbbbbbbbbbbb', 'dueno');
+  ('b2b2b2b2-c0c0-c0c0-c0c0-b2b2b2b2b2b2', 'bbbbbbbb-c0c0-c0c0-c0c0-bbbbbbbbbbbb', 'dueno'),
+  ('d4d4d4d4-c0c0-c0c0-c0c0-d4d4d4d4d4d4', 'aaaaaaaa-c0c0-c0c0-c0c0-aaaaaaaaaaaa', 'vendedor');
 
 -- ===== RPC =====
 -- 1) Ana crea una consulta.
@@ -65,6 +67,13 @@ select throws_ok(
   'asunto demasiado largo se rechaza'
 );
 
+-- 5b) Mensaje de mas de 5000 caracteres se rechaza (hallazgo review: rama sin test).
+select throws_ok(
+  $$select crear_consulta_admin('Asunto', repeat('m', 5001))$$,
+  'P0001', 'La consulta no puede superar los 5000 caracteres',
+  'mensaje demasiado largo se rechaza'
+);
+
 -- 6) Caro (sin organizacion) no puede consultar.
 set local request.jwt.claims to '{"sub": "c3c3c3c3-c0c0-c0c0-c0c0-c3c3c3c3c3c3", "role": "authenticated"}';
 select throws_ok(
@@ -82,12 +91,21 @@ select is(
   'otra organizacion no ve consultas ajenas'
 );
 
--- 8) Ana ve la consulta de su organizacion.
+-- 8) Ana (duena y autora) ve la consulta de su organizacion.
 set local request.jwt.claims to '{"sub": "a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1", "role": "authenticated"}';
 select is(
   (select count(*) from consultas_admin),
   1::bigint,
   'la organizacion autora ve su consulta'
+);
+
+-- 8b) Vero (vendedora de la MISMA org, no autora) ve 0: las consultas a plataforma
+--     hablan de facturacion — solo autor y dueno/admin (hallazgo review 2026-07-22).
+set local request.jwt.claims to '{"sub": "d4d4d4d4-c0c0-c0c0-c0c0-d4d4d4d4d4d4", "role": "authenticated"}';
+select is(
+  (select count(*) from consultas_admin),
+  0::bigint,
+  'un co-miembro sin rol admin no lee las consultas ajenas'
 );
 
 -- ===== Escritura directa: el grant es el candado =====

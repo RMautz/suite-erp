@@ -23,19 +23,15 @@ create index consultas_admin_estado_idx on public.consultas_admin (estado, cread
 -- ---------- RLS ----------
 alter table public.consultas_admin enable row level security;
 
--- Los miembros ACTIVOS de la organizacion ven sus consultas (y la respuesta del
--- admin). La subquery a miembros corre bajo la RLS de miembros: cada uno lee su
--- propia membresia, suficiente para el match.
-create policy "miembros ven consultas de su organizacion" on public.consultas_admin
+-- El AUTOR siempre ve las suyas; dueno/admin ven todas las de su organizacion
+-- (hallazgo review 2026-07-22: las consultas hablan de facturacion/suscripcion —
+-- un vendedor o conductor no tiene por que leer las del dueno). app.tiene_rol es
+-- security definer: sin RLS-sobre-RLS.
+create policy "autor y administradores ven consultas" on public.consultas_admin
   for select to authenticated
   using (
-    exists (
-      select 1
-      from public.miembros m
-      where m.organizacion_id = consultas_admin.organizacion_id
-        and m.usuario_id = auth.uid()
-        and m.estado = 'activo'
-    )
+    usuario_id = auth.uid()
+    or app.tiene_rol(consultas_admin.organizacion_id, array['dueno', 'admin'])
   );
 
 -- ---------- Grants Data API (leccion 0001) ----------

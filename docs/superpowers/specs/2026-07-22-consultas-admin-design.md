@@ -10,7 +10,7 @@ Canal tenant → plataforma: un usuario con cuenta escribe una consulta a la adm
 
 `id, organizacion_id → organizaciones, usuario_id, email, asunto, mensaje, estado check ('abierta','respondida','cerrada') default 'abierta', respuesta null, respondida_en null, creado_en`. Índices por `(organizacion_id, creado_en desc)` y `(estado, creado_en desc)`.
 
-- RLS SELECT: miembros ACTIVOS de la organización (subquery a `miembros` por `auth.uid()` — RLS de miembros permite leer la propia membresía).
+- RLS SELECT (endurecida por review 2026-07-22): el AUTOR siempre ve las suyas; `dueno`/`admin` de la organización ven todas las de su org (`app.tiene_rol`). Un vendedor/conductor NO lee consultas ajenas — hablan de facturación y suscripción.
 - Escritura de usuarios SOLO vía RPC (grant `select` a authenticated; el grant es el candado, patrón `whatsapp_vinculos`). Responder/cerrar es del admin vía service_role (apps/admin) — sin policies de update para authenticated.
 - RPC `crear_consulta_admin(p_asunto, p_mensaje) returns uuid` (security definer): trim + mensajes byte-exactos `Escribe un asunto` · `Escribe tu consulta` · `El asunto no puede superar los 200 caracteres` · `La consulta no puede superar los 5000 caracteres` · `Tu cuenta no tiene una organización`; toma organización y email de `auth.uid()`; revoke anon/public.
 
@@ -24,7 +24,7 @@ Canal tenant → plataforma: un usuario con cuenta escribe una consulta a la adm
 
 ## 4. Tests y verificación
 
-- pgTAP archivo 22 `consultas_admin.test.sql`, `plan(10)`: RPC feliz + estado inicial, asunto/mensaje vacíos, tope de largo, sin organización, RLS cross-org 0 filas, propio org visible, insert directo 42501, update directo 42501. Suite total: **458 + 10 = 468 en 22 archivos**.
+- pgTAP archivo 22 `consultas_admin.test.sql`, `plan(12)`: RPC feliz + estado inicial, asunto/mensaje vacíos, topes de largo (200 y 5000), sin organización, RLS cross-org 0 filas, propio org visible, co-miembro sin rol admin 0 filas, insert directo 42501, update directo 42501. Suite total: **458 + 12 = 470 en 22 archivos**.
 - E2E en vivo: demo crea consulta desde el menú → admin la responde en :3002 → demo ve la respuesta. Sin `next build` con los dev servers arriba (lección 2026-07-21); el pipeline de builds corre en el próximo cierre.
 
 ## 5. Fuera de alcance
