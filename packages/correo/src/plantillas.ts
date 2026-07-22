@@ -161,3 +161,21 @@ export function plantillaRecordatorio(datos: DatosRecordatorio): ContenidoCorreo
     '</strong>. Agradeceremos regularizar el pago.</p>'
   return { asunto, html: envolver(datos.empresa, `Recordatorio de pago — ${etiqueta} N° ${datos.folio}`, cuerpo) }
 }
+
+// Aviso de ticket al admin de la PLATAFORMA (spec tickets 2026-07-22): sin envolver()
+// porque el remitente logico es Suite ERP, no una empresa. Todo dato de usuario escapado.
+export function plantillaTicketAdmin(datos: DatosTicketAdmin): ContenidoCorreo {
+  const asunto = `Nuevo ticket #${datos.numero} — ${datos.organizacion}`
+  const canal = datos.origen === 'whatsapp' ? 'WhatsApp' : 'sitio web'
+  const html =
+    '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:640px;margin:0 auto">' +
+    '<h1 style="font-size:18px;margin:0 0 4px">Suite ERP — ticket #' + datos.numero + '</h1>' +
+    '<p style="font-size:13px;color:#6b7280;margin:0 0 16px">' +
+    escaparHtml(datos.organizacion) + ' · RUT ' + formatearRut(datos.rut) +
+    ' · ' + escaparHtml(datos.autorEmail) + ' · vía ' + canal + '</p>' +
+    '<h2 style="font-size:16px;margin:0 0 12px">' + escaparHtml(datos.asunto) + '</h2>' +
+    '<p style="font-size:14px;white-space:pre-wrap">' + escaparHtml(datos.mensaje) + '</p>' +
+    '<p style="font-size:12px;color:#9ca3af;margin-top:24px">Respóndelo en el panel de plataforma → Consultas.</p>' +
+    '</div>'
+  return { asunto, html }
+}

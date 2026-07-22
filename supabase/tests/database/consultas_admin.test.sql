@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(16);
 
 -- ===== Fixtures (superuser, patron whatsapp.test.sql) =====
 -- Ana duena y Vero vendedora de la org A; Beto dueno de la org B; Caro sin organizacion.
@@ -31,17 +31,19 @@ select lives_ok(
   'la duena crea una consulta'
 );
 
--- 2) Queda abierta, con su organizacion y su email.
+-- 2) Queda abierta, con numero de ticket, origen web, su organizacion y su email.
 reset role;
 select is(
   (select estado = 'abierta'
+      and numero is not null
+      and origen = 'web'
       and organizacion_id = 'aaaaaaaa-c0c0-c0c0-c0c0-aaaaaaaaaaaa'
       and email = 'ana@consultas.cl'
       and respuesta is null
    from consultas_admin
    where usuario_id = 'a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1'),
   true,
-  'la consulta nace abierta con organizacion y email del autor'
+  'el ticket nace abierto, numerado y con origen web'
 );
 
 -- 3) Asunto vacio (solo espacios) se rechaza.
@@ -122,6 +124,39 @@ select throws_ok(
   $$update consultas_admin set respuesta = 'me la respondo sola'$$,
   '42501', 'permission denied for table consultas_admin',
   'update directo denegado'
+);
+
+-- ===== Alta por WhatsApp (crear_consulta_whatsapp, spec 2026-07-22b) =====
+-- 11) authenticated NO ejecuta la variante del bot (exclusiva del webhook).
+select throws_ok(
+  $$select crear_consulta_whatsapp('a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1', 'x', 'y')$$,
+  '42501', 'permission denied for function crear_consulta_whatsapp',
+  'crear_consulta_whatsapp vetada para authenticated'
+);
+
+-- 12) Como superuser (equivale a service_role): crea y el numero crece.
+reset role;
+select is(
+  (select crear_consulta_whatsapp('a1a1a1a1-c0c0-c0c0-c0c0-a1a1a1a1a1a1', 'Desde el bot', 'No puedo emitir facturas')
+     > (select max(numero) from consultas_admin where origen = 'web')),
+  true,
+  'el ticket del bot recibe un numero correlativo mayor'
+);
+
+-- 13) La fila del bot queda con origen whatsapp y el email del usuario del vinculo.
+select is(
+  (select origen = 'whatsapp' and email = 'ana@consultas.cl' and estado = 'abierta'
+   from consultas_admin
+   where asunto = 'Desde el bot'),
+  true,
+  'el ticket del bot nace con origen whatsapp'
+);
+
+-- 14) Usuario sin organizacion tampoco por el bot.
+select throws_ok(
+  $$select crear_consulta_whatsapp('c3c3c3c3-c0c0-c0c0-c0c0-c3c3c3c3c3c3', 'Hola', 'sin org')$$,
+  'P0001', 'Tu cuenta no tiene una organización',
+  'el bot no crea tickets para usuarios sin organizacion'
 );
 
 select * from finish();

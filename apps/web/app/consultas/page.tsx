@@ -14,7 +14,7 @@ export default async function PaginaConsultas() {
 
   const { data: consultas } = await supabase
     .from('consultas_admin')
-    .select('id, asunto, mensaje, estado, respuesta, respondida_en, creado_en')
+    .select('id, numero, origen, asunto, mensaje, estado, respuesta, respondida_en, creado_en')
     .order('creado_en', { ascending: false })
     .limit(50)
 
@@ -45,7 +45,15 @@ export default async function PaginaConsultas() {
           return (
             <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold text-slate-800">{c.asunto}</p>
+                <p className="font-semibold text-slate-800">
+                  <span className="mr-1.5 font-mono text-sm text-slate-400">#{c.numero}</span>
+                  {c.asunto}
+                  {c.origen === 'whatsapp' && (
+                    <span className="ml-2 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                      WhatsApp
+                    </span>
+                  )}
+                </p>
                 <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${etiqueta.clase}`}>
                   {etiqueta.texto}
                 </span>

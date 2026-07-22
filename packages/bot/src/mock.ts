@@ -13,6 +13,7 @@ export const MENU_BOT = [
   '5. Semáforo del auditor',
   '6. Saldo de un cliente (escribe: saldo <nombre>)',
   '7. Recordar una factura (escribe: recordar <folio>)',
+  '8. Hablar con administración (escribe: ayuda <tu problema>)',
 ].join('\n')
 
 export const AYUDA_BOT = 'No te entendí. Escribe "menú" para ver lo que puedo hacer.'
@@ -70,6 +71,14 @@ export class MockMotor implements MotorBot {
       if (!Number.isInteger(folio) || folio <= 0) return 'Escribe: recordar <folio de la factura>'
       const r = await t.recordarFactura(folio)
       return r.detalle
+    }
+
+    if (m === '8' || m === 'ayuda' || m === 'soporte') return 'Escribe: ayuda <tu problema>'
+    if (m.startsWith('ayuda ') || m.startsWith('soporte ')) {
+      const problema = mensaje.trim().slice(m.startsWith('ayuda ') ? 'ayuda '.length : 'soporte '.length).trim()
+      if (!problema) return 'Escribe: ayuda <tu problema>'
+      const ticket = await t.crearTicket('Consulta por WhatsApp', problema)
+      return `Ticket #${ticket.numero} creado. Administración te responderá pronto (míralo en el sitio, sección Consultas).`
     }
 
     return AYUDA_BOT

@@ -22,8 +22,21 @@ const TOOLS = [
   },
   {
     name: 'recordar_factura',
-    description: 'Envia el recordatorio de pago por correo de UNA factura vencida (unica accion disponible).',
+    description: 'Envia el recordatorio de pago por correo de UNA factura vencida.',
     input_schema: { type: 'object' as const, properties: { folio: { type: 'integer', description: 'Folio de la factura' } }, required: ['folio'], additionalProperties: false },
+  },
+  {
+    name: 'crear_ticket',
+    description: 'Crea un ticket a la administracion de Suite ERP (soporte de la plataforma: cuenta, suscripcion, problemas). Devuelve el numero de ticket.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        asunto: { type: 'string', description: 'Resumen corto del problema' },
+        mensaje: { type: 'string', description: 'Detalle del problema o consulta' },
+      },
+      required: ['asunto', 'mensaje'],
+      additionalProperties: false,
+    },
   },
 ]
 
@@ -52,6 +65,8 @@ async function ejecutarHerramienta(t: HerramientasBot, nombre: string, input: Re
       return t.saldoCliente(String(input.nombre ?? ''))
     case 'recordar_factura':
       return t.recordarFactura(Number(input.folio ?? 0))
+    case 'crear_ticket':
+      return t.crearTicket(String(input.asunto ?? ''), String(input.mensaje ?? ''))
     default:
       return { error: `Herramienta desconocida: ${nombre}` }
   }

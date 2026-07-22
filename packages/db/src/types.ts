@@ -527,7 +527,9 @@ export type Database = {
           estado: string
           id: string
           mensaje: string
+          numero: number
           organizacion_id: string
+          origen: string
           respondida_en: string | null
           respuesta: string | null
           usuario_id: string
@@ -539,7 +541,9 @@ export type Database = {
           estado?: string
           id?: string
           mensaje: string
+          numero?: never
           organizacion_id: string
+          origen?: string
           respondida_en?: string | null
           respuesta?: string | null
           usuario_id: string
@@ -551,7 +555,9 @@ export type Database = {
           estado?: string
           id?: string
           mensaje?: string
+          numero?: never
           organizacion_id?: string
+          origen?: string
           respondida_en?: string | null
           respuesta?: string | null
           usuario_id?: string
@@ -3364,7 +3370,11 @@ export type Database = {
       }
       crear_consulta_admin: {
         Args: { p_asunto: string; p_mensaje: string }
-        Returns: string
+        Returns: number
+      }
+      crear_consulta_whatsapp: {
+        Args: { p_asunto: string; p_mensaje: string; p_usuario: string }
+        Returns: number
       }
       crear_cotizacion: {
         Args: {

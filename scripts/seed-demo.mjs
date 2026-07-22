@@ -563,6 +563,7 @@ const MENU_WA = [
   '5. Semáforo del auditor',
   '6. Saldo de un cliente (escribe: saldo <nombre>)',
   '7. Recordar una factura (escribe: recordar <folio>)',
+  '8. Hablar con administración (escribe: ayuda <tu problema>)',
 ].join('\n')
 const conversacionWa = [
   { direccion: 'entrante', contenido: 'hola' },

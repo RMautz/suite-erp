@@ -32,7 +32,7 @@ export function FormularioConsulta() {
       )}
       {estado.ok && !estado.error && (
         <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-          Consulta enviada. Te responderemos aquí mismo.
+          Ticket #{estado.numero} enviado. Te responderemos aquí mismo.
         </p>
       )}
       <button

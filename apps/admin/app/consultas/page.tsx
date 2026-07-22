@@ -10,7 +10,7 @@ export default async function PaginaConsultasAdmin() {
   const [{ data: consultas }, { data: orgs }] = await Promise.all([
     admin
       .from('consultas_admin')
-      .select('id, organizacion_id, email, asunto, mensaje, estado, respuesta, respondida_en, creado_en')
+      .select('id, numero, origen, organizacion_id, email, asunto, mensaje, estado, respuesta, respondida_en, creado_en')
       .order('creado_en', { ascending: false })
       .limit(200),
     admin.from('organizaciones').select('id, razon_social, rut'),
@@ -39,7 +39,15 @@ export default async function PaginaConsultasAdmin() {
           <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="font-semibold text-slate-800">{c.asunto}</p>
+                <p className="font-semibold text-slate-800">
+                  <span className="mr-1.5 font-mono text-sm text-slate-400">#{c.numero}</span>
+                  {c.asunto}
+                  {c.origen === 'whatsapp' && (
+                    <span className="ml-2 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                      WhatsApp
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-slate-500">
                   {nombreOrg.get(c.organizacion_id) ?? c.organizacion_id} · {c.email} ·{' '}
                   {new Date(c.creado_en).toLocaleDateString('es-CL')}

@@ -1,12 +1,13 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { HerramientasBot } from '@suite/bot'
+import { plantillaTicketAdmin } from '@suite/correo'
 import type { Database } from '@suite/db'
 import { enviarRecordatorioDocumento, proveedorCorreoConfigurado } from './recordatorio'
 
-// Las 7 herramientas del bot (spec §5): implementacion con el ADMIN client y TODAS
-// las queries explicitamente filtradas por la empresa del vinculo (patron webhook MP
-// P13). El motor redacta; aqui solo datos tipados.
+// Las 8 herramientas del bot (spec §5 + tickets 2026-07-22): implementacion con el
+// ADMIN client y TODAS las queries explicitamente filtradas por la empresa del
+// vinculo (patron webhook MP P13). El motor redacta; aqui solo datos tipados.
 type Admin = SupabaseClient<Database>
 
 const hoyISO = () => new Date().toISOString().slice(0, 10)
@@ -148,6 +149,44 @@ export function herramientasBot(
       )
       if ('error' in resultado) return { ok: false, detalle: resultado.error }
       return { ok: true, detalle: `Recordatorio enviado a ${resultado.para} por la factura N° ${folio}.` }
+    },
+
+    async crearTicket(asunto, mensaje) {
+      // La RPC (service_role-only) valida y numera; el usuario es el del VINCULO
+      // verificado. El aviso por correo al admin es best-effort: jamas bloquea el alta.
+      const { data: numero, error } = await admin.rpc('crear_consulta_whatsapp', {
+        p_usuario: usuarioId,
+        p_asunto: asunto,
+        p_mensaje: mensaje,
+      })
+      if (error || numero == null) throw new Error(error?.message ?? 'No se pudo crear el ticket')
+      try {
+        const destino = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean)[0]
+        const proveedor = proveedorCorreoConfigurado()
+        if (destino && proveedor) {
+          const { data: fila } = await admin
+            .from('consultas_admin')
+            .select('email, organizacion_id')
+            .eq('numero', numero)
+            .single()
+          const { data: org } = fila
+            ? await admin.from('organizaciones').select('razon_social, rut').eq('id', fila.organizacion_id).single()
+            : { data: null }
+          const { asunto: asuntoCorreo, html } = plantillaTicketAdmin({
+            numero: Number(numero),
+            organizacion: org?.razon_social ?? empresa.razonSocial,
+            rut: org?.rut ?? empresa.rut,
+            autorEmail: fila?.email ?? '',
+            asunto,
+            mensaje,
+            origen: 'whatsapp',
+          })
+          await proveedor.enviar({ para: destino, asunto: asuntoCorreo, html })
+        }
+      } catch (e) {
+        console.error('aviso ticket whatsapp:', e instanceof Error ? e.message : 'error desconocido')
+      }
+      return { numero: Number(numero) }
     },
   }
 }

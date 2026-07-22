@@ -10,6 +10,7 @@
   "dependencies": {
     "@suite/auth": "workspace:*",
     "@suite/core": "workspace:*",
+    "@suite/correo": "workspace:*",
     "@suite/db": "workspace:*",
     "next": "^15.1.0",
     "react": "^19.0.0",

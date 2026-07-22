@@ -133,6 +133,9 @@ importers:
       '@suite/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@suite/correo':
+        specifier: workspace:*
+        version: link:../../packages/correo
       '@suite/db':
         specifier: workspace:*
         version: link:../../packages/db

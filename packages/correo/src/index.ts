@@ -5,6 +5,7 @@ export type {
   DatosDocumento,
   DatosProforma,
   DatosRecordatorio,
+  DatosTicketAdmin,
   EmpresaCorreo,
   LineaCorreo,
   Mensaje,
@@ -17,6 +18,7 @@ export {
   plantillaDocumento,
   plantillaProforma,
   plantillaRecordatorio,
+  plantillaTicketAdmin,
 } from './plantillas'
 export { MockCorreo, correosMockEnviados, limpiarCorreosMock } from './mock'
 export { ResendCorreo } from './resend'

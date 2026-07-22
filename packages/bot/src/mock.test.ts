@@ -20,6 +20,7 @@ function herramientasFake(): HerramientasBot {
       nombre.toLowerCase().includes('sur') ? { cliente: 'Comercial del Sur Ltda', saldo: 1190000 } : null,
     ),
     recordarFactura: vi.fn(async (folio: number) => ({ ok: true, detalle: `Recordatorio enviado por la factura N° ${folio}.` })),
+    crearTicket: vi.fn(async () => ({ numero: 42 })),
   }
 }
 
@@ -79,6 +80,16 @@ describe('MockMotor (goldens contractuales)', () => {
     expect(await new MockMotor().responder(ctx(t), 'recordar 1043')).toBe('Recordatorio enviado por la factura N° 1043.')
     expect(t.recordarFactura).toHaveBeenCalledWith(1043)
     expect(await new MockMotor().responder(ctx(t), '7')).toBe('Escribe: recordar <folio de la factura>')
+  })
+
+  it('ayuda <problema> crea el ticket y devuelve su número; ayuda a secas da la pista', async () => {
+    const t = herramientasFake()
+    expect(await new MockMotor().responder(ctx(t), 'ayuda no puedo emitir facturas')).toBe(
+      'Ticket #42 creado. Administración te responderá pronto (míralo en el sitio, sección Consultas).',
+    )
+    expect(t.crearTicket).toHaveBeenCalledWith('Consulta por WhatsApp', 'no puedo emitir facturas')
+    expect(await new MockMotor().responder(ctx(t), 'ayuda')).toBe('Escribe: ayuda <tu problema>')
+    expect(MENU_BOT).toContain('8. Hablar con administración')
   })
 
   it('mensaje desconocido devuelve la ayuda', async () => {

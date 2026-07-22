@@ -4,6 +4,7 @@ import {
   plantillaDocumento,
   plantillaProforma,
   plantillaRecordatorio,
+  plantillaTicketAdmin,
 } from './plantillas'
 import type { OdeCorreo } from './tipos'
 
@@ -133,5 +134,23 @@ describe('escape de datos de usuario en el HTML', () => {
     })
     expect(html).not.toContain('<script>')
     expect(html).toContain('&lt;script&gt;x&lt;/script&gt;')
+  })
+
+  it('plantillaTicketAdmin arma el aviso con numero, canal y datos escapados', () => {
+    const { asunto, html } = plantillaTicketAdmin({
+      numero: 7,
+      organizacion: 'Transportes <Sur> SpA',
+      rut: '76543210-9',
+      autorEmail: 'dueno@sur.cl',
+      asunto: 'No puedo emitir',
+      mensaje: 'Línea 1\ncon <b>html</b>',
+      origen: 'whatsapp',
+    })
+    expect(asunto).toBe('Nuevo ticket #7 — Transportes <Sur> SpA')
+    expect(html).toContain('ticket #7')
+    expect(html).toContain('vía WhatsApp')
+    expect(html).toContain('Transportes &lt;Sur&gt; SpA')
+    expect(html).toContain('con &lt;b&gt;html&lt;/b&gt;')
+    expect(html).not.toContain('<b>html</b>')
   })
 })

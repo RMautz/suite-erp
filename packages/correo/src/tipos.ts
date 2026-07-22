@@ -114,3 +114,15 @@ export interface DatosRecordatorio {
   saldo: number
   fechaVencimiento: string
 }
+
+// Aviso al administrador de la PLATAFORMA por un ticket nuevo (spec tickets
+// 2026-07-22): no es correo de una empresa, no usa EmpresaCorreo ni envolver().
+export interface DatosTicketAdmin {
+  numero: number
+  organizacion: string
+  rut: string
+  autorEmail: string
+  asunto: string
+  mensaje: string
+  origen: 'web' | 'whatsapp'
+}

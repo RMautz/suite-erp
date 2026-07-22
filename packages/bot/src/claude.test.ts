@@ -11,6 +11,7 @@ function herramientasFake(): HerramientasBot {
     semaforoAuditor: vi.fn(async () => ({ estado: 'ok', observaciones: [] })),
     saldoCliente: vi.fn(async () => null),
     recordarFactura: vi.fn(async () => ({ ok: true, detalle: 'x' })),
+    crearTicket: vi.fn(async () => ({ numero: 1 })),
   }
 }
 
@@ -65,7 +66,7 @@ describe('ClaudeMotor.responder', () => {
     const body = JSON.parse(init.body)
     expect(body.model).toBe('claude-sonnet-5')
     expect(body.system).toContain('Demo Transportes SpA')
-    expect(body.tools).toHaveLength(7)
+    expect(body.tools).toHaveLength(8)
     expect(body.messages).toHaveLength(3)
     expect(body.messages[0]).toEqual({ role: 'user', content: 'hola' })
     expect(body.messages[1]).toEqual({ role: 'assistant', content: 'Hola!' })
