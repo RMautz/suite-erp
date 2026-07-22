@@ -37,28 +37,27 @@ export default async function Inicio() {
           <a href="#precios">Precios</a>
         </nav>
         <div className="flex items-center gap-3 text-sm">
-          {sesion ? (
-            <>
-              <span className="hidden text-slate-500 sm:inline">{sesion.email}</span>
-              <a
-                href={sesion.destino}
-                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
-              >
-                Mi cuenta →
-              </a>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="font-semibold text-marca-700">
-                Iniciar sesión
-              </Link>
-              <Link
-                href="/registro"
-                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
-              >
-                Prueba gratis
-              </Link>
-            </>
+          {sesion && <span className="hidden text-slate-500 sm:inline">{sesion.email}</span>}
+          <Link href="/login" className="font-semibold text-marca-700">
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/registro"
+            className={
+              sesion
+                ? 'font-semibold text-marca-700'
+                : 'rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30'
+            }
+          >
+            Prueba gratis
+          </Link>
+          {sesion && (
+            <a
+              href={sesion.destino}
+              className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
+            >
+              Mi cuenta →
+            </a>
           )}
         </div>
       </header>

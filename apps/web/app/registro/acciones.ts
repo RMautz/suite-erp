@@ -23,14 +23,15 @@ export async function registrar(_prev: EstadoForm, formData: FormData): Promise<
   // Reintento tras un fallo posterior (ej. RUT duplicado): si ya hay sesión o el
   // correo ya tiene cuenta, no volver a crear el usuario — así el segundo envío
   // del formulario llega al RPC en vez de morir en "User already registered".
-  const {
+  let {
     data: { user },
   } = await supabase.auth.getUser()
   if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
-    return {
-      error:
-        'Ya hay una sesión iniciada con otro correo en este navegador. Cierra esa sesión para registrar una cuenta nueva.',
-    }
+    // Registrar OTRA cuenta con la sesion viva (mas RUTs por usuario, 2026-07-22): se
+    // suelta la sesion SOLO en este navegador (scope local, no revoca otros equipos)
+    // y se sigue como registro nuevo. Cambiar de cuenta = volver a iniciar sesion.
+    await supabase.auth.signOut({ scope: 'local' })
+    user = null
   }
   if (!user) {
     const { error: errorAuth } = await supabase.auth.signUp({ email, password })
