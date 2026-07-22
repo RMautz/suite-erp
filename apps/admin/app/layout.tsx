@@ -29,6 +29,9 @@ export default function LayoutRaiz({ children }: { children: ReactNode }) {
               <Link href="/indicadores" className="hover:text-marca-700">
                 Indicadores
               </Link>
+              <Link href="/consultas" className="hover:text-marca-700">
+                Consultas
+              </Link>
             </nav>
           </div>
         </header>

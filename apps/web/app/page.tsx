@@ -78,6 +78,12 @@ export default async function Inicio() {
                   >
                     Gestionar suscripción
                   </a>
+                  <Link
+                    href="/consultas"
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Consultar a administración
+                  </Link>
                 </div>
               </details>
             ))}
