@@ -51,14 +51,36 @@ export default async function Inicio() {
           >
             Prueba gratis
           </Link>
-          {sesion && (
-            <a
-              href={sesion.destino}
-              className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
-            >
-              Mi cuenta →
-            </a>
-          )}
+          {sesion &&
+            (sesion.destino === process.env.NEXT_PUBLIC_URL_ADMIN ? (
+              <a
+                href={sesion.destino}
+                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
+              >
+                Mi cuenta →
+              </a>
+            ) : (
+              // Menu nativo (details/summary): entrar al ERP o ir directo a la suscripcion.
+              <details className="relative">
+                <summary className="cursor-pointer list-none rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30 [&::-webkit-details-marker]:hidden">
+                  Mi cuenta ▾
+                </summary>
+                <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                  <a
+                    href={sesion.destino}
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Entrar al ERP
+                  </a>
+                  <a
+                    href={`${sesion.destino}/configuracion/suscripcion`}
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Gestionar suscripción
+                  </a>
+                </div>
+              </details>
+            ))}
         </div>
       </header>
 
