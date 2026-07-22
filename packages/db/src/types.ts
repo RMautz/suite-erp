@@ -519,6 +519,53 @@ export type Database = {
           },
         ]
       }
+      consultas_admin: {
+        Row: {
+          asunto: string
+          creado_en: string
+          email: string
+          estado: string
+          id: string
+          mensaje: string
+          organizacion_id: string
+          respondida_en: string | null
+          respuesta: string | null
+          usuario_id: string
+        }
+        Insert: {
+          asunto: string
+          creado_en?: string
+          email: string
+          estado?: string
+          id?: string
+          mensaje: string
+          organizacion_id: string
+          respondida_en?: string | null
+          respuesta?: string | null
+          usuario_id: string
+        }
+        Update: {
+          asunto?: string
+          creado_en?: string
+          email?: string
+          estado?: string
+          id?: string
+          mensaje?: string
+          organizacion_id?: string
+          respondida_en?: string | null
+          respuesta?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultas_admin_organizacion_id_fkey"
+            columns: ["organizacion_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos: {
         Row: {
           afp: string
@@ -3313,6 +3360,10 @@ export type Database = {
           p_glosa: string
           p_lineas: Json
         }
+        Returns: string
+      }
+      crear_consulta_admin: {
+        Args: { p_asunto: string; p_mensaje: string }
         Returns: string
       }
       crear_cotizacion: {
