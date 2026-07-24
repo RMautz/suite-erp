@@ -33,17 +33,40 @@ describe('MockMotorVentas (goldens contractuales)', () => {
     expect(await motor.responder('cuánto cuesta el precio?')).toBe(r)
   })
 
-  it('contacto <datos> guarda el lead y agradece con nombre y número', async () => {
+  it('contacto <datos> guarda el lead y responde número de atención y plazo', async () => {
     const t = herramientasFake()
     const r = await new MockMotorVentas(t).responder('contacto Juan Pérez, juan@empresa.cl, +56911112222')
     expect(t.guardarLead).toHaveBeenCalledWith('Juan Pérez', 'juan@empresa.cl', '+56911112222', null)
-    expect(r).toBe('¡Gracias Juan Pérez! Quedaste registrado (#9). Te contactaremos pronto al juan@empresa.cl.')
+    expect(r).toBe('¡Gracias Juan Pérez! Tu número de atención es el #9. Te contactaremos al juan@empresa.cl dentro de 1 día hábil.')
   })
 
-  it('si guardarLead lanza, el motor relata el error y repite la pista', async () => {
+  it('los datos escritos al natural (sin prefijo contacto) también capturan el lead', async () => {
+    const t = herramientasFake()
+    const r = await new MockMotorVentas(t).responder('Ana Rojas, ana@pyme.cl')
+    expect(t.guardarLead).toHaveBeenCalledWith('Ana Rojas', 'ana@pyme.cl', null, null)
+    expect(r).toContain('¡Gracias Ana Rojas!')
+    expect(r).toContain('#9')
+    expect(r).toContain('1 día hábil')
+  })
+
+  it('un correo sin nombre pide el nombre en vez de fallar en silencio', async () => {
+    const t = herramientasFake()
+    const r = await new MockMotorVentas(t).responder('rpmautz@gmail.com')
+    expect(t.guardarLead).not.toHaveBeenCalled()
+    expect(r).toContain('dime también tu nombre')
+  })
+
+  it('si guardarLead lanza (rechazo de la RPC), el motor relata el error y repite la pista', async () => {
     const t: HerramientasVentas = { guardarLead: vi.fn(async () => { throw new Error('Ingresa un correo válido') }) }
-    const r = await new MockMotorVentas(t).responder('contacto Juan, no-es-correo')
+    const r = await new MockMotorVentas(t).responder('contacto Juan, juan@empresa.cl')
     expect(r).toContain('Ingresa un correo válido')
+    expect(r).toContain('<tu nombre>')
+  })
+
+  it('un correo malformado con prefijo contacto pide los datos sin llamar la RPC', async () => {
+    const t = herramientasFake()
+    const r = await new MockMotorVentas(t).responder('contacto Juan, no-es-correo')
+    expect(t.guardarLead).not.toHaveBeenCalled()
     expect(r).toContain('contacto <tu nombre>')
   })
 
