@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
+import { cerrarSesion } from './acciones'
 import { ChatVentas } from '../componentes/chat-ventas'
 import { Hero } from '../componentes/landing/hero'
 import { Modulos } from '../componentes/landing/modulos'
@@ -85,6 +86,14 @@ export default async function Inicio() {
                   >
                     Consultar a administración
                   </Link>
+                  <form action={cerrarSesion} className="border-t border-slate-100 pt-1.5 mt-1.5">
+                    <button
+                      type="submit"
+                      className="block w-full rounded-lg px-3 py-2 text-left font-medium text-slate-700 hover:bg-red-50 hover:text-red-700"
+                    >
+                      Cerrar sesión
+                    </button>
+                  </form>
                 </div>
               </details>
             ))}
