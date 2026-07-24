@@ -1,5 +1,12 @@
 import 'server-only'
-import { correoPorAmbiente, plantillaTicketAdmin, type DatosTicketAdmin, type ProveedorCorreo } from '@suite/correo'
+import {
+  correoPorAmbiente,
+  plantillaLeadAdmin,
+  plantillaTicketAdmin,
+  type DatosLeadAdmin,
+  type DatosTicketAdmin,
+  type ProveedorCorreo,
+} from '@suite/correo'
 
 // Fail-closed (patron proveedorCorreoConfigurado del erp): solo 'mock' | 'resend';
 // throw del selector tragado -> null.
@@ -24,5 +31,18 @@ export async function avisarTicketAdmin(datos: DatosTicketAdmin): Promise<void> 
     await proveedor.enviar({ para: destino, asunto, html })
   } catch (e) {
     console.error('aviso ticket:', e instanceof Error ? e.message : 'error desconocido')
+  }
+}
+
+// Mismo best-effort para los LEADS del chat de ventas de la landing.
+export async function avisarLeadAdmin(datos: DatosLeadAdmin): Promise<void> {
+  try {
+    const destino = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean)[0]
+    const proveedor = proveedorCorreo()
+    if (!destino || !proveedor) return
+    const { asunto, html } = plantillaLeadAdmin(datos)
+    await proveedor.enviar({ para: destino, asunto, html })
+  } catch (e) {
+    console.error('aviso lead:', e instanceof Error ? e.message : 'error desconocido')
   }
 }

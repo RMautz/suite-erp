@@ -36,6 +36,10 @@ El widget de chat también vive en la landing (`localhost:3000`), orientado a VI
 
 E2E vivo anónimo: abrir el widget en la landing → menú → precios → `contacto Juan Pérez, juan@empresa.cl, +56911112222` → gracias con nombre → lead visible en el panel admin `/leads` → aviso en `/mock-correo`. pgTAP 482/23 y unit 269 verdes. Review de seguridad (superficie anon de la RPC, XSS, spam) antes del push.
 
+## 6b. Limitación conocida del mock (verificada en E2E)
+
+Los avisos por correo enviados desde **apps/web** (leads y tickets web) usan el `MockCorreo` del PROCESO web, y el visor `/mock-correo` corre en el proceso del erp: en local esos avisos no se ven en el visor (el flujo corre igual y sin error). Con Resend real en producción no existe la separación — ambos procesos pegan al mismo servicio HTTP. La tubería completa de avisos quedó demostrada con los del bot (proceso erp).
+
 ## 7. Fuera de alcance
 
 - Persona IA del chat de ventas (seam #12); persistir conversaciones anónimas; rate limiting de producción (seam deploy); captura multivuelta con estado.

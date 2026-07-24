@@ -130,6 +130,9 @@ importers:
       '@suite/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@suite/bot':
+        specifier: workspace:*
+        version: link:../../packages/bot
       '@suite/core':
         specifier: workspace:*
         version: link:../../packages/core

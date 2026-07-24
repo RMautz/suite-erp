@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { crearClienteServidor } from '@suite/auth/server'
+import { ChatVentas } from '../componentes/chat-ventas'
 import { Hero } from '../componentes/landing/hero'
 import { Modulos } from '../componentes/landing/modulos'
 import { Precios } from '../componentes/landing/precios'
@@ -106,6 +107,8 @@ export default async function Inicio() {
         <span>© 2026 Suite ERP</span>
         <span>contacto@suite-erp.cl</span>
       </footer>
+
+      <ChatVentas />
     </main>
   )
 }

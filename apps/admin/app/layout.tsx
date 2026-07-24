@@ -32,6 +32,9 @@ export default function LayoutRaiz({ children }: { children: ReactNode }) {
               <Link href="/consultas" className="hover:text-marca-700">
                 Consultas
               </Link>
+              <Link href="/leads" className="hover:text-marca-700">
+                Leads
+              </Link>
             </nav>
           </div>
         </header>

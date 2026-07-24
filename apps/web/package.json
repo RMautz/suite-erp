@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@suite/auth": "workspace:*",
+    "@suite/bot": "workspace:*",
     "@suite/core": "workspace:*",
     "@suite/correo": "workspace:*",
     "@suite/db": "workspace:*",
