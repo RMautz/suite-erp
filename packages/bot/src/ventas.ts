@@ -63,7 +63,9 @@ export class MockMotorVentas implements MotorVentas {
     }
     if (m === '2' || m.includes('módulo') || m.includes('modulo')) return MODULOS
     if (m === '3' || m.includes('precio') || m.includes('plan') || m.includes('cuesta') || m.includes('vale')) return PRECIOS
-    if (m === '4' || m === 'contacto' || m.includes('persona') || m.includes('llamen') || m.includes('vendedor')) return PIDE_DATOS
+    if (m === '4' || m === 'contacto' || m.includes('persona') || m.includes('llamen') || m.includes('vendedor') || m.includes('contacten')) {
+      return PIDE_DATOS
+    }
 
     if (m.startsWith('contacto ')) {
       const partes = mensaje.trim().slice('contacto '.length).split(',').map((p) => p.trim())

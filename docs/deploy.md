@@ -78,6 +78,12 @@ O simplemente abre una terminal nueva.
    Si falta, GoTrue descarta el `redirectTo` y el correo de recuperación sale
    apuntando al Site URL sin `/auth/confirm` — el flujo falla en silencio (el
    usuario ve el éxito genérico pero el enlace no restablece).
+5. **Rate limiting del chat de ventas** (ANTES de exponer la landing pública):
+   la RPC `crear_lead` está abierta a `anon` y la action `responderVentas` dispara
+   un correo por lead (tope parcial de 30/día por proceso en el código). Para
+   producción: límite por IP en Vercel (WAF/middleware) o proxy sobre ambas rutas,
+   o el rate limiter de Supabase para la RPC. Sin esto, un script puede inflar la
+   tabla `leads` y quemar cuota de Resend.
 
 ### 2.2 Vincular y aplicar migraciones
 

@@ -34,14 +34,28 @@ export async function avisarTicketAdmin(datos: DatosTicketAdmin): Promise<void> 
   }
 }
 
+// Tope diario de avisos de LEAD (hallazgo review: la superficie es ANONIMA y cada
+// lead dispara un correo — sin freno es un amplificador contra la casilla del admin
+// y la cuota de Resend). En memoria por proceso: freno parcial (se reinicia con el
+// deploy/instancia); el rate limiting real por IP es seam de produccion (deploy.md).
+const TOPE_AVISOS_LEAD_DIA = 30
+let avisosLeadHoy = { fecha: '', enviados: 0 }
+
 // Mismo best-effort para los LEADS del chat de ventas de la landing.
 export async function avisarLeadAdmin(datos: DatosLeadAdmin): Promise<void> {
   try {
+    const hoy = new Date().toISOString().slice(0, 10)
+    if (avisosLeadHoy.fecha !== hoy) avisosLeadHoy = { fecha: hoy, enviados: 0 }
+    if (avisosLeadHoy.enviados >= TOPE_AVISOS_LEAD_DIA) {
+      console.error('aviso lead: tope diario alcanzado, lead #' + datos.numero + ' sin aviso (queda en el panel)')
+      return
+    }
     const destino = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean)[0]
     const proveedor = proveedorCorreo()
     if (!destino || !proveedor) return
     const { asunto, html } = plantillaLeadAdmin(datos)
     await proveedor.enviar({ para: destino, asunto, html })
+    avisosLeadHoy.enviados++
   } catch (e) {
     console.error('aviso lead:', e instanceof Error ? e.message : 'error desconocido')
   }

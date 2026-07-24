@@ -11,7 +11,7 @@ El widget de chat también vive en la landing (`localhost:3000`), orientado a VI
 `id, numero bigint identity (unique), nombre, email, telefono null, mensaje null, origen text default 'chat_web' check ('chat_web','otro'), creado_en`. RLS habilitada SIN policies y SIN grants API (solo service_role full): los leads son datos comerciales de la plataforma — nadie los lee por la Data API salvo el panel (service_role). Alta SOLO vía RPC `crear_lead(p_nombre, p_email, p_telefono, p_mensaje) returns bigint` (security definer, grant a **anon** y authenticated — el visitante no tiene sesión): valida byte-exacto `Dinos tu nombre` (vacío / >100), `Ingresa un correo válido` (regex simple), teléfono ≤30 y mensaje ≤1000 (`El mensaje es demasiado largo`). Aplicación con `migration up` (sin reset).
 
 - pgTAP archivo 23 `leads.test.sql` `plan(8)`: feliz como ANON retorna numero, nombre vacío, correo inválido, mensaje largo, teléfono largo, select denegado a anon Y a authenticated (sin grant), insert directo denegado. Suite: **482 en 23 archivos**.
-- Anti-spam v1: solo los caps de largo + el origin-check de las server actions. Rate limiting real queda como seam para producción.
+- Anti-spam v1 (corregido por review): solo los caps de largo — el origin-check de las server actions es protección CSRF, NO frena a un script directo. Mitigación parcial implementada: tope diario en memoria de 30 avisos de lead por proceso (el lead igual se guarda y se ve en el panel). El rate limiting real por IP (RPC `crear_lead` Y la action `responderVentas`) es requisito de deploy público — anotado en `docs/deploy.md`.
 
 ## 3. `@suite/bot` — `MockMotorVentas`
 

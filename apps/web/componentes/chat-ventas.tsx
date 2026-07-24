@@ -64,11 +64,11 @@ export function ChatVentas() {
             </div>
             {burbujas.length === 0 && (
               <div className="flex flex-wrap gap-2 px-1 pt-1">
-                {['¿Qué es Suite ERP?', 'Módulos', 'Precios', 'Quiero que me contacten'].map((sugerencia, i) => (
+                {['¿Qué es Suite ERP?', 'Módulos', 'Precios', 'Quiero que me contacten'].map((sugerencia) => (
                   <button
                     key={sugerencia}
                     type="button"
-                    onClick={() => enviar(String(i + 1))}
+                    onClick={() => enviar(sugerencia)}
                     className="rounded-full border border-marca-200 bg-white px-3 py-1.5 text-xs font-medium text-marca-700 transition-colors hover:bg-marca-50"
                   >
                     {sugerencia}
