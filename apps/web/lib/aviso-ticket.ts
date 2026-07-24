@@ -7,6 +7,36 @@ import {
   type DatosTicketAdmin,
   type ProveedorCorreo,
 } from '@suite/correo'
+import {
+  plantillaLeadWhatsApp,
+  plantillaTicketWhatsApp,
+  whatsappPorAmbiente,
+  type ProveedorWhatsApp,
+} from '@suite/whatsapp'
+
+// Aviso al WHATSAPP del admin (spec avisos 2026-07-24): mismo best-effort que el
+// correo. WHATSAPP_ADMIN (E.164) + proveedor fail-closed; en mock el mensaje queda
+// en el store del proceso web (misma limitacion cross-proceso documentada §6b).
+// Produccion real: exige plantillas HSM aprobadas (credencial #15).
+async function avisarWhatsAppAdmin(texto: string): Promise<void> {
+  const destino = process.env.WHATSAPP_ADMIN
+  if (!destino) return
+  const perilla = process.env.PROVEEDOR_WHATSAPP
+  if (perilla !== 'mock' && perilla !== 'cloud') return
+  let proveedor: ProveedorWhatsApp
+  try {
+    proveedor = whatsappPorAmbiente(
+      perilla,
+      process.env.WHATSAPP_TOKEN,
+      process.env.WHATSAPP_PHONE_ID,
+      process.env.WHATSAPP_VERIFY_TOKEN,
+      process.env.WHATSAPP_APP_SECRET,
+    )
+  } catch {
+    return
+  }
+  await proveedor.enviarTexto(destino, texto)
+}
 
 // Fail-closed (patron proveedorCorreoConfigurado del erp): solo 'mock' | 'resend';
 // throw del selector tragado -> null.
@@ -32,6 +62,19 @@ export async function avisarTicketAdmin(datos: DatosTicketAdmin): Promise<void> 
   } catch (e) {
     console.error('aviso ticket:', e instanceof Error ? e.message : 'error desconocido')
   }
+  try {
+    await avisarWhatsAppAdmin(
+      plantillaTicketWhatsApp({
+        numero: datos.numero,
+        organizacion: datos.organizacion,
+        asunto: datos.asunto,
+        autorEmail: datos.autorEmail,
+        origen: datos.origen,
+      }),
+    )
+  } catch (e) {
+    console.error('aviso ticket whatsapp:', e instanceof Error ? e.message : 'error desconocido')
+  }
 }
 
 // Tope diario de avisos de LEAD (hallazgo review: la superficie es ANONIMA y cada
@@ -55,6 +98,14 @@ export async function avisarLeadAdmin(datos: DatosLeadAdmin): Promise<void> {
     if (!destino || !proveedor) return
     const { asunto, html } = plantillaLeadAdmin(datos)
     await proveedor.enviar({ para: destino, asunto, html })
+    await avisarWhatsAppAdmin(
+      plantillaLeadWhatsApp({
+        numero: datos.numero,
+        nombre: datos.nombre,
+        email: datos.email,
+        telefono: datos.telefono,
+      }),
+    )
     avisosLeadHoy.enviados++
   } catch (e) {
     console.error('aviso lead:', e instanceof Error ? e.message : 'error desconocido')

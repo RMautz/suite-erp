@@ -2,8 +2,10 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { HerramientasBot } from '@suite/bot'
 import { plantillaTicketAdmin } from '@suite/correo'
+import { plantillaTicketWhatsApp } from '@suite/whatsapp'
 import type { Database } from '@suite/db'
 import { enviarRecordatorioDocumento, proveedorCorreoConfigurado } from './recordatorio'
+import { proveedorWhatsAppConfigurado } from './whatsapp'
 
 // Las 8 herramientas del bot (spec §5 + tickets 2026-07-22): implementacion con el
 // ADMIN client y TODAS las queries explicitamente filtradas por la empresa del
@@ -161,17 +163,18 @@ export function herramientasBot(
       })
       if (error || numero == null) throw new Error(error?.message ?? 'No se pudo crear el ticket')
       try {
+        const { data: fila } = await admin
+          .from('consultas_admin')
+          .select('email, organizacion_id')
+          .eq('numero', numero)
+          .single()
+        const { data: org } = fila
+          ? await admin.from('organizaciones').select('razon_social, rut').eq('id', fila.organizacion_id).single()
+          : { data: null }
+
         const destino = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean)[0]
         const proveedor = proveedorCorreoConfigurado()
         if (destino && proveedor) {
-          const { data: fila } = await admin
-            .from('consultas_admin')
-            .select('email, organizacion_id')
-            .eq('numero', numero)
-            .single()
-          const { data: org } = fila
-            ? await admin.from('organizaciones').select('razon_social, rut').eq('id', fila.organizacion_id).single()
-            : { data: null }
           const { asunto: asuntoCorreo, html } = plantillaTicketAdmin({
             numero: Number(numero),
             organizacion: org?.razon_social ?? empresa.razonSocial,
@@ -182,6 +185,21 @@ export function herramientasBot(
             origen: 'whatsapp',
           })
           await proveedor.enviar({ para: destino, asunto: asuntoCorreo, html })
+        }
+        // Aviso al WHATSAPP del admin (spec avisos 2026-07-24), mismo best-effort.
+        const telefonoAdmin = process.env.WHATSAPP_ADMIN
+        const provWa = proveedorWhatsAppConfigurado()
+        if (telefonoAdmin && provWa) {
+          await provWa.enviarTexto(
+            telefonoAdmin,
+            plantillaTicketWhatsApp({
+              numero: Number(numero),
+              organizacion: org?.razon_social ?? empresa.razonSocial,
+              asunto,
+              autorEmail: fila?.email ?? '',
+              origen: 'whatsapp',
+            }),
+          )
         }
       } catch (e) {
         console.error('aviso ticket whatsapp:', e instanceof Error ? e.message : 'error desconocido')
