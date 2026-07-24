@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   plantillaCotizacion,
   plantillaDocumento,
+  plantillaLeadAdmin,
   plantillaProforma,
   plantillaRecordatorio,
   plantillaTicketAdmin,
@@ -152,5 +153,19 @@ describe('escape de datos de usuario en el HTML', () => {
     expect(html).toContain('Transportes &lt;Sur&gt; SpA')
     expect(html).toContain('con &lt;b&gt;html&lt;/b&gt;')
     expect(html).not.toContain('<b>html</b>')
+  })
+
+  it('plantillaLeadAdmin arma el aviso del lead con datos escapados y teléfono opcional', () => {
+    const { asunto, html } = plantillaLeadAdmin({
+      numero: 3,
+      nombre: 'Juan <Pérez>',
+      email: 'juan@empresa.cl',
+      telefono: null,
+      mensaje: null,
+    })
+    expect(asunto).toBe('Nuevo lead #3 — Juan <Pérez>')
+    expect(html).toContain('lead #3')
+    expect(html).toContain('Juan &lt;Pérez&gt;')
+    expect(html).not.toContain('<Pérez>')
   })
 })

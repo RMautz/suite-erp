@@ -4,6 +4,7 @@ export type {
   DatosCotizacion,
   DatosDocumento,
   DatosProforma,
+  DatosLeadAdmin,
   DatosRecordatorio,
   DatosTicketAdmin,
   EmpresaCorreo,
@@ -17,6 +18,7 @@ export {
   plantillaCotizacion,
   plantillaDocumento,
   plantillaProforma,
+  plantillaLeadAdmin,
   plantillaRecordatorio,
   plantillaTicketAdmin,
 } from './plantillas'

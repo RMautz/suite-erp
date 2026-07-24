@@ -115,6 +115,15 @@ export interface DatosRecordatorio {
   fechaVencimiento: string
 }
 
+// Aviso al admin por un lead nuevo del chat de ventas (spec 2026-07-24).
+export interface DatosLeadAdmin {
+  numero: number
+  nombre: string
+  email: string
+  telefono: string | null
+  mensaje: string | null
+}
+
 // Aviso al administrador de la PLATAFORMA por un ticket nuevo (spec tickets
 // 2026-07-22): no es correo de una empresa, no usa EmpresaCorreo ni envolver().
 export interface DatosTicketAdmin {

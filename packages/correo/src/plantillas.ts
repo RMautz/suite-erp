@@ -179,3 +179,21 @@ export function plantillaTicketAdmin(datos: DatosTicketAdmin): ContenidoCorreo {
     '</div>'
   return { asunto, html }
 }
+
+// Aviso de LEAD del chat de ventas de la landing (spec 2026-07-24): un posible
+// cliente dejo sus datos. Todo escapado.
+export function plantillaLeadAdmin(datos: DatosLeadAdmin): ContenidoCorreo {
+  const asunto = `Nuevo lead #${datos.numero} — ${datos.nombre}`
+  const html =
+    '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:640px;margin:0 auto">' +
+    '<h1 style="font-size:18px;margin:0 0 4px">Suite ERP — lead #' + datos.numero + '</h1>' +
+    '<p style="font-size:14px;margin:0 0 4px"><strong>' + escaparHtml(datos.nombre) + '</strong></p>' +
+    '<p style="font-size:13px;color:#6b7280;margin:0 0 12px">' +
+    escaparHtml(datos.email) +
+    (datos.telefono ? ' · ' + escaparHtml(datos.telefono) : '') +
+    '</p>' +
+    (datos.mensaje ? '<p style="font-size:14px;white-space:pre-wrap">' + escaparHtml(datos.mensaje) + '</p>' : '') +
+    '<p style="font-size:12px;color:#9ca3af;margin-top:24px">Llegó desde el chat de la landing. Míralo en el panel → Leads.</p>' +
+    '</div>'
+  return { asunto, html }
+}

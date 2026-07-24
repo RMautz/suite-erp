@@ -2,3 +2,5 @@ export type { ContextoBot, HerramientasBot, MotorBot, TurnoHistorial } from './t
 export { AYUDA_BOT, MENU_BOT, MockMotor } from './mock'
 export { ClaudeMotor, DISCULPA_BOT } from './claude'
 export { motorPorAmbiente } from './seleccionar'
+export { AYUDA_VENTAS, MENU_VENTAS, MockMotorVentas } from './ventas'
+export type { HerramientasVentas, MotorVentas } from './ventas'
