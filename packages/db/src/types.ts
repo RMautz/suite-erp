@@ -1493,6 +1493,39 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          creado_en: string
+          email: string
+          id: string
+          mensaje: string | null
+          nombre: string
+          numero: number
+          origen: string
+          telefono: string | null
+        }
+        Insert: {
+          creado_en?: string
+          email: string
+          id?: string
+          mensaje?: string | null
+          nombre: string
+          numero?: never
+          origen?: string
+          telefono?: string | null
+        }
+        Update: {
+          creado_en?: string
+          email?: string
+          id?: string
+          mensaje?: string | null
+          nombre?: string
+          numero?: never
+          origen?: string
+          telefono?: string | null
+        }
+        Relationships: []
+      }
       links_pago: {
         Row: {
           cliente_id: string
@@ -3394,6 +3427,15 @@ export type Database = {
           p_tipo: string
         }
         Returns: string
+      }
+      crear_lead: {
+        Args: {
+          p_email: string
+          p_mensaje: string
+          p_nombre: string
+          p_telefono: string
+        }
+        Returns: number
       }
       crear_link_pago: {
         Args: {
