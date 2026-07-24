@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BarraLateral } from '@suite/ui'
+import { BurbujaWhatsApp } from '../componentes/burbuja-whatsapp'
 import './globals.css'
 import { cambiarEmpresaActiva } from './acciones'
 import { BotonCerrarSesion } from '../componentes/boton-cerrar-sesion'
@@ -75,6 +76,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
             />
           </div>
           <main className="min-h-screen flex-1 p-8 print:p-0">{children}</main>
+          <BurbujaWhatsApp />
         </div>
       </body>
     </html>
