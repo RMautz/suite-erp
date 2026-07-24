@@ -62,7 +62,21 @@ export function ChatVentas() {
                 <strong>precios</strong> o cómo funciona Suite ERP.
               </div>
             </div>
-            {burbujas.length === 0 && (
+            {burbujas.map((b) => (
+              <div key={b.id} className={b.mio ? 'flex justify-end' : 'flex justify-start'}>
+                <div
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm text-slate-800 ${
+                    b.mio ? 'bg-marca-100' : 'border border-slate-200 bg-white'
+                  }`}
+                >
+                  {b.texto}
+                </div>
+              </div>
+            ))}
+            {pendiente && <p className="px-1 text-xs text-slate-400">Escribiendo…</p>}
+            {/* Sugerencias SIEMPRE tras la ultima respuesta (pedido 2026-07-24): el
+                visitante nunca queda sin siguiente paso. */}
+            {!pendiente && (
               <div className="flex flex-wrap gap-2 px-1 pt-1">
                 {['¿Qué es Suite ERP?', 'Módulos', 'Precios', 'Quiero que me contacten'].map((sugerencia) => (
                   <button
@@ -76,18 +90,6 @@ export function ChatVentas() {
                 ))}
               </div>
             )}
-            {burbujas.map((b) => (
-              <div key={b.id} className={b.mio ? 'flex justify-end' : 'flex justify-start'}>
-                <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm text-slate-800 ${
-                    b.mio ? 'bg-marca-100' : 'border border-slate-200 bg-white'
-                  }`}
-                >
-                  {b.texto}
-                </div>
-              </div>
-            ))}
-            {pendiente && <p className="px-1 text-xs text-slate-400">Escribiendo…</p>}
             <div ref={finRef} />
           </div>
 
