@@ -55,12 +55,40 @@ export default async function Inicio() {
           </Link>
           {sesion &&
             (sesion.destino === process.env.NEXT_PUBLIC_URL_ADMIN ? (
-              <a
-                href={sesion.destino}
-                className="rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30"
-              >
-                Mi cuenta →
-              </a>
+              // Menu del ADMIN de plataforma (mismo tratamiento que la cuenta empresa).
+              <details className="relative">
+                <summary className="cursor-pointer list-none rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-4 py-2 font-semibold text-white shadow-md shadow-marca-600/30 [&::-webkit-details-marker]:hidden">
+                  Mi cuenta ▾
+                </summary>
+                <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                  <a
+                    href={sesion.destino}
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Entrar al panel
+                  </a>
+                  <a
+                    href={`${sesion.destino}/consultas`}
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Consultas
+                  </a>
+                  <a
+                    href={`${sesion.destino}/leads`}
+                    className="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-marca-50 hover:text-marca-700"
+                  >
+                    Leads
+                  </a>
+                  <form action={cerrarSesion} className="border-t border-slate-100 pt-1.5 mt-1.5">
+                    <button
+                      type="submit"
+                      className="block w-full rounded-lg px-3 py-2 text-left font-medium text-slate-700 hover:bg-red-50 hover:text-red-700"
+                    >
+                      Cerrar sesión
+                    </button>
+                  </form>
+                </div>
+              </details>
             ) : (
               // Menu nativo (details/summary): entrar al ERP o ir directo a la suscripcion.
               <details className="relative">
