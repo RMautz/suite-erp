@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { esTelefonoE164 } from '@suite/whatsapp'
+import { postearAlWebhook } from '../../lib/webhook-bot'
 
 export type EstadoMockWhatsApp = { error?: string; ok?: boolean }
 
@@ -16,19 +16,8 @@ export async function simularEntrante(_prev: EstadoMockWhatsApp, formData: FormD
   if (!esTelefonoE164(telefono)) return { error: 'Teléfono no válido: usa formato internacional +56...' }
   if (!texto) return { error: 'Escribe un mensaje' }
 
-  const h = await headers()
-  const host = h.get('host') ?? 'localhost:3001'
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  const cuerpo = JSON.stringify({
-    entry: [{ changes: [{ value: { messages: [{ from: telefono.slice(1), type: 'text', text: { body: texto } }] } }] }],
-  })
-  const respuesta = await fetch(`${proto}://${host}/api/webhooks/whatsapp`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: cuerpo,
-    cache: 'no-store',
-  })
-  if (!respuesta.ok) return { error: `El webhook respondió ${respuesta.status}` }
+  const resultado = await postearAlWebhook(telefono, texto)
+  if (resultado.error) return { error: resultado.error }
   revalidatePath('/mock-whatsapp')
   return { ok: true }
 }

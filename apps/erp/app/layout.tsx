@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
+import { crearClienteServidor } from '@suite/auth/server'
 import { BarraLateral } from '@suite/ui'
-import { BurbujaWhatsApp } from '../componentes/burbuja-whatsapp'
+import { ChatWidget } from '../componentes/chat-widget'
 import './globals.css'
 import { cambiarEmpresaActiva } from './acciones'
 import { BotonCerrarSesion } from '../componentes/boton-cerrar-sesion'
@@ -13,6 +14,22 @@ export const metadata = { title: 'Suite ERP' }
 
 export default async function LayoutRaiz({ children }: { children: ReactNode }) {
   const { activa, empresas } = await obtenerEmpresaActiva()
+
+  // Telefono del vinculo verificado (para el widget de chat). RLS: solo dueno/admin
+  // lo ven; otros roles reciben null y el widget invita a vincular.
+  let telefonoBot: string | null = null
+  if (activa) {
+    const supabase = await crearClienteServidor()
+    const { data: vinculos } = await supabase
+      .from('whatsapp_vinculos')
+      .select('telefono')
+      .eq('empresa_id', activa.id)
+      .eq('activo', true)
+      .not('verificado_en', 'is', null)
+      .limit(1)
+    telefonoBot = vinculos?.[0]?.telefono ?? null
+  }
+  const modoMock = process.env.PROVEEDOR_WHATSAPP === 'mock'
   // El NAV depende de la empresa activa: las entradas de transporte solo existen
   // con el módulo activo. Esto es UX, no seguridad: RLS y las RPCs siguen
   // mandando aunque alguien navegue a mano.
@@ -76,7 +93,14 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
             />
           </div>
           <main className="min-h-screen flex-1 p-8 print:p-0">{children}</main>
-          <BurbujaWhatsApp />
+          {activa && (modoMock || process.env.NEXT_PUBLIC_WHATSAPP_URL) && (
+            <ChatWidget
+              telefono={telefonoBot}
+              modoMock={modoMock}
+              urlExterna={process.env.NEXT_PUBLIC_WHATSAPP_URL}
+              nombreEmpresa={activa.razon_social}
+            />
+          )}
         </div>
       </body>
     </html>
