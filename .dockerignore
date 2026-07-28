@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/.next
+.git
+.superpowers
+.playwright-mcp
+.remember
+graphify-out
+supabase/.temp
+Dockerfile
+docker-compose.yml

@@ -18,7 +18,9 @@ export default async function PaginaConsultas() {
     .order('creado_en', { ascending: false })
     .limit(50)
 
-  const ETIQUETA: Record<string, { texto: string; clase: string }> = {
+  // Claves literales (sin Record indexado): con noUncheckedIndexedAccess el fallback
+  // ETIQUETA.abierta debe ser NO-undefined para tipar limpio.
+  const ETIQUETA = {
     abierta: { texto: 'Abierta', clase: 'bg-amber-50 text-amber-700 border-amber-200' },
     respondida: { texto: 'Respondida', clase: 'bg-green-50 text-green-700 border-green-200' },
     cerrada: { texto: 'Cerrada', clase: 'bg-slate-100 text-slate-600 border-slate-200' },
@@ -62,7 +64,7 @@ export default async function PaginaConsultas() {
       <h2 className="mt-10 text-lg font-semibold text-slate-800">Tus consultas</h2>
       <div className="mt-3 space-y-4">
         {(consultas ?? []).map((c) => {
-          const etiqueta = ETIQUETA[c.estado] ?? ETIQUETA.abierta
+          const etiqueta = ETIQUETA[c.estado as keyof typeof ETIQUETA] ?? ETIQUETA.abierta
           return (
             <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">

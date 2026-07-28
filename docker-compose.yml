@@ -1,0 +1,44 @@
+# Operacion local "siempre arriba" (2026-07-24): las 3 apps compiladas como
+# contenedores con reinicio automatico. Supabase local sigue siendo del CLI
+# (npx supabase start); las apps lo alcanzan via host.docker.internal:54321 —
+# URL que TAMBIEN resuelve desde el navegador del host (Docker Desktop la agrega
+# al archivo hosts de Windows), por eso los .env.local la usan directamente.
+#
+# Uso:
+#   docker compose up -d --build   -> compilar y dejar todo arriba
+#   docker compose stop            -> pausar (para volver a los dev servers)
+#   docker compose up -d           -> reanudar
+# Para desarrollo con hot-reload: compose stop + pnpm dev (mismos puertos).
+
+services:
+  web:
+    build: .
+    image: suite-erp:local
+    command: pnpm --filter web start
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  erp:
+    image: suite-erp:local
+    depends_on:
+      - web
+    command: pnpm --filter erp start
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  admin:
+    image: suite-erp:local
+    depends_on:
+      - web
+    command: pnpm --filter admin start
+    ports:
+      - "3002:3002"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
