@@ -9,4 +9,9 @@ supabase/.temp/
 *.tsbuildinfo
 .vercel
 .env*
+
+# Carpetas de trabajo de los agentes/plugins (rutas fijas de sus herramientas):
+# artefactos de sesion, no fuente. graphify-out/ SI se versiona (mapa del codigo).
 .playwright-mcp/
+.superpowers/
+.remember/
