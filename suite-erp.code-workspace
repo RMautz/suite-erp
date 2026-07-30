@@ -1,0 +1,37 @@
+{
+  // Vista organizada del monorepo (2026-07-30): abre ESTE archivo en VSCode
+  // (Archivo → Abrir área de trabajo desde archivo) y el explorador muestra las
+  // secciones por rol, sin mover ninguna carpeta física.
+  "folders": [
+    { "name": "🎨 FRONTEND — apps (web · erp · admin)", "path": "apps" },
+    { "name": "⚙️ BACKEND — supabase (migraciones · pgTAP)", "path": "supabase" },
+    { "name": "⚙️ BACKEND — packages (librerías)", "path": "packages" },
+    { "name": "📚 DOCS", "path": "docs" },
+    { "name": "🤖 AGENTES — planes y reportes de sesión", "path": ".superpowers" },
+    { "name": "🧰 RAÍZ — config, scripts y docker", "path": "." }
+  ],
+  "settings": {
+    // En la sección RAÍZ se ocultan las carpetas que ya tienen su propia sección
+    // y el ruido de tooling; los patrones son relativos a cada root, así que no
+    // afectan el contenido de las otras secciones.
+    "files.exclude": {
+      "apps": true,
+      "docs": true,
+      "packages": true,
+      "supabase": true,
+      ".superpowers": true,
+      ".remember": true,
+      ".playwright-mcp": true,
+      ".turbo": true,
+      ".vercel": true,
+      "node_modules": true
+    },
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+      "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, turbo.json, tsconfig.base.json, .nvmrc",
+      "Dockerfile": "docker-compose.yml, .dockerignore",
+      ".gitignore": ".gitattributes"
+    }
+  }
+}

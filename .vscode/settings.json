@@ -1,0 +1,19 @@
+{
+  // Para quien abre la CARPETA directamente (sin el .code-workspace): se oculta el
+  // ruido de tooling/agentes y se anidan los configs bajo package.json/Dockerfile.
+  "files.exclude": {
+    "node_modules": true,
+    ".turbo": true,
+    ".vercel": true,
+    ".playwright-mcp": true,
+    ".remember": true,
+    ".superpowers": true
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, turbo.json, tsconfig.base.json, .nvmrc",
+    "Dockerfile": "docker-compose.yml, .dockerignore",
+    ".gitignore": ".gitattributes"
+  }
+}
