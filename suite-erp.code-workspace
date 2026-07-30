@@ -3,9 +3,9 @@
   // (Archivo → Abrir área de trabajo desde archivo) y el explorador muestra las
   // secciones por rol, sin mover ninguna carpeta física.
   "folders": [
-    { "name": "🎨 FRONTEND — apps (web · erp · admin)", "path": "apps" },
-    { "name": "⚙️ BACKEND — supabase (migraciones · pgTAP)", "path": "supabase" },
-    { "name": "⚙️ BACKEND — packages (librerías)", "path": "packages" },
+    { "name": "🎨 FRONTEND — apps (web · erp · admin)", "path": "frontend/apps" },
+    { "name": "⚙️ BACKEND — supabase (migraciones · pgTAP)", "path": "backend/supabase" },
+    { "name": "⚙️ BACKEND — packages (librerías)", "path": "backend/packages" },
     { "name": "📚 DOCS", "path": "docs" },
     { "name": "🤖 AGENTES — planes y reportes de sesión", "path": ".superpowers" },
     { "name": "🧰 RAÍZ — config, scripts y docker", "path": "." }

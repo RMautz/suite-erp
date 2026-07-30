@@ -27,6 +27,10 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.109.1
+      # El CLI busca la carpeta supabase/ bajo el working-directory (ahora anidada
+      # en backend/ por la reorganizacion 2026-07-30).
       - run: supabase start
+        working-directory: backend
       - run: supabase test db
+        working-directory: backend
       - run: pnpm build

@@ -101,10 +101,11 @@ pnpm supabase link --project-ref <ref-del-proyecto>
 Pedirá la contraseña de base de datos guardada en el paso 2.1.
 
 ```powershell
+cd backend
 pnpm supabase db push
 ```
 
-Esto aplica, en orden, las 2 migraciones existentes en `supabase/migrations/`:
+Esto aplica, en orden, las 2 migraciones existentes en `backend/supabase/migrations/`:
 
 | Migración | Contenido |
 |---|---|
@@ -126,9 +127,9 @@ En el dashboard del proyecto:
    exista cobro automático. **Sin este cambio el smoke test del paso 4 falla**
    porque el usuario queda sin sesión tras registrarse.
 2. **Authentication → Providers → Email → Minimum password length**: subir de 6
-   (default) a **8**. El default local en `supabase/config.toml`
+   (default) a **8**. El default local en `backend/supabase/config.toml`
    (`minimum_password_length = 6`) es solo para desarrollo; el formulario de
-   registro del portal (`apps/web`) ya valida 8+ caracteres en el cliente, pero el
+   registro del portal (`frontend/apps/web`) ya valida 8+ caracteres en el cliente, pero el
    proyecto hosted debe exigir el mismo mínimo en el servidor o un RUT válido con
    contraseña de 6-7 caracteres pasaría el frontend de otro cliente API y sería
    aceptado igual.
@@ -154,9 +155,9 @@ En Vercel → **Add New… → Project** → importar `suite-erp` → repetir 3 
 
 | Proyecto Vercel | Root Directory |
 |---|---|
-| `suite-erp-web` | `apps/web` |
-| `suite-erp-erp` | `apps/erp` |
-| `suite-erp-admin` | `apps/admin` |
+| `suite-erp-web` | `frontend/apps/web` |
+| `suite-erp-erp` | `frontend/apps/erp` |
+| `suite-erp-admin` | `frontend/apps/admin` |
 
 Tras crear los 3, anotar sus URLs (`https://<nombre>.vercel.app`, Vercel asigna
 el subdominio según el nombre de proyecto elegido).
@@ -177,10 +178,10 @@ el subdominio según el nombre de proyecto elegido).
 
 Configurar en cada proyecto Vercel → **Settings → Environment Variables**,
 ambiente **Production** (y Preview si se quiere que los PR deploys funcionen
-contra el mismo proyecto Supabase — opcional). Fuente: `apps/*/.env.example` de
+contra el mismo proyecto Supabase — opcional). Fuente: `frontend/apps/*/.env.example` de
 cada app.
 
-**`apps/web` (`.env.example`):**
+**`frontend/apps/web` (`.env.example`):**
 
 | Variable | Valor en producción |
 |---|---|
@@ -189,7 +190,7 @@ cada app.
 | `NEXT_PUBLIC_URL_ERP` | URL Vercel del proyecto `suite-erp-erp` |
 | `NEXT_PUBLIC_COOKIE_DOMAIN` | **vacía** (ver §3.2) |
 
-**`apps/erp` (`.env.example`):**
+**`frontend/apps/erp` (`.env.example`):**
 
 | Variable | Valor en producción |
 |---|---|
@@ -198,7 +199,7 @@ cada app.
 | `NEXT_PUBLIC_URL_WEB` | URL Vercel del proyecto `suite-erp-web` |
 | `NEXT_PUBLIC_COOKIE_DOMAIN` | **vacía** |
 
-**`apps/admin` (`.env.example`):**
+**`frontend/apps/admin` (`.env.example`):**
 
 | Variable | Valor en producción |
 |---|---|
@@ -339,10 +340,11 @@ Terminado el smoke test, borrar la organización de prueba siguiendo el §4.1.
 
 ## 7. Aplicar migraciones futuras
 
-Cualquier migración nueva agregada a `supabase/migrations/` después de un merge a
-`main` se aplica a producción con:
+Cualquier migración nueva agregada a `backend/supabase/migrations/` después de un
+merge a `main` se aplica a producción con:
 
 ```powershell
+cd backend
 pnpm supabase db push
 ```
 
@@ -355,7 +357,7 @@ una vez por máquina/checkout, o de nuevo si se reclona el repo.)
 
 Desde que Supabase dejó de auto-exponer tablas nuevas de `public` a los roles del
 Data API (`anon`, `authenticated`, `service_role`) sin GRANT explícito (ver
-comentario en `supabase/migrations/00000000000001_plataforma.sql`, sección
+comentario en `backend/supabase/migrations/00000000000001_plataforma.sql`, sección
 "Grants Data API"), **toda migración futura que cree tablas en `public` debe
 incluir sus propios `grant` explícitos** junto a las políticas RLS — de lo
 contrario la tabla queda con RLS activo pero sin ningún rol autorizado a tocarla,

@@ -6,6 +6,6 @@ node_modules
 .playwright-mcp
 .remember
 graphify-out
-supabase/.temp
+backend/supabase/.temp
 Dockerfile
 docker-compose.yml

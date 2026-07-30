@@ -5,7 +5,7 @@ node_modules/
 .env.local
 .env*.local
 coverage/
-supabase/.temp/
+backend/supabase/.temp/
 *.tsbuildinfo
 .vercel
 .env*

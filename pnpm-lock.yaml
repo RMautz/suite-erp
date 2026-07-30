@@ -18,163 +18,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  apps/admin:
-    dependencies:
-      '@suite/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@suite/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@suite/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@suite/ui':
-        specifier: workspace:^
-        version: link:../../packages/ui
-      next:
-        specifier: ^15.1.0
-        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
-      server-only:
-        specifier: ^0.0.1
-        version: 0.0.1
-    devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.3.2
-        version: 4.3.2
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.0
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
-      tailwindcss:
-        specifier: ^4.3.2
-        version: 4.3.2
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
-  apps/erp:
-    dependencies:
-      '@suite/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@suite/bot':
-        specifier: workspace:*
-        version: link:../../packages/bot
-      '@suite/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@suite/correo':
-        specifier: workspace:*
-        version: link:../../packages/correo
-      '@suite/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@suite/dte':
-        specifier: workspace:*
-        version: link:../../packages/dte
-      '@suite/pagos':
-        specifier: workspace:*
-        version: link:../../packages/pagos
-      '@suite/ui':
-        specifier: workspace:^
-        version: link:../../packages/ui
-      '@suite/whatsapp':
-        specifier: workspace:*
-        version: link:../../packages/whatsapp
-      '@supabase/supabase-js':
-        specifier: ^2.47.0
-        version: 2.110.1
-      '@tailwindcss/postcss':
-        specifier: ^4.3.2
-        version: 4.3.2
-      next:
-        specifier: ^15.1.0
-        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
-      tailwindcss:
-        specifier: ^4.3.2
-        version: 4.3.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.0
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
-  apps/web:
-    dependencies:
-      '@suite/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@suite/bot':
-        specifier: workspace:*
-        version: link:../../packages/bot
-      '@suite/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@suite/correo':
-        specifier: workspace:*
-        version: link:../../packages/correo
-      '@suite/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@suite/whatsapp':
-        specifier: workspace:*
-        version: link:../../packages/whatsapp
-      next:
-        specifier: ^15.1.0
-        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
-    devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.3.2
-        version: 4.3.2
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.20.0
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
-      tailwindcss:
-        specifier: ^4.3.2
-        version: 4.3.2
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
-  packages/auth:
+  backend/packages/auth:
     dependencies:
       '@suite/db':
         specifier: workspace:*
@@ -202,7 +46,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/bot:
+  backend/packages/bot:
     dependencies:
       '@suite/core':
         specifier: workspace:*
@@ -215,7 +59,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/core:
+  backend/packages/core:
     devDependencies:
       typescript:
         specifier: ^5.7.0
@@ -224,7 +68,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/correo:
+  backend/packages/correo:
     dependencies:
       '@suite/core':
         specifier: workspace:*
@@ -237,7 +81,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/db:
+  backend/packages/db:
     devDependencies:
       supabase:
         specifier: ^2.0.0
@@ -246,7 +90,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/dte:
+  backend/packages/dte:
     dependencies:
       '@suite/core':
         specifier: workspace:*
@@ -259,7 +103,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/pagos:
+  backend/packages/pagos:
     devDependencies:
       typescript:
         specifier: ^5.7.0
@@ -268,7 +112,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
-  packages/ui:
+  backend/packages/ui:
     devDependencies:
       '@types/react':
         specifier: ^19.0.0
@@ -283,7 +127,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/whatsapp:
+  backend/packages/whatsapp:
     dependencies:
       '@suite/core':
         specifier: workspace:*
@@ -295,6 +139,162 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  frontend/apps/admin:
+    dependencies:
+      '@suite/auth':
+        specifier: workspace:*
+        version: link:../../../backend/packages/auth
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../../../backend/packages/core
+      '@suite/db':
+        specifier: workspace:*
+        version: link:../../../backend/packages/db
+      '@suite/ui':
+        specifier: workspace:^
+        version: link:../../../backend/packages/ui
+      next:
+        specifier: ^15.1.0
+        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.3.2
+        version: 4.3.2
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      tailwindcss:
+        specifier: ^4.3.2
+        version: 4.3.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  frontend/apps/erp:
+    dependencies:
+      '@suite/auth':
+        specifier: workspace:*
+        version: link:../../../backend/packages/auth
+      '@suite/bot':
+        specifier: workspace:*
+        version: link:../../../backend/packages/bot
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../../../backend/packages/core
+      '@suite/correo':
+        specifier: workspace:*
+        version: link:../../../backend/packages/correo
+      '@suite/db':
+        specifier: workspace:*
+        version: link:../../../backend/packages/db
+      '@suite/dte':
+        specifier: workspace:*
+        version: link:../../../backend/packages/dte
+      '@suite/pagos':
+        specifier: workspace:*
+        version: link:../../../backend/packages/pagos
+      '@suite/ui':
+        specifier: workspace:^
+        version: link:../../../backend/packages/ui
+      '@suite/whatsapp':
+        specifier: workspace:*
+        version: link:../../../backend/packages/whatsapp
+      '@supabase/supabase-js':
+        specifier: ^2.47.0
+        version: 2.110.1
+      '@tailwindcss/postcss':
+        specifier: ^4.3.2
+        version: 4.3.2
+      next:
+        specifier: ^15.1.0
+        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      tailwindcss:
+        specifier: ^4.3.2
+        version: 4.3.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  frontend/apps/web:
+    dependencies:
+      '@suite/auth':
+        specifier: workspace:*
+        version: link:../../../backend/packages/auth
+      '@suite/bot':
+        specifier: workspace:*
+        version: link:../../../backend/packages/bot
+      '@suite/core':
+        specifier: workspace:*
+        version: link:../../../backend/packages/core
+      '@suite/correo':
+        specifier: workspace:*
+        version: link:../../../backend/packages/correo
+      '@suite/db':
+        specifier: workspace:*
+        version: link:../../../backend/packages/db
+      '@suite/whatsapp':
+        specifier: workspace:*
+        version: link:../../../backend/packages/whatsapp
+      next:
+        specifier: ^15.1.0
+        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.3.2
+        version: 4.3.2
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      tailwindcss:
+        specifier: ^4.3.2
+        version: 4.3.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
 packages:
 

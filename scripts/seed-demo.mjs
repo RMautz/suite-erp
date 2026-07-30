@@ -17,7 +17,7 @@ import { createRequire, register } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const require = createRequire(join(raiz, 'packages/auth/package.json'))
+const require = createRequire(join(raiz, 'backend/packages/auth/package.json'))
 const { createClient } = require('@supabase/supabase-js')
 
 // Espeja packages/dte/src/cripto.ts#cifrar byte a byte (mismo algoritmo/formato,
@@ -422,7 +422,7 @@ console.log('✓ 2da organización (trial, sin pagar): Comercial Ficticia SpA �
 register('data:text/javascript,' + encodeURIComponent(
   'export async function resolve(s,c,n){try{return await n(s,c)}catch(e){for(const x of [".ts","/index.ts"]){try{return await n(s+x,c)}catch{}}throw e}}'
 ))
-const requireErp = createRequire(join(raiz, 'apps/erp/package.json'))
+const requireErp = createRequire(join(raiz, 'frontend/apps/erp/package.json'))
 const correoDir = dirname(requireErp.resolve('@suite/correo'))
 const { plantillaRecordatorio, plantillaCotizacion } = await import(pathToFileURL(join(correoDir, 'plantillas.ts')).href)
 const empresaCorreo = { razonSocial: 'Demo Transportes SpA', rut: '771234569' }

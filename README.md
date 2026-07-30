@@ -9,21 +9,21 @@ Monorepo pnpm + Turbo. Las carpetas siguen las convenciones de sus herramientas
 
 ## Mapa del repositorio
 
-### Frontend — `apps/`
+### Frontend — `frontend/apps/`
 
 | App | Puerto | Qué es |
 |---|---|---|
-| [`apps/web`](apps/web) | 3000 | Sitio público: landing con chat de ventas (leads), login/registro, recuperación de contraseña, consultas a administración |
-| [`apps/erp`](apps/erp) | 3001 | La aplicación: dashboard, ventas/DTE, cobranza, inventario, transporte, RRHH, contabilidad, configuración, simuladores mock y widget del bot |
-| [`apps/admin`](apps/admin) | 3002 | Panel de plataforma: organizaciones, recaudación, indicadores, tickets (consultas) y leads |
+| [`frontend/apps/web`](frontend/apps/web) | 3000 | Sitio público: landing con chat de ventas (leads), login/registro, recuperación de contraseña, consultas a administración |
+| [`frontend/apps/erp`](frontend/apps/erp) | 3001 | La aplicación: dashboard, ventas/DTE, cobranza, inventario, transporte, RRHH, contabilidad, configuración, simuladores mock y widget del bot |
+| [`frontend/apps/admin`](frontend/apps/admin) | 3002 | Panel de plataforma: organizaciones, recaudación, indicadores, tickets (consultas) y leads |
 
 ### Backend
 
 | Carpeta | Qué es |
 |---|---|
-| [`supabase/migrations`](supabase/migrations) | El esquema completo: 31 migraciones (tablas, RLS, RPCs `security definer`) — la lógica autoritativa vive en SQL |
-| [`supabase/tests/database`](supabase/tests/database) | Suite pgTAP (23 archivos): RLS multi-tenant, RPCs y mensajes byte-exactos. Corre con `npx supabase test db` |
-| [`packages/`](packages) | Librerías compartidas: `core` (dominio puro: RUT, IVA, remuneraciones…), `db` (tipos generados), `auth` (clientes Supabase SSR), `correo`, `pagos`, `dte`, `whatsapp`, `bot`, `ui` |
+| [`backend/supabase/migrations`](backend/supabase/migrations) | El esquema completo: 31 migraciones (tablas, RLS, RPCs `security definer`) — la lógica autoritativa vive en SQL |
+| [`backend/supabase/tests/database`](backend/supabase/tests/database) | Suite pgTAP (23 archivos): RLS multi-tenant, RPCs y mensajes byte-exactos. Corre con `cd backend && npx supabase test db` |
+| [`backend/packages/`](backend/packages) | Librerías compartidas: `core` (dominio puro: RUT, IVA, remuneraciones…), `db` (tipos generados), `auth` (clientes Supabase SSR), `correo`, `pagos`, `dte`, `whatsapp`, `bot`, `ui` |
 | [`scripts/seed-demo.mjs`](scripts/seed-demo.mjs) | Datos demo chilenos (correr tras `supabase db reset`) |
 
 ### Documentación — `docs/`
@@ -43,14 +43,14 @@ pgTAP en CI.
 
 ```bash
 # Desarrollo (hot-reload)
-npx supabase start          # backend local (Docker)
+cd backend && npx supabase start          # backend local (Docker)
 pnpm dev                    # las 3 apps
 
 # Página siempre arriba (contenedores compilados, ver docs/operacion-local.md)
 docker compose up -d --build
 
 # Verificación
-npx supabase test db        # pgTAP (23 archivos)
+cd backend && npx supabase test db        # pgTAP (23 archivos)
 pnpm test                   # unit de packages
 pnpm build --concurrency=1  # 3 apps (NUNCA con los dev servers corriendo)
 ```
