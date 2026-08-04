@@ -5,6 +5,7 @@
 - [`operacion-local.md`](operacion-local.md) — mantener la página arriba con Docker, comandos, modo desarrollo vs contenedores, `host.docker.internal`.
 - [`deploy.md`](deploy.md) — checklist de deploy a producción: Supabase cloud, Vercel, dominios, Redirect URLs de auth, rate limiting del chat público.
 - [`credenciales-pendientes.md`](credenciales-pendientes.md) — las 15 credenciales/APIs externas que activan adaptadores ya construidos (SII, MercadoPago, Resend, Anthropic, Meta WhatsApp…). Todo funciona hoy con mocks.
+- [`incidentes/`](incidentes) — registro de incidentes operacionales y sus checklists (documentación ACHS, plazos legales).
 
 ## Diseño e implementación por fase
 
