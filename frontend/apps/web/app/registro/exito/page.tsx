@@ -6,7 +6,7 @@ export default function RegistroExitoso() {
     >
       <div className="w-full max-w-sm">
         <p className="mb-6 block text-center text-2xl font-bold tracking-tight text-slate-900">
-          Suite <span className="bg-gradient-to-r from-marca-600 to-cyan-500 bg-clip-text text-transparent">ERP</span>
+          Suite <span className="bg-gradient-to-r from-marca-600 to-violet-500 bg-clip-text text-transparent">ERP</span>
         </p>
         <div className="rounded-2xl border border-marca-100 bg-white p-8 text-center shadow-xl shadow-marca-600/10">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-2xl text-emerald-700" aria-hidden>

@@ -2,13 +2,13 @@ const MODULOS = [
   {
     titulo: 'Ventas y facturación DTE',
     desc: 'Boletas, facturas y notas de crédito electrónicas con folios SII automáticos.',
-    tinte: 'bg-sky-100 stroke-sky-600',
+    tinte: 'bg-violet-100 stroke-violet-600',
     icono: <path d="M4 6h16M4 12h16M4 18h10" />,
   },
   {
     titulo: 'Inventario multi-bodega',
     desc: 'Stock en tiempo real derivado de un libro de movimientos auditable.',
-    tinte: 'bg-cyan-100 stroke-cyan-600',
+    tinte: 'bg-violet-100 stroke-violet-600',
     icono: <path d="M4 7l8-4 8 4v10l-8 4-8-4zM12 3v18M4 7l8 4 8-4" />,
   },
   {

@@ -1,16 +1,17 @@
 @theme {
-  /* Marca: azul eléctrico vivo (escala sky de Tailwind; antes azul petróleo) */
-  --color-marca-50: #f0f9ff;
-  --color-marca-100: #e0f2fe;
-  --color-marca-200: #bae6fd;
-  --color-marca-300: #7dd3fc;
-  --color-marca-400: #38bdf8;
-  --color-marca-500: #0ea5e9;
-  --color-marca-600: #0284c7;
-  --color-marca-700: #0369a1;
-  --color-marca-800: #075985;
-  --color-marca-900: #0c4a6e;
-  --color-marca-950: #082f49;
+  /* Marca Letier: azul→violeta; la escala base es indigo de Tailwind (centro del
+     degradado de letier.cl: blue-500 → indigo-500 → violet-500). Antes: sky. */
+  --color-marca-50: #eef2ff;
+  --color-marca-100: #e0e7ff;
+  --color-marca-200: #c7d2fe;
+  --color-marca-300: #a5b4fc;
+  --color-marca-400: #818cf8;
+  --color-marca-500: #6366f1;
+  --color-marca-600: #4f46e5;
+  --color-marca-700: #4338ca;
+  --color-marca-800: #3730a3;
+  --color-marca-900: #312e81;
+  --color-marca-950: #1e1b4b;
 }
 
 /* Scroll del NAV lateral: delgado y a juego con el fondo oscuro (la barra

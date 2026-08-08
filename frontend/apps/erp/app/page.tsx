@@ -134,7 +134,7 @@ export default async function Inicio() {
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                   <span
-                    className="block h-full rounded-full bg-gradient-to-r from-cyan-400 to-marca-600"
+                    className="block h-full rounded-full bg-gradient-to-r from-violet-400 to-marca-600"
                     style={{ width: `${Math.round((t.subtotal / maxTop) * 100)}%` }}
                   />
                 </div>

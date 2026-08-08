@@ -16,7 +16,7 @@ export default function LayoutRaiz({ children }: { children: ReactNode }) {
             <div>
               <p className="text-lg font-semibold leading-tight text-slate-900">
                 Suite{' '}
-                <span className="bg-gradient-to-r from-marca-600 to-cyan-500 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-marca-600 to-violet-500 bg-clip-text text-transparent">
                   ERP
                 </span>
               </p>

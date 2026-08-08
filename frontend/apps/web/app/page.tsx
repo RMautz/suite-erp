@@ -132,7 +132,7 @@ export default async function Inicio() {
       <Modulos />
       <Precios />
 
-      <section className="bg-gradient-to-br from-marca-700 via-marca-600 to-cyan-500 px-6 py-14 text-center text-white">
+      <section className="bg-gradient-to-br from-marca-700 via-marca-600 to-violet-500 px-6 py-14 text-center text-white">
         <h2 className="text-2xl font-bold">Deja las planillas hoy</h2>
         <p className="mt-1 text-marca-100">Crea tu cuenta y emite tu primer documento en menos de 10 minutos.</p>
         <Link href="/registro" className="mt-5 inline-block rounded-lg bg-white px-5 py-2.5 font-semibold text-marca-800">

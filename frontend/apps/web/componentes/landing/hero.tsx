@@ -12,7 +12,7 @@ export function Hero() {
       <div>
         <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl" style={{ textWrap: 'balance' }}>
           El ERP para pymes chilenas: ventas,{' '}
-          <em className="bg-gradient-to-r from-marca-600 to-cyan-500 bg-clip-text not-italic text-transparent">
+          <em className="bg-gradient-to-r from-marca-600 to-violet-500 bg-clip-text not-italic text-transparent">
             facturación SII
           </em>{' '}
           e inventario en un solo lugar
@@ -52,7 +52,7 @@ export function Hero() {
         </div>
         <div className="flex h-20 items-end gap-1.5 rounded-lg border border-marca-100 bg-white px-3 pb-2 pt-3">
           {BARRAS.map((h, i) => (
-            <span key={i} className="flex-1 rounded-t-sm bg-gradient-to-b from-cyan-400 to-marca-600" style={{ height: `${h}%` }} />
+            <span key={i} className="flex-1 rounded-t-sm bg-gradient-to-b from-violet-400 to-marca-600" style={{ height: `${h}%` }} />
           ))}
         </div>
       </div>

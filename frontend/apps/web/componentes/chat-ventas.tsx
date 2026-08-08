@@ -43,7 +43,7 @@ export function ChatVentas() {
     <div>
       {abierto && (
         <div className="fixed bottom-24 right-5 z-50 flex h-[520px] w-[360px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/25">
-          <div className="bg-gradient-to-br from-marca-700 to-cyan-600 px-5 py-4 text-white">
+          <div className="bg-gradient-to-br from-marca-700 to-violet-600 px-5 py-4 text-white">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-white/15">
                 <IconoChat clase="h-6 w-6" />

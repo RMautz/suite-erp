@@ -19,7 +19,7 @@ export default function PaginaLogin() {
     >
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-6 block text-center text-2xl font-bold tracking-tight text-slate-900">
-          Suite <span className="bg-gradient-to-r from-marca-600 to-cyan-500 bg-clip-text text-transparent">ERP</span>
+          Suite <span className="bg-gradient-to-r from-marca-600 to-violet-500 bg-clip-text text-transparent">ERP</span>
         </Link>
         <div className="rounded-2xl border border-marca-100 bg-white p-8 shadow-xl shadow-marca-600/10">
           <h1 className="text-xl font-semibold text-slate-900">Iniciar sesión</h1>
