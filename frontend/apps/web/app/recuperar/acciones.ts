@@ -17,7 +17,9 @@ export async function solicitarRecuperacion(_prev: EstadoRecuperar, formData: Fo
   if (!email.includes('@')) return { error: 'Ingresa un correo válido' }
 
   const h = await headers()
-  const host = h.get('host') ?? 'localhost:3000'
+  // Tras el proxy multi-zone de www.letier.cl el Host es el del deployment interno;
+  // x-forwarded-host conserva el dominio que ve el usuario (y sus cookies).
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
   const proto = h.get('x-forwarded-proto') ?? 'http'
 
   const supabase = await crearClienteServidor()
@@ -27,7 +29,7 @@ export async function solicitarRecuperacion(_prev: EstadoRecuperar, formData: Fo
   // sesion valida queda intacta.
   await supabase.auth.getUser()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${proto}://${host}/auth/confirm`,
+    redirectTo: `${proto}://${host}/erp/cuenta/auth/confirm`,
   })
   if (error) console.error('resetPasswordForEmail:', error.message)
   return { ok: true }
