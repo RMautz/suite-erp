@@ -49,7 +49,7 @@ export function ChatVentas() {
                 <IconoChat clase="h-6 w-6" />
               </span>
               <div>
-                <p className="text-base font-bold leading-tight">¡Te damos la bienvenida a Suite ERP!</p>
+                <p className="text-base font-bold leading-tight">¡Te damos la bienvenida a Letier ERP!</p>
                 <p className="text-xs text-marca-100">Te contamos cómo funciona y te ayudamos a partir</p>
               </div>
             </div>
@@ -59,7 +59,7 @@ export function ChatVentas() {
             <div className="flex justify-start">
               <div className="max-w-[85%] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
                 Hola! ¿En qué te puedo ayudar? Pregúntame por los <strong>módulos</strong>, los{' '}
-                <strong>precios</strong> o cómo funciona Suite ERP.
+                <strong>precios</strong> o cómo funciona Letier ERP.
               </div>
             </div>
             {burbujas.map((b) => (
@@ -78,7 +78,7 @@ export function ChatVentas() {
                 visitante nunca queda sin siguiente paso. */}
             {!pendiente && (
               <div className="flex flex-wrap gap-2 px-1 pt-1">
-                {['¿Qué es Suite ERP?', 'Módulos', 'Precios', 'Quiero que me contacten'].map((sugerencia) => (
+                {['¿Qué es Letier ERP?', 'Módulos', 'Precios', 'Quiero que me contacten'].map((sugerencia) => (
                   <button
                     key={sugerencia}
                     type="button"
@@ -116,7 +116,7 @@ export function ChatVentas() {
             </button>
           </div>
           <p className="border-t border-slate-100 bg-white py-1.5 text-center text-[10px] text-slate-400">
-            Asistente de Suite ERP · prueba gratis 14 días
+            Asistente de Letier ERP · prueba gratis 14 días
           </p>
         </div>
       )}
@@ -124,7 +124,7 @@ export function ChatVentas() {
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        aria-label={abierto ? 'Cerrar el chat' : 'Chatear con Suite ERP'}
+        aria-label={abierto ? 'Cerrar el chat' : 'Chatear con Letier ERP'}
         title="¿Te ayudamos?"
         className="fixed bottom-5 right-5 z-50 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-marca-600 to-marca-700 text-white shadow-lg shadow-marca-600/40 transition-transform hover:scale-105"
       >

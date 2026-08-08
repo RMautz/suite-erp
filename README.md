@@ -1,4 +1,4 @@
-# Suite ERP
+# Letier ERP
 
 ERP SaaS multi-tenant para pymes chilenas: facturación electrónica (SII), ventas,
 cobranza (correo + WhatsApp), inventario, transporte, remuneraciones/Previred,

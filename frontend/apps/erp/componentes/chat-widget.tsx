@@ -148,7 +148,7 @@ export function ChatWidget({
             </div>
           )}
           <p className="border-t border-slate-100 bg-white py-1.5 text-center text-[10px] text-slate-400">
-            Bot de Suite ERP · también responde en WhatsApp
+            Bot de Letier ERP · también responde en WhatsApp
           </p>
         </div>
       )}

@@ -27,7 +27,7 @@ const TOOLS = [
   },
   {
     name: 'crear_ticket',
-    description: 'Crea un ticket a la administracion de Suite ERP (soporte de la plataforma: cuenta, suscripcion, problemas). Devuelve el numero de ticket.',
+    description: 'Crea un ticket a la administracion de Letier ERP (soporte de la plataforma: cuenta, suscripcion, problemas). Devuelve el numero de ticket.',
     input_schema: {
       type: 'object' as const,
       properties: {

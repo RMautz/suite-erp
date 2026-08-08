@@ -6,7 +6,7 @@ import { correoPorAmbiente } from './seleccionar'
 describe('correoPorAmbiente (fail-closed)', () => {
   it("'mock' construye MockCorreo y 'resend' completo construye ResendCorreo", () => {
     expect(correoPorAmbiente('mock', undefined, undefined)).toBeInstanceOf(MockCorreo)
-    expect(correoPorAmbiente('resend', 'RESEND-KEY', 'Suite ERP <envios@suite.cl>')).toBeInstanceOf(ResendCorreo)
+    expect(correoPorAmbiente('resend', 'RESEND-KEY', 'Letier ERP <envios@letier.cl>')).toBeInstanceOf(ResendCorreo)
   })
 
   it('perilla ausente/desconocida o resend incompleto lanza — JAMÁS cae a mock', () => {

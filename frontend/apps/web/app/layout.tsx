@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import './globals.css'
 
-export const metadata = { title: 'Suite ERP — Gestión para pymes chilenas' }
+export const metadata = { title: 'Letier ERP — Gestión para pymes chilenas' }
 
 export default function LayoutRaiz({ children }: { children: ReactNode }) {
   return (

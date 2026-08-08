@@ -33,7 +33,7 @@ export default async function PaginaConsultas() {
       </Link>
       <h1 className="mt-4 text-2xl font-bold text-slate-900">Consultar a administración</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Escríbenos por tu cuenta, tu suscripción o cualquier duda de Suite ERP. Te respondemos aquí mismo.
+        Escríbenos por tu cuenta, tu suscripción o cualquier duda de Letier ERP. Te respondemos aquí mismo.
       </p>
 
       <div className="mt-6 rounded-2xl border border-marca-100 bg-white p-6 shadow-xl shadow-marca-600/10">

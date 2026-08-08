@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import './globals.css'
 
-export const metadata = { title: 'Suite ERP — Panel de plataforma' }
+export const metadata = { title: 'Letier ERP — Panel de plataforma' }
 
 export default function LayoutRaiz({ children }: { children: ReactNode }) {
   return (

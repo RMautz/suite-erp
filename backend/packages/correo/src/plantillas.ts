@@ -29,7 +29,7 @@ function envolver(empresa: EmpresaCorreo, titulo: string, cuerpo: string): strin
     escaparHtml(titulo) +
     '</h2>' +
     cuerpo +
-    '<p style="font-size:12px;color:#9ca3af;margin-top:24px">Enviado con Suite ERP</p>' +
+    '<p style="font-size:12px;color:#9ca3af;margin-top:24px">Enviado con Letier ERP</p>' +
     '</div>'
   )
 }
@@ -165,13 +165,13 @@ export function plantillaRecordatorio(datos: DatosRecordatorio): ContenidoCorreo
 }
 
 // Aviso de ticket al admin de la PLATAFORMA (spec tickets 2026-07-22): sin envolver()
-// porque el remitente logico es Suite ERP, no una empresa. Todo dato de usuario escapado.
+// porque el remitente logico es Letier ERP, no una empresa. Todo dato de usuario escapado.
 export function plantillaTicketAdmin(datos: DatosTicketAdmin): ContenidoCorreo {
   const asunto = `Nuevo ticket #${datos.numero} — ${datos.organizacion}`
   const canal = datos.origen === 'whatsapp' ? 'WhatsApp' : 'sitio web'
   const html =
     '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:640px;margin:0 auto">' +
-    '<h1 style="font-size:18px;margin:0 0 4px">Suite ERP — ticket #' + datos.numero + '</h1>' +
+    '<h1 style="font-size:18px;margin:0 0 4px">Letier ERP — ticket #' + datos.numero + '</h1>' +
     '<p style="font-size:13px;color:#6b7280;margin:0 0 16px">' +
     escaparHtml(datos.organizacion) + ' · RUT ' + formatearRut(datos.rut) +
     ' · ' + escaparHtml(datos.autorEmail) + ' · vía ' + canal + '</p>' +
@@ -188,7 +188,7 @@ export function plantillaLeadAdmin(datos: DatosLeadAdmin): ContenidoCorreo {
   const asunto = `Nuevo lead #${datos.numero} — ${datos.nombre}`
   const html =
     '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:640px;margin:0 auto">' +
-    '<h1 style="font-size:18px;margin:0 0 4px">Suite ERP — lead #' + datos.numero + '</h1>' +
+    '<h1 style="font-size:18px;margin:0 0 4px">Letier ERP — lead #' + datos.numero + '</h1>' +
     '<p style="font-size:14px;margin:0 0 4px"><strong>' + escaparHtml(datos.nombre) + '</strong></p>' +
     '<p style="font-size:13px;color:#6b7280;margin:0 0 12px">' +
     escaparHtml(datos.email) +

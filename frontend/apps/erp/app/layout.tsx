@@ -10,7 +10,7 @@ import { obtenerEmpresaActiva } from '../lib/empresa-activa'
 import { puedeVerContabilidad } from '../lib/contabilidad-acceso'
 import { puedeVerRRHH } from '../lib/rrhh-acceso'
 
-export const metadata = { title: 'Suite ERP' }
+export const metadata = { title: 'Letier ERP' }
 
 export default async function LayoutRaiz({ children }: { children: ReactNode }) {
   const { activa, empresas } = await obtenerEmpresaActiva()
@@ -81,7 +81,7 @@ export default async function LayoutRaiz({ children }: { children: ReactNode }) 
         <div className="flex">
           <div className="print:hidden">
             <BarraLateral
-              titulo="Suite ERP"
+              titulo="Letier ERP"
               tituloHref={process.env.NEXT_PUBLIC_URL_WEB ?? '/'}
               items={nav}
               pie={

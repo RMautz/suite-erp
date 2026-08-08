@@ -41,7 +41,7 @@ describe('plantillas de correo', () => {
     expect(html).toContain('Flete Santiago-Rancagua')
     expect(html).toContain('$11.900')
     expect(html).not.toContain('Exento')
-    expect(html).toContain('Enviado con Suite ERP')
+    expect(html).toContain('Enviado con Letier ERP')
   })
 
   it('proforma: asunto con número y empresa; destino y neto de la ODE en el cuerpo', () => {
@@ -59,7 +59,7 @@ describe('plantillas de correo', () => {
     expect(asunto).toContain('Transportes del Sur SpA')
     expect(html).toContain('Puerto Montt')
     expect(html).toContain('$23.800')
-    expect(html).toContain('Enviado con Suite ERP')
+    expect(html).toContain('Enviado con Letier ERP')
   })
 
   it('documento: tipo minúscula capitaliza la etiqueta; exento > 0 se lista; total CLP en el cuerpo', () => {
@@ -80,7 +80,7 @@ describe('plantillas de correo', () => {
     expect(html).toContain('Exento')
     expect(html).toContain('$4.000')
     expect(html).toContain('$63.500')
-    expect(html).toContain('Enviado con Suite ERP')
+    expect(html).toContain('Enviado con Letier ERP')
   })
 
   it('recordatorio: tipo minúscula capitaliza la etiqueta; total y saldo CLP y cliente en el cuerpo', () => {
@@ -98,7 +98,7 @@ describe('plantillas de correo', () => {
     expect(html).toContain('Comercial Andes Ltda')
     expect(html).toContain('$300.000')
     expect(html).toContain('$250.000')
-    expect(html).toContain('Enviado con Suite ERP')
+    expect(html).toContain('Enviado con Letier ERP')
   })
 })
 

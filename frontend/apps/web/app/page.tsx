@@ -32,7 +32,7 @@ export default async function Inicio() {
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-marca-500 to-marca-700 text-sm text-white">
             S
           </span>
-          Suite ERP
+          Letier ERP
         </div>
         <nav className="hidden gap-6 text-sm text-slate-600 sm:flex">
           <a href="#modulos">Módulos</a>
@@ -141,8 +141,8 @@ export default async function Inicio() {
       </section>
 
       <footer className="flex justify-between px-6 py-5 text-sm text-slate-400 sm:px-10">
-        <span>© 2026 Suite ERP</span>
-        <span>contacto@suite-erp.cl</span>
+        <span>© 2026 Letier ERP</span>
+        <span>contacto@letier-erp.cl</span>
       </footer>
 
       <ChatVentas />

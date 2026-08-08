@@ -1,4 +1,4 @@
-# Runbook de deploy — Suite ERP
+# Runbook de deploy — Letier ERP
 
 Este documento describe, paso a paso, cómo llevar el monorepo `suite-erp` desde el
 estado actual (rama `feature/plan1-fundacion`, todo verde en local) a producción:

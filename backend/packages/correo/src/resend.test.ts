@@ -21,7 +21,7 @@ describe('ResendCorreo.enviar', () => {
     }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const resultado = await new ResendCorreo('RESEND-KEY', 'Suite ERP <envios@suite.cl>').enviar(MENSAJE)
+    const resultado = await new ResendCorreo('RESEND-KEY', 'Letier ERP <envios@letier.cl>').enviar(MENSAJE)
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
@@ -32,7 +32,7 @@ describe('ResendCorreo.enviar', () => {
     expect(init.method).toBe('POST')
     expect(init.headers.Authorization).toBe('Bearer RESEND-KEY')
     const body = JSON.parse(init.body)
-    expect(body.from).toBe('Suite ERP <envios@suite.cl>')
+    expect(body.from).toBe('Letier ERP <envios@letier.cl>')
     expect(body.to).toEqual(['cliente@ejemplo.cl'])
     expect(body.subject).toBe('Cotización N° 42')
     expect(body.html).toBe('<p>hola</p>')
@@ -42,7 +42,7 @@ describe('ResendCorreo.enviar', () => {
   it('no filtra la apiKey ni el Bearer en los logs (serializa objetos)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })))
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const proveedor = new ResendCorreo('RESEND-SUPER-SECRETO', 'Suite ERP <envios@suite.cl>')
+    const proveedor = new ResendCorreo('RESEND-SUPER-SECRETO', 'Letier ERP <envios@letier.cl>')
 
     await expect(proveedor.enviar(MENSAJE)).rejects.toThrow()
 
@@ -59,7 +59,7 @@ describe('ResendCorreo.enviar', () => {
 
   it('lanza limpio ante una respuesta no-ok de Resend', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 422, json: async () => ({}) })))
-    const proveedor = new ResendCorreo('KEY', 'Suite ERP <envios@suite.cl>')
+    const proveedor = new ResendCorreo('KEY', 'Letier ERP <envios@letier.cl>')
     await expect(proveedor.enviar(MENSAJE)).rejects.toThrow('Resend respondió 422')
   })
 })
