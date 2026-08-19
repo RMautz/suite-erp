@@ -40,7 +40,7 @@ export function FormularioRespuesta({
           <button
             type="submit"
             disabled={pendienteR}
-            className="rounded-lg bg-marca-600 px-4 py-2 text-sm font-semibold text-white hover:bg-marca-700 disabled:opacity-60"
+            className="rounded-lg grad-marca px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60"
           >
             {pendienteR ? 'Guardando…' : 'Enviar respuesta'}
           </button>

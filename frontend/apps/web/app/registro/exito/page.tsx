@@ -6,7 +6,7 @@ export default function RegistroExitoso() {
     >
       <div className="w-full max-w-sm">
         <p className="mb-6 block text-center text-2xl font-bold tracking-tight text-slate-900">
-          Suite <span className="bg-gradient-to-r from-marca-600 to-violet-500 bg-clip-text text-transparent">ERP</span>
+          Letier <span className="texto-grad-marca">ERP</span>
         </p>
         <div className="rounded-2xl border border-marca-100 bg-white p-8 text-center shadow-xl shadow-marca-600/10">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-2xl text-emerald-700" aria-hidden>
@@ -16,7 +16,7 @@ export default function RegistroExitoso() {
           <p className="mt-2 text-sm text-slate-500">Tu organización quedó registrada con 14 días de prueba.</p>
           <a
             href={process.env.NEXT_PUBLIC_URL_ERP}
-            className="mt-6 inline-block w-full rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30 transition-opacity hover:opacity-95"
+            className="mt-6 inline-block w-full rounded-lg grad-marca px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30 transition-opacity hover:opacity-95"
           >
             Entrar al ERP
           </a>

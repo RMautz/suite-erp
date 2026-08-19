@@ -14,6 +14,20 @@
   --color-marca-950: #1e1b4b;
 }
 
+/* Degradado de marca (mismo que letier.cl: azul → indigo → violeta). */
+:root {
+  --grad-marca: linear-gradient(100deg, #3b82f6, #6366f1 55%, #8b5cf6);
+}
+@utility grad-marca {
+  background-image: var(--grad-marca);
+}
+@utility texto-grad-marca {
+  background-image: var(--grad-marca);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* Scroll del NAV lateral: delgado y a juego con el fondo oscuro (la barra
    por defecto del navegador es gris clara y rompe la barra de marca). */
 .nav-scroll {

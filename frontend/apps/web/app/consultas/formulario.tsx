@@ -38,7 +38,7 @@ export function FormularioConsulta() {
       <button
         type="submit"
         disabled={pendiente}
-        className="justify-self-start rounded-lg bg-gradient-to-br from-marca-600 to-marca-700 px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30 transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+        className="justify-self-start rounded-lg grad-marca px-5 py-2.5 font-semibold text-white shadow-lg shadow-marca-600/30 transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pendiente ? 'Enviando…' : 'Enviar consulta'}
       </button>

@@ -2,7 +2,8 @@ import type { ButtonHTMLAttributes } from 'react'
 import { cn } from './cn'
 
 const VARIANTES = {
-  primario: 'bg-marca-700 text-white hover:bg-marca-800 disabled:bg-marca-300',
+  primario:
+    'grad-marca text-white hover:brightness-110 hover:shadow-md hover:shadow-marca-500/40 disabled:bg-marca-300 disabled:[background-image:none]',
   secundario: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:text-slate-400',
   peligro: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
 } as const
@@ -15,7 +16,7 @@ export function Boton({ variante = 'primario', className, ...props }: BotonProps
   return (
     <button
       className={cn(
-        'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed',
+        'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed',
         VARIANTES[variante],
         className
       )}
