@@ -23,7 +23,7 @@ export async function obtenerEmpresas(): Promise<EmpresaResumen[]> {
       .order('razon_social'),
     supabase.auth.getUser(),
   ])
-  if (empresasRes.error) throw new Error('No se pudieron cargar tus empresas')
+  if (empresasRes.error) throw new Error('No se pudieron cargar tus empresas', { cause: empresasRes.error })
   const empresas = empresasRes.data ?? []
 
   // Rol del usuario POR organización (UNA consulta a miembros, no N): el NAV y los
